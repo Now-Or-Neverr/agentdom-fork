@@ -1,0 +1,24 @@
+# Dependencies and builds
+node_modules/
+dist/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data (database, uploads, generated admin key)
+data/
+
+# Local tooling and notes
+.claude/
+preview/
+scripts/rekam-preview.mjs
+TODO.md
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

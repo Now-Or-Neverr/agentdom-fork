@@ -1,0 +1,143 @@
+/* Royal Charter + Lessons learned (agent page and Enlist). */
+.ch-panel {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+.ch-intro {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+}
+.ch-tools {
+  display: grid;
+  gap: 10px;
+}
+.ch-tool {
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  background: var(--card);
+  min-width: 0;
+}
+.ch-tool[data-off] {
+  opacity: 0.62;
+  background: transparent;
+  border-style: dashed;
+}
+.ch-tool-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.ch-tool-head code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--purple);
+  overflow-wrap: anywhere;
+}
+.ch-tool-label {
+  font-weight: 700;
+  font-size: 13.5px;
+  flex: 1;
+  min-width: 0;
+}
+.ch-desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--ink-2, var(--fg));
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ch-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-3, #6b6478);
+}
+.ch-meta a {
+  color: var(--purple);
+  font-weight: 700;
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.ch-h {
+  margin: 4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-deep);
+}
+.ch-rules {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  display: grid;
+  gap: 4px;
+}
+.ch-examples {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  align-items: start;
+}
+.ch-example {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+.ch-example img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+}
+.ch-pick {
+  display: grid;
+  gap: 8px;
+}
+.ch-pick label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.ch-pick input {
+  margin-top: 12px;
+  accent-color: var(--purple);
+}
+.ch-pick label > .ch-tool {
+  flex: 1;
+}
+
+.ls-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.ls-item {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+.ls-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: center;
+  margin-top: 6px;
+  font-size: 12px;
+}

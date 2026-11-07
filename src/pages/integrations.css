@@ -1,0 +1,253 @@
+/* /integrations — Royal Couriers status page. Prefix ic-. */
+.ic-page {
+  padding-top: 24px;
+  padding-bottom: 70px;
+  display: grid;
+  gap: 18px;
+}
+.ic-link {
+  color: var(--purple);
+  font-weight: 700;
+}
+.ic-muted {
+  color: var(--ink-3);
+  font-size: 12.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.ic-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fde8e8;
+  color: #9b2c2c;
+  border: 1px solid #f5c2c2;
+}
+.ic-h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  margin: 8px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ic-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+@media (min-width: 760px) {
+  .ic-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.ic-stats > div {
+  background: var(--surface);
+  border: 1px solid var(--line-c);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: grid;
+  box-shadow: var(--shadow-1);
+}
+.ic-stats b {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+.ic-stats span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.bad {
+  color: var(--bad);
+}
+
+.ic-table-wrap {
+  overflow-x: auto;
+  background: var(--surface);
+  border: 1px solid var(--line-c);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
+.ic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+  min-width: 760px;
+}
+.ic-table th {
+  text-align: left;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line-c);
+  background: var(--surface-2);
+}
+.ic-table td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--line-c);
+  vertical-align: middle;
+}
+.ic-table tr:last-child td {
+  border-bottom: 0;
+}
+.ic-table tr.on td {
+  background: var(--purple-soft);
+}
+.ic-table .r {
+  text-align: right;
+  white-space: nowrap;
+}
+.ic-prov {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.ic-prov a {
+  font-weight: 800;
+  color: var(--ink);
+}
+.ic-prov small {
+  display: block;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.ic-prov .ic-docs {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--purple);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ic-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line-c2);
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+.ic-dot.ok {
+  background: #34c46a;
+}
+.ic-dot.bad {
+  background: var(--bad);
+}
+.ic-dot.off {
+  background: transparent;
+  border: 2px solid var(--ink-3);
+}
+.ic-count {
+  font: inherit;
+  color: var(--purple);
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.ic-last {
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: 12.5px;
+}
+
+.ic-log-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+}
+.ic-log-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ic-log {
+  background: var(--night);
+  color: #e9e4f7;
+  border-radius: var(--r-lg);
+  padding: 8px;
+  display: grid;
+  gap: 2px;
+  font-size: 12.5px;
+}
+.ic-log .empty {
+  color: #b9b2d0;
+}
+.ic-call {
+  display: grid;
+  grid-template-columns: 70px 130px minmax(0, 1fr) 44px 64px auto;
+  gap: 10px;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 8px;
+}
+.ic-call:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.ic-call.fail {
+  background: rgba(214, 69, 69, 0.14);
+}
+.ic-call code {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #cfc6ec;
+}
+.ic-call .tag {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: #e9e4f7;
+}
+.ic-time,
+.ic-ms {
+  color: #a79fc4;
+}
+.ic-pname {
+  font-weight: 700;
+  color: var(--gold-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ic-status {
+  color: #7ee2a8;
+  font-weight: 700;
+}
+.ic-status.bad {
+  color: #ff8b8b;
+}
+@media (max-width: 759px) {
+  .ic-call {
+    grid-template-columns: 62px minmax(0, 1fr) auto auto;
+  }
+  .ic-call code {
+    grid-column: 1 / -1;
+    order: 9;
+  }
+  .ic-call .tag,
+  .ic-ms {
+    display: none;
+  }
+}
+.ic-foot {
+  display: block;
+}

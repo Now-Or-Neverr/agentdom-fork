@@ -1,0 +1,491 @@
+/* Quest Board (/quests) */
+.qb {
+  min-height: 100vh;
+}
+.qb-hero {
+  padding: 44px 0 34px;
+}
+.qb-h1 {
+  margin: 14px 0 12px;
+  max-width: 760px;
+}
+.qb-how {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 0;
+  display: grid;
+  gap: 10px;
+  max-width: 900px;
+}
+@media (min-width: 760px) {
+  .qb-how {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.qb-how li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  background: rgba(255, 253, 249, 0.7);
+  border: 1px solid var(--line-c);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+}
+.qb-how b {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--purple);
+  color: #fff;
+  font-size: 12px;
+}
+.qb-main {
+  padding-bottom: 70px;
+}
+.qb-main .section-title {
+  margin-top: 34px;
+}
+
+/* chain */
+.qb-chain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.qb-chain-node {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.qb-chain-arrow {
+  color: var(--ink-3);
+}
+
+/* template cards */
+.qb-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+}
+.qb-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-c);
+  box-shadow: var(--shadow-1);
+  transition:
+    border-color 0.2s,
+    transform 0.25s var(--ease);
+}
+.qb-card:hover {
+  border-color: var(--purple-3);
+  transform: translateY(-2px);
+}
+.qb-card h3 {
+  font-family: var(--font-display);
+  font-size: 21px;
+  margin: 4px 0 0;
+  line-height: 1.15;
+}
+.qb-card p {
+  margin: 0;
+  font-size: 14px;
+}
+.qb-steps-mini {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+}
+.qb-steps-mini li {
+  padding-left: 12px;
+  border-left: 3px solid var(--g);
+  color: var(--ink-2);
+}
+.qb-steps-mini li span {
+  font-weight: 700;
+  color: var(--ink);
+}
+.qb-card-foot {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+.qb-cr {
+  color: var(--ink);
+  font-size: 15px;
+}
+.qb-card-custom {
+  border-style: dashed;
+  border-color: var(--line-c2);
+  background: linear-gradient(160deg, var(--purple-soft), var(--surface) 70%);
+}
+.qb-custom-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--purple);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-purple);
+}
+
+/* my quests */
+.qb-list {
+  display: grid;
+  gap: 12px;
+}
+.qb-quest {
+  min-width: 0;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line-c);
+  overflow: hidden;
+}
+.qb-quest.open {
+  box-shadow: var(--shadow-1);
+}
+.qb-quest-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.qb-quest-title {
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  font-size: 15px;
+}
+.qb-quest-title .muted {
+  font-size: 12.5px;
+}
+.qb-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.qb-badge-active {
+  background: #dff5ec;
+  color: #1f7d60;
+}
+.qb-badge-complete {
+  background: var(--gold-soft);
+  color: #7a5208;
+}
+.qb-badge-failed {
+  background: #fbe3e3;
+  color: #c03a3a;
+}
+.qb-caret {
+  color: var(--ink-3);
+  transition: transform 0.2s;
+}
+.qb-quest.open .qb-caret {
+  transform: rotate(180deg);
+}
+.qb-progress {
+  height: 3px;
+  background: var(--bg-2);
+}
+.qb-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple), var(--gold));
+  transition: width 0.6s var(--ease);
+}
+.qb-q-failed .qb-progress span {
+  background: var(--bad);
+}
+.qb-quest-body {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.qb-subject p {
+  margin: 0;
+  font-size: 14px;
+  white-space: pre-wrap;
+  color: var(--ink-2);
+}
+
+/* step track */
+.qb-track {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+.qb-node {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-c);
+  border-top: 3px solid var(--g);
+  background: var(--surface-2);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.qb-node.on {
+  background: var(--surface);
+  border-color: var(--g);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--g) 18%, transparent);
+}
+.qb-node-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.qb-node-text small {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.qb-node-text b {
+  font-size: 14px;
+}
+.qb-node-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.qb-s-wait .qb-node-status,
+.qb-s-off .qb-node-status {
+  color: var(--ink-3);
+}
+.qb-s-queue .qb-node-status {
+  color: #a5650b;
+}
+.qb-s-work .qb-node-status {
+  color: #1f7d60;
+}
+.qb-s-done .qb-node-status {
+  color: var(--ok);
+}
+.qb-s-bad .qb-node-status {
+  color: var(--bad);
+}
+.qb-s-wait,
+.qb-s-off {
+  opacity: 0.75;
+}
+
+/* step detail */
+.qb-step {
+  min-width: 0;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-c);
+  border-left: 4px solid var(--g);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+.qb-step-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.qb-instr {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+.qb-result {
+  position: relative;
+  min-width: 0;
+  overflow-x: auto;
+  background: var(--surface-2);
+  border-radius: var(--r-sm);
+  padding: 4px 14px;
+}
+.qb-live {
+  position: sticky;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1f7d60;
+}
+.qb-note {
+  font-size: 13.5px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--ink-2);
+}
+.qb-note.bad {
+  background: #fbe3e3;
+  color: #a12f2f;
+}
+.qb-note a {
+  text-decoration: underline;
+}
+
+/* rating */
+.qb-rate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: var(--gold-soft);
+}
+.qb-rate .label {
+  margin: 0;
+  width: 100%;
+}
+.qb-rate .field {
+  flex: 1;
+  min-width: 180px;
+}
+.qb-stars {
+  display: flex;
+}
+.qb-stars button {
+  background: none;
+  border: 0;
+  padding: 2px;
+  cursor: pointer;
+}
+
+/* create sheet */
+.qb-sheet {
+  max-width: 640px;
+}
+.qb-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.qb-gap {
+  margin-top: 14px;
+}
+.qb-builder {
+  display: grid;
+  gap: 10px;
+}
+.qb-builder .label {
+  margin-bottom: 0;
+}
+.qb-draft {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line-c);
+  border-left: 4px solid var(--g);
+  background: var(--surface-2);
+}
+.qb-draft-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qb-draft-row select {
+  flex: 1;
+}
+.qb-split {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--line-c);
+}
+.qb-split ol {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.qb-split li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+.qb-split-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.qb-split .num {
+  font-weight: 700;
+}
+.qb-small {
+  font-size: 12.5px;
+  margin: 10px 0 0;
+}
+.qb-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 14px;
+  margin: 14px 0 10px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.qb-sheet .qb-note.bad {
+  margin-bottom: 10px;
+}

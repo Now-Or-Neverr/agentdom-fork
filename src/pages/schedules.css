@@ -1,0 +1,262 @@
+/* Standing decrees (/schedules), the cadence picker, the voice button and the Vizier planner */
+.sd-main {
+  padding: 24px 16px 70px;
+  max-width: 900px;
+}
+.sd-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.sd-small {
+  font-size: 12.5px;
+}
+.sd-grow {
+  flex: 1;
+  min-width: 0;
+}
+.sd-err {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(214, 69, 69, 0.4);
+  border-radius: var(--r-md, 12px);
+  color: var(--bad);
+  font-size: 13.5px;
+  background: var(--surface);
+}
+.sd-list {
+  display: grid;
+  gap: 14px;
+}
+.sd-card {
+  background: var(--surface);
+  border: 1px solid var(--line-c);
+  border-left: 4px solid var(--g);
+  border-radius: var(--r-md, 12px);
+  padding: 16px;
+}
+.sd-card.off {
+  background: var(--surface-2);
+}
+.sd-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.sd-title {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.sd-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sd-note {
+  margin-top: 10px;
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--gold-soft);
+  color: var(--ink);
+}
+.sd-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.sd-history {
+  margin-top: 14px;
+  border-top: 1px dashed var(--line-c2);
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+.sd-history-h {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.sd-run {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+}
+.sd-run-no {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  min-width: 30px;
+}
+.sd-run-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--purple);
+  font-weight: 700;
+}
+.sd-run-skip {
+  color: var(--warn);
+}
+.sd-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.sd-picker {
+  display: grid;
+  gap: 6px;
+}
+.sd-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.sd-picker-row .field {
+  flex: 1 1 130px;
+  min-width: 0;
+}
+.sd-standing {
+  border: 1px dashed var(--line-c2);
+  border-radius: var(--r-md, 12px);
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+.sd-check {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  font-size: 13.5px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.sd-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--vermilion);
+}
+.sd-row-wrap {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.sd-row-wrap > a {
+  flex: 1;
+  min-width: 0;
+}
+.sd-row-btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* voice decree */
+.vd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12.5px;
+}
+.vd select {
+  width: auto;
+  min-height: 34px;
+  padding: 4px 30px 4px 10px;
+  font-size: 12.5px;
+}
+.vd-state {
+  color: var(--ink-2);
+}
+.vd-state.rec {
+  color: var(--bad);
+  font-weight: 700;
+}
+.vd-state.bad {
+  color: var(--bad);
+}
+.vd-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bad);
+  margin-right: 6px;
+  animation: vd-pulse 1s infinite;
+}
+@keyframes vd-pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+/* Vizier planner */
+.vp-step {
+  border: 1px solid var(--line-c);
+  border-left: 4px solid var(--g);
+  border-radius: var(--r-md, 12px);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  background: var(--surface);
+}
+.vp-step-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vp-step-head .field {
+  flex: 1;
+  min-width: 0;
+}
+.vp-reason {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  font-style: italic;
+}
+.vp-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.vp-share .field {
+  width: 110px;
+}
+.vp-steps {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.vp-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line-c);
+  border-radius: var(--r-md, 12px);
+  padding: 16px;
+  background: var(--purple-soft);
+  margin-bottom: 18px;
+}

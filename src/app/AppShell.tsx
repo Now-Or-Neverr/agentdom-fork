@@ -1,0 +1,94 @@
+import { useState, type ReactNode } from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { ArrowUpRight, Menu, ScrollText, X } from 'lucide-react';
+import { Wordmark } from '../components/Brand';
+import { useApp } from '../lib/store';
+import { fmt } from '../lib/api';
+import { BRAND } from '../config';
+import './app.css';
+
+const NAV = [
+  { to: '/realm', label: 'The Realm' },
+  { to: '/hall', label: 'Decree Hall' },
+  { to: '/quests', label: 'Quests' },
+  { to: '/workshop', label: 'Workshops' },
+  { to: '/gazette', label: 'Gazette' },
+  { to: '/gallery', label: 'Gallery' },
+  { to: '/honors', label: 'Honors' },
+  { to: '/enlist', label: 'Enlist' },
+  { to: '/decrees', label: 'My Decrees' },
+];
+
+export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?: () => void }) {
+  const { user } = useApp();
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="light" style={{ minHeight: '100vh' }}>
+      <header className="mast">
+        <div className="wrap mast-row">
+          <Link to="/" aria-label={`${BRAND.name} home`}>
+            <Wordmark size={30} tone="dark" />
+          </Link>
+          <nav className="mast-nav" aria-label="Main">
+            {NAV.map((n) => (
+              <NavLink key={n.to} to={n.to} end className={({ isActive }) => (isActive ? 'on' : '')}>
+                {n.label}
+              </NavLink>
+            ))}
+          </nav>
+          <div className="mast-right">
+            <Link to="/vault" className="purse" aria-label="Your vault">
+              <span className="crown-coin" />
+              {user ? fmt(user.crowns) : '—'}
+              <span style={{ opacity: 0.6 }}>{BRAND.currencyShort}</span>
+            </Link>
+            {onIssue ? (
+              <button className="btn btn-seal btn-sm" onClick={onIssue}>
+                <ScrollText size={15} />
+                <span className="mast-issue-label">Issue decree</span>
+              </button>
+            ) : (
+              <Link to="/hall?issue=1" className="btn btn-seal btn-sm">
+                <ScrollText size={15} />
+                <span className="mast-issue-label">Issue decree</span>
+              </Link>
+            )}
+            <button className="btn btn-quiet btn-icon btn-sm mast-burger" onClick={() => setOpen(true)} aria-label="Open menu">
+              <Menu size={20} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {open && (
+        <div className="drawer" role="dialog" aria-label="Menu">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+            <Wordmark size={30} tone="dark" />
+            <button className="btn btn-icon" onClick={() => setOpen(false)} aria-label="Close menu">
+              <X size={20} />
+            </button>
+          </div>
+          {[{ to: '/', label: 'Home' }, ...NAV, { to: '/vault', label: 'Vault' }].map((n) => (
+            <Link key={n.to} to={n.to} className="big" onClick={() => setOpen(false)}>
+              {n.label} <ArrowUpRight size={22} color="var(--purple)" />
+            </Link>
+          ))}
+          <p className="muted" style={{ marginTop: 'auto', fontSize: 12.5 }}>
+            {BRAND.currency} are a simulated currency. They are not money or crypto.
+          </p>
+        </div>
+      )}
+
+      {children}
+
+      <footer className="wrap foot-note" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+        <span>
+          {BRAND.name} · {BRAND.currency} are simulated and carry no monetary value.
+        </span>
+        <span className="mono" style={{ letterSpacing: '0.12em' }}>
+          EDITION MMXXVI
+        </span>
+      </footer>
+    </div>
+  );
+}

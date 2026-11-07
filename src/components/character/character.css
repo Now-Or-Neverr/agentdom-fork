@@ -1,0 +1,75 @@
+/* Chibi character idle motion */
+.chr-figure,
+.chr-portrait {
+  display: inline-block;
+  overflow: visible;
+  flex-shrink: 0;
+}
+.chr-idle .chr-body {
+  transform-box: view-box;
+  transform-origin: 60px 186px;
+  animation: chr-bob 3.4s ease-in-out infinite;
+  animation-delay: var(--chr-delay, 0s);
+}
+.chr-idle .chr-shadow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chr-shadow 3.4s ease-in-out infinite;
+  animation-delay: var(--chr-delay, 0s);
+}
+.chr-idle .chr-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chr-blink 5.2s infinite;
+  animation-delay: var(--chr-delay, 0s);
+}
+@keyframes chr-bob {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(-2.2px) scale(1.012, 0.99);
+  }
+}
+@keyframes chr-shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.22;
+  }
+  50% {
+    transform: scaleX(0.92);
+    opacity: 0.16;
+  }
+}
+@keyframes chr-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chr-idle .chr-body,
+  .chr-idle .chr-shadow,
+  .chr-idle .chr-eye {
+    animation: none;
+  }
+}
+
+.chr-sheet {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+}
+.chr-sheet-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font: 600 12px/1.2 var(--font-body);
+}
