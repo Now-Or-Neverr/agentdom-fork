@@ -2057,3 +2057,60 @@ a.ld-pin:hover .ld-pin-label {
     font-size: 12.5px;
   }
 }
+
+/* ---- desktop guild picker: the pinned panel always fits the screen height ---- */
+.ld-guilds.is-desktop .ld-guilds-sticky {
+  top: 70px;
+  height: calc(100vh - 70px);
+  padding: clamp(14px, 3vh, 34px) 0;
+  align-items: stretch;
+}
+.ld-guilds.is-desktop .ld-guilds-sticky > .wrap {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ld-guilds.is-desktop .ld-head {
+  margin-bottom: clamp(12px, 2.4vh, 28px);
+}
+.ld-guilds.is-desktop .ld-head .display {
+  font-size: clamp(36px, min(4.4vw, 7vh), 68px);
+  margin: 10px 0 0;
+}
+.ld-guilds.is-desktop .ld-guild-count {
+  font-size: clamp(44px, min(5vw, 8vh), 80px) !important;
+}
+.ld-guilds.is-desktop .ld-guilds-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.ld-guilds.is-desktop .ld-guild-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(2px, 1.1vh, 12px);
+  min-height: 0;
+}
+.ld-guilds.is-desktop .ld-guild-list button {
+  padding-top: clamp(3px, 0.7vh, 9px);
+  padding-bottom: clamp(3px, 0.7vh, 9px);
+}
+.ld-guilds.is-desktop .ld-gl-name {
+  font-size: clamp(17px, 2.3vh, 21px) !important;
+}
+.ld-guilds.is-desktop .ld-guild-stage {
+  min-height: 0;
+}
+.ld-guilds.is-desktop .ld-guild-preview {
+  min-height: 0;
+}
+.ld-guilds.is-desktop .ld-guild-info {
+  padding: clamp(16px, 2.4vh, 26px) 26px !important;
+}
+.ld-guilds.is-desktop .ld-guild-info h3 {
+  font-size: clamp(30px, min(3vw, 5vh), 48px) !important;
+  margin: 6px 0 4px !important;
+}
+.ld-guilds.is-desktop .ld-guild-info p {
+  margin: 4px 0;
+}
