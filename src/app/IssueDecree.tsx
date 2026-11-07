@@ -84,50 +84,48 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
 
   return (
     <div className="overlay" onClick={onClose}>
-      <form className="sheet" onClick={(e) => e.stopPropagation()} onSubmit={submit} aria-label="Issue a decree">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+      <form className="sheet sd-sheet isd" onClick={(e) => e.stopPropagation()} onSubmit={submit} aria-label="Issue a decree">
+        <div className="sd-sheet-head">
           {toVizier ? (
-            <span style={{ width: 52, height: 64, overflow: 'hidden', display: 'inline-flex', alignItems: 'flex-end', justifyContent: 'center' }}>
+            <span className="sd-figure">
               <Figure role="vizier" size={70} color={PROVINCE.throne.color} />
             </span>
           ) : (
             agent && <AgentPortrait a={agent} size={52} />
           )}
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="sd-sheet-title">
             <div className="kicker">New decree</div>
-            <div className="display d-sm" style={{ marginTop: 4 }}>
+            <div className="display sd-h">
               {toVizier ? 'To the Grand Vizier' : `For ${agent?.name}`}
             </div>
           </div>
-          <button type="button" className="btn btn-icon btn-sm" onClick={onClose} aria-label="Close">
+          <button type="button" className="btn btn-icon btn-sm sd-close" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
 
         {toVizier && (
-          <p className="soft" style={{ fontSize: 14, marginTop: 0 }}>
+          <p className="sd-intro">
             The Grand Vizier reads your decree and hands it to the best-suited agent. You can also limit it to one guild.
           </p>
         )}
         {c && (
-          <div className="panel" style={{ padding: 14, marginBottom: 14, borderLeft: `3px solid ${PROVINCE[c.province].color}` }}>
-            <div className="mono" style={{ fontSize: 10.5, letterSpacing: '0.14em', color: PROVINCE[c.province].color }}>
-              {PROVINCE[c.province].craft.toUpperCase()}
-            </div>
-            <div style={{ fontWeight: 700, marginTop: 2 }}>{c.title}</div>
+          <div className="isd-commission" style={{ ['--g' as string]: PROVINCE[c.province].color }}>
+            <div className="isd-commission-craft">{PROVINCE[c.province].craft.toUpperCase()}</div>
+            <div className="isd-commission-title">{c.title}</div>
           </div>
         )}
 
         {status && !status.aiEnabled && (
-          <div className="panel" style={{ padding: 12, marginBottom: 14, display: 'flex', gap: 10, fontSize: 13, background: '#f6e6c8', borderColor: '#e4c88c' }}>
-            <AlertTriangle size={18} color="#a5772a" style={{ flexShrink: 0 }} />
+          <div className="isd-warn">
+            <AlertTriangle size={17} />
             <span>
               Preview mode: the realm’s AI is not connected yet, so your decree will <b>wait in the queue</b>. You can cancel it any time for a full refund.
             </span>
           </div>
         )}
 
-        <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'minmax(0, 1fr)' }}>
+        <div className="isd-fields">
           {toVizier && (
             <div>
               <label className="label" htmlFor="guild">
@@ -164,27 +162,27 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
             />
             <VoiceDecree onText={(t) => setBrief((b) => (b.trim() ? b.trimEnd() + '\n' + t : t))} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 12, alignItems: 'end' }}>
+          <div className="isd-pair">
             <div>
               <label className="label" htmlFor="dprice">
                 Reward ({BRAND.currency})
               </label>
               {c ? (
-                <div className="field num" style={{ background: 'var(--paper-2)' }}>
+                <div className="field num isd-fixed">
                   {fmt(c.price)} · fixed
                 </div>
               ) : (
                 <input id="dprice" className="field num" type="number" min={5} max={1000} value={price} onChange={(e) => setPrice(Number(e.target.value))} />
               )}
             </div>
-            <label style={{ display: 'flex', gap: 9, alignItems: 'center', fontSize: 13, minHeight: 46, cursor: 'pointer' }}>
-              <input type="checkbox" checked={isPublic} onChange={(e) => setPublic(e.target.checked)} style={{ width: 18, height: 18, accentColor: 'var(--vermilion)' }} />
+            <label className="sd-check isd-public">
+              <input type="checkbox" checked={isPublic} onChange={(e) => setPublic(e.target.checked)} />
               Show in the agent’s portfolio once approved
             </label>
           </div>
         </div>
 
-        <div className="sd-standing" style={{ marginTop: 14 }}>
+        <div className="sd-standing">
           <label className="sd-check">
             <input type="checkbox" checked={standing} onChange={(e) => setStanding(e.target.checked)} />
             Make it a standing decree (repeat it)
@@ -192,26 +190,26 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
           {standing && (
             <>
               <CadencePicker value={cad} onChange={setCad} />
-              <span className="muted" style={{ fontSize: 12.5 }}>
+              <span className="sd-small muted">
                 Each run sends this brief to the same agent and locks {fmt(c?.price ?? price)} {BRAND.currencyShort}. Manage it under Standing decrees.
               </span>
             </>
           )}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 9, fontSize: 12.5, color: 'var(--ink-2)', margin: '16px 0' }}>
-          <Lock size={14} style={{ marginTop: 3, flexShrink: 0 }} />
+        <div className="isd-vault">
+          <Lock size={14} />
           <span>
             Your crowns are sealed in the Royal Vault and released only when you approve the work. Balance <b className="num">{user ? fmt(user.crowns) : '—'}</b>
             {left != null && <> · {left} of {status!.dailyLimitPerUser} decrees left today</>}
           </span>
         </div>
         {err && (
-          <div className="panel" style={{ padding: '10px 12px', marginBottom: 12, color: 'var(--vermilion)', borderColor: 'rgba(194,59,34,.4)', fontSize: 13.5 }}>
+          <div className="sd-err">
             {err}
           </div>
         )}
-        <button className="btn btn-seal btn-lg btn-block" disabled={busy || !title.trim() || !brief.trim()}>
+        <button className="btn btn-seal btn-lg btn-block isd-submit" disabled={busy || !title.trim() || !brief.trim()}>
           {busy ? (
             toVizier ? (
               <>

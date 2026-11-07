@@ -16,7 +16,7 @@ const readKey = () => {
   }
 };
 const FILTERS: (HeraldStatus | 'all')[] = ['pending', 'failed', 'posted', 'rejected', 'all'];
-const COLOR: Record<HeraldStatus, string> = { pending: '#b7791f', approved: '#3b6fd8', posted: '#2f855a', rejected: '#8a8a8a', failed: '#c53030' };
+const COLOR: Record<HeraldStatus, string> = { pending: 'var(--warn)', approved: 'var(--purple)', posted: 'var(--ok)', rejected: 'var(--ink-3)', failed: 'var(--bad)' };
 const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '');
 
 export default function HeraldQueue() {
@@ -118,7 +118,7 @@ export default function HeraldQueue() {
               <div className="ws-row ws-wrap">
                 <div className="ws-chips">
                   {FILTERS.map((f) => (
-                    <button key={f} className={'btn btn-sm ' + (f === filter ? 'btn-seal' : 'btn-quiet')} onClick={() => setFilter(f)}>
+                    <button key={f} className={'btn btn-sm ' + (f === filter ? 'btn-ink' : 'btn-quiet')} onClick={() => setFilter(f)}>
                       {f}
                     </button>
                   ))}

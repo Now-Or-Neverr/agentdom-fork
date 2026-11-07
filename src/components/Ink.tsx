@@ -27,7 +27,7 @@ export function Seal({ children, size = 64, rotate = -6, color = 'var(--purple)'
         boxShadow: `0 ${size * 0.08}px ${size * 0.2}px rgba(27,21,48,.18), inset 0 0 0 ${Math.max(2, size * 0.045)}px rgba(255,255,255,.35)`,
         transform: `rotate(${rotate}deg)`,
         fontFamily: 'var(--font-display)',
-        fontWeight: 900,
+        fontWeight: 400,
         fontSize: size * 0.2,
         lineHeight: 1.05,
         flexShrink: 0,

@@ -73,25 +73,25 @@ export function StandingDialog({ decree, onClose, onDone }: { decree: Decree; on
   };
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Make it a standing decree">
-        <div className="sd-head">
-          <div>
+      <div className="sheet sd-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Make it a standing decree">
+        <div className="sd-sheet-head">
+          <div className="sd-sheet-title">
             <div className="kicker">Standing decree</div>
-            <div className="display d-sm" style={{ marginTop: 4 }}>
-              Repeat “{decree.title}”
+            <div className="display sd-h">
+              Repeat <em>“{decree.title}”</em>
             </div>
           </div>
-          <button type="button" className="btn btn-icon btn-sm" onClick={onClose} aria-label="Close">
+          <button type="button" className="btn btn-icon btn-sm sd-close" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
-        <p className="soft sd-small">
+        <p className="sd-intro">
           The same brief goes to {decree.agent?.name ?? 'the same agent'} on every run, with {fmt(decree.price)} {BRAND.currencyShort} locked from your balance each time. A
           run is skipped (and recorded) if you lack crowns or hit the daily decree limit; after {SCHEDULE_PAUSE_AFTER} misses in a row it pauses itself.
         </p>
         <CadencePicker value={v} onChange={setV} />
         {err && <div className="sd-err">{err}</div>}
-        <button className="btn btn-seal btn-block" style={{ marginTop: 16 }} disabled={busy} onClick={save}>
+        <button className="btn btn-seal btn-lg btn-block isd-submit" disabled={busy} onClick={save}>
           <Repeat size={15} /> {busy ? 'Saving…' : 'Make it a standing decree'}
         </button>
       </div>
@@ -151,41 +151,63 @@ export default function Schedules() {
       <div className="page-paper">
         <div className="wrap sd-main">
           <div className="sd-bar">
-            <span className="muted">
-              {active} of {SCHEDULE_MAX_ACTIVE} active · runs no more than once a day · pauses after {SCHEDULE_PAUSE_AFTER} missed runs in a row
+            <span className="sd-bar-text">
+              <b className="num">
+                {active} of {SCHEDULE_MAX_ACTIVE}
+              </b>{' '}
+              active · runs no more than once a day · pauses after {SCHEDULE_PAUSE_AFTER} missed runs in a row
             </span>
             <Link to="/decrees" className="btn btn-sm">
               Pick a decree to repeat
             </Link>
           </div>
           {err && <div className="sd-err">{err}</div>}
-          {list == null && [0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 120 }} />)}
+          {list == null && [0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 160, borderRadius: 22, marginBottom: 14 }} />)}
           {list?.length === 0 && (
-            <div className="empty">
-              No standing decrees yet. Open <Link to="/decrees">My decrees</Link> and choose “Make it a standing decree”, or tick the option when you issue a new one.
+            <div className="sd-empty">
+              <div className="display sd-empty-title">
+                No standing decrees <em>yet</em>.
+              </div>
+              <p>
+                Open <Link to="/decrees">My decrees</Link> and choose “Make it a standing decree”, or tick the option when you issue a new one.
+              </p>
             </div>
           )}
           <div className="sd-list">
             {list?.map((s) => (
               <article key={s.id} className={'sd-card' + (s.active ? '' : ' off')} style={{ ['--g' as string]: s.agent ? PROVINCE[s.agent.province].color : 'var(--ink-2)' }}>
                 <header className="sd-card-head">
-                  {s.agent && <AgentPortrait a={s.agent} size={44} />}
+                  {s.agent && <AgentPortrait a={s.agent} size={48} />}
                   <div className="sd-grow">
+                    {s.agent && <div className="sd-guild">{PROVINCE[s.agent.province].name}</div>}
                     <div className="sd-title">{s.title}</div>
-                    <div className="muted sd-small">
-                      {s.agent?.name ?? 'Agent'} · {fmt(s.price)} {BRAND.currencyShort} per run · {cadenceLabel(s.cadence, s.hour, s.weekday)}
+                    <div className="sd-sub">
+                      {s.agent?.name ?? 'Agent'} · <span className="num">{fmt(s.price)} {BRAND.currencyShort}</span> per run
                     </div>
                   </div>
-                  <span className={'tag ' + (s.active ? 'jade' : 'gold')}>{s.active ? 'Active' : 'Paused'}</span>
+                  <span className={'sd-pill ' + (s.active ? 'on' : 'off')}>
+                    <span className="dot" />
+                    {s.active ? 'Active' : 'Paused'}
+                  </span>
                 </header>
-                <div className="sd-meta">
-                  <span>
-                    <CalendarClock size={14} /> {s.active ? <>Next run {when(s.nextRunAt)}</> : 'Not scheduled while paused'}
-                  </span>
-                  <span>
-                    {s.runs} run{s.runs === 1 ? '' : 's'} so far
-                  </span>
-                </div>
+                <dl className="sd-facts">
+                  <div>
+                    <dt>Cadence</dt>
+                    <dd>{cadenceLabel(s.cadence, s.hour, s.weekday)}</dd>
+                  </div>
+                  <div>
+                    <dt>
+                      <CalendarClock size={12} /> Next run
+                    </dt>
+                    <dd>{s.active ? when(s.nextRunAt) : 'Not scheduled while paused'}</dd>
+                  </div>
+                  <div>
+                    <dt>Runs</dt>
+                    <dd>
+                      {s.runs} run{s.runs === 1 ? '' : 's'} so far
+                    </dd>
+                  </div>
+                </dl>
                 {!s.active && s.pausedReason && <div className="sd-note">{s.pausedReason}</div>}
                 <div className="sd-actions">
                   {s.active ? (
@@ -207,19 +229,21 @@ export default function Schedules() {
                 </div>
                 <div className="sd-history">
                   <div className="sd-history-h">History</div>
-                  {s.history.length === 0 && <div className="muted sd-small">No runs yet.</div>}
+                  {s.history.length === 0 && <div className="sd-run muted sd-small">No runs yet.</div>}
                   {s.history.map((r) => (
                     <div key={r.id} className="sd-run">
                       <span className="sd-run-no">#{r.runNo}</span>
-                      <span className="muted sd-small">{ago(r.at)}</span>
-                      {r.status === 'issued' && r.decreeId ? (
-                        <Link to={`/decrees/${r.decreeId}`} className="sd-run-link">
-                          Decree issued {r.decreeStatus && <StatusSeal s={r.decreeStatus} />}
-                        </Link>
-                      ) : (
-                        <span className="sd-run-skip">Skipped: {r.reason}</span>
-                      )}
-                      {r.status === 'issued' && r.reason && <span className="sd-run-skip">{r.reason}</span>}
+                      <span className="sd-run-ago">{ago(r.at)}</span>
+                      <span className="sd-run-body">
+                        {r.status === 'issued' && r.decreeId ? (
+                          <Link to={`/decrees/${r.decreeId}`} className="sd-run-link">
+                            Decree issued {r.decreeStatus && <StatusSeal s={r.decreeStatus} />}
+                          </Link>
+                        ) : (
+                          <span className="sd-run-skip">Skipped: {r.reason}</span>
+                        )}
+                        {r.status === 'issued' && r.reason && <span className="sd-run-skip">{r.reason}</span>}
+                      </span>
                     </div>
                   ))}
                 </div>

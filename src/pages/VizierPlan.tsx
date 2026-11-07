@@ -67,27 +67,23 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
 
   return (
     <div className="overlay" onClick={onClose}>
-      <div className="sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Plan with the Vizier" style={{ maxWidth: 680 }}>
-        <div className="sd-head">
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <span style={{ width: 46, height: 58, overflow: 'hidden', display: 'inline-flex', alignItems: 'flex-end', justifyContent: 'center' }}>
-              <Figure role="vizier" size={64} color={PROVINCE.throne.color} />
-            </span>
-            <div>
-              <div className="kicker">Ask the Vizier to plan</div>
-              <div className="display d-sm" style={{ marginTop: 4 }}>
-                {plan ? 'Your quest plan' : 'One goal, many guilds'}
-              </div>
-            </div>
+      <div className="sheet sd-sheet vp-sheet" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Plan with the Vizier">
+        <div className="sd-sheet-head">
+          <span className="sd-figure">
+            <Figure role="vizier" size={70} color={PROVINCE.throne.color} />
+          </span>
+          <div className="sd-sheet-title">
+            <div className="kicker">Ask the Vizier to plan</div>
+            <div className="display sd-h">{plan ? <>Your quest <em>plan</em></> : <>One goal, <em>many guilds</em></>}</div>
           </div>
-          <button type="button" className="btn btn-icon btn-sm" onClick={onClose} aria-label="Close">
+          <button type="button" className="btn btn-icon btn-sm sd-close" onClick={onClose} aria-label="Close">
             <X size={18} />
           </button>
         </div>
 
         {!plan ? (
           <>
-            <p className="soft sd-small">
+            <p className="sd-intro">
               Describe the whole goal. The Grand Vizier (Claude) splits it into 2–4 steps for different guilds. Planning is free; nothing is charged until you confirm the
               plan. {left && <b>{left.left} of {left.limit} plans left today.</b>}
             </p>
@@ -102,12 +98,12 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
               maxLength={1500}
               placeholder="e.g. Launch my handmade candle shop on Instagram next month: I need a brand voice, the first posts and a simple price list."
             />
-            <label className="label" htmlFor="vp-budget" style={{ marginTop: 12 }}>
+            <label className="label vp-gap" htmlFor="vp-budget">
               Total reward ({BRAND.currency})
             </label>
             <input id="vp-budget" className="field num" type="number" min={QUEST_MIN_SHARE * QUEST_MIN_STEPS} max={QUEST_MAX_REWARD} value={budget} onChange={(e) => setBudget(Number(e.target.value))} />
             {err && <div className="sd-err">{err}</div>}
-            <button className="btn btn-seal btn-block" style={{ marginTop: 16 }} disabled={busy !== null || goal.trim().length < 12 || left?.left === 0} onClick={ask}>
+            <button className="btn btn-seal btn-lg btn-block isd-submit" disabled={busy !== null || goal.trim().length < 12 || left?.left === 0} onClick={ask}>
               <Crown size={15} /> {busy === 'plan' ? 'The Vizier is planning…' : 'Ask the Vizier to plan'}
             </button>
           </>
@@ -121,7 +117,7 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
               {steps.map((s, i) => (
                 <div key={i} className="vp-step" style={{ ['--g' as string]: PROVINCE[s.province].color } as CSSProperties}>
                   <div className="vp-step-head">
-                    <b className="mono">{i + 1}</b>
+                    <span className="vp-no">{i + 1}</span>
                     <select className="field" aria-label={`Step ${i + 1} guild`} value={s.province} onChange={(e) => edit(i, { province: e.target.value as GuildId })}>
                       {GUILDS.map((g) => (
                         <option key={g.id} value={g.id}>
@@ -150,20 +146,19 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
                 </div>
               ))}
             </div>
-            <div className="vp-share">
+            <div className="vp-share vp-total">
               Total reward
               <input className="field num" type="number" min={QUEST_MIN_SHARE * steps.length} max={QUEST_MAX_REWARD} value={total} onChange={(e) => rescale(Math.round(Number(e.target.value)))} />
               {BRAND.currencyShort} · balance {user ? fmt(user.crowns) : '—'} · each step counts as one of today’s decrees
             </div>
             {dupGuild && <div className="sd-err">Each step must be handled by a different guild.</div>}
             {err && <div className="sd-err">{err}</div>}
-            <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+            <div className="vp-foot">
               <button className="btn" disabled={busy !== null} onClick={() => setPlan(null)}>
                 Back
               </button>
               <button
-                className="btn btn-seal"
-                style={{ flex: 1 }}
+                className="btn btn-seal vp-confirm"
                 disabled={busy !== null || dupGuild || !title.trim() || steps.some((s) => !s.instruction.trim() || s.share < QUEST_MIN_SHARE) || total > QUEST_MAX_REWARD}
                 onClick={confirm}
               >

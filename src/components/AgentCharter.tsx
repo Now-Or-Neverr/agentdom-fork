@@ -9,7 +9,9 @@ import { getUid } from '../lib/api';
 import './court.css';
 
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const headers: Record<string, string> = { ...(init.headers as Record<string, string>) };
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string>),
+  };
   const uid = getUid();
   if (uid) headers['x-user'] = uid;
   if (typeof init.body === 'string') headers['content-type'] = 'application/json';
@@ -21,7 +23,11 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export const courtApi = {
   charter: (agentId: string) => req<Charter>(`/agents/${agentId}/charter`),
-  setCharter: (agentId: string, tools: string[]) => req<Charter>(`/agents/${agentId}/charter`, { method: 'PUT', body: JSON.stringify({ tools }) }),
+  setCharter: (agentId: string, tools: string[]) =>
+    req<Charter>(`/agents/${agentId}/charter`, {
+      method: 'PUT',
+      body: JSON.stringify({ tools }),
+    }),
   guildTools: (province: ProvinceId) => req<CharterTool[]>(`/guilds/${province}/tools`),
   lessons: (agentId: string) => req<Lesson[]>(`/agents/${agentId}/lessons`),
   gallery: (q: { kind?: string; province?: string; sort?: string; page?: number }) => {
@@ -37,7 +43,15 @@ export function ToolLine({ t, compact }: { t: CharterTool; compact?: boolean }) 
       <div className="ch-tool-head">
         <code>{t.name}</code>
         <span className="ch-tool-label">{t.label}</span>
-        {!t.allowed ? <span className="tag">Switched off by owner</span> : t.enabled ? <span className="tag jade"><span className="dot live" /> Live</span> : <span className="tag red">Disabled · no key</span>}
+        {!t.allowed ? (
+          <span className="tag">Switched off by owner</span>
+        ) : t.enabled ? (
+          <span className="tag jade">
+            <span className="dot live" /> Live
+          </span>
+        ) : (
+          <span className="tag red">Disabled · no key</span>
+        )}
       </div>
       {!compact && <p className="ch-desc">{t.description}</p>}
       <div className="ch-meta">
@@ -66,19 +80,24 @@ export function AgentCharter({ agentId }: { agentId: string }) {
   const [err, setErr] = useState<string | null>(null);
   useEffect(() => {
     setC(null);
-    courtApi.charter(agentId).then(setC).catch((e) => setErr(e.message));
+    courtApi
+      .charter(agentId)
+      .then(setC)
+      .catch((e) => setErr(e.message));
   }, [agentId]);
 
   return (
     <section className="ch">
       <div className="section-title">
-        <h2>Royal Charter</h2>
+        <h2>
+          Royal <em>Charter</em>
+        </h2>
         <span className="muted">What this agent can really do</span>
       </div>
       {err && <div className="empty">{err}</div>}
       {!c && !err && <div className="skeleton" style={{ height: 160 }} />}
       {c && (
-        <div className="panel ch-panel">
+        <div className="ch-panel">
           <div className="ch-intro">
             <ScrollText size={18} color="var(--gold-deep)" />
             <span>
@@ -109,13 +128,21 @@ export function AgentCharter({ agentId }: { agentId: string }) {
                   <b>{w.title}</b>
                   <span className="muted">
                     {w.rating != null ? `${w.rating}/5 · ` : ''}
-                    {w.finishedAt ? new Date(w.finishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''} ·{' '}
-                    {w.artifacts.map((a) => a.kind).join(', ')}
+                    {w.finishedAt
+                      ? new Date(w.finishedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })
+                      : ''}{' '}
+                    · {w.artifacts.map((a) => a.kind).join(', ')}
                   </span>
-                  {w.artifacts.find((a) => a.kind === 'image' && a.url) && <img src={w.artifacts.find((a) => a.kind === 'image')!.url!} alt={w.artifacts.find((a) => a.kind === 'image')!.title} loading="lazy" />}
+                  {w.artifacts.find((a) => a.kind === 'image' && a.url) && (
+                    <img src={w.artifacts.find((a) => a.kind === 'image')!.url!} alt={w.artifacts.find((a) => a.kind === 'image')!.title} loading="lazy" />
+                  )}
                 </div>
               ))}
-              <Link to="/gallery" className="soft" style={{ fontSize: 13, fontWeight: 700 }}>
+              <Link to="/gallery" className="soft" style={{ fontSize: 13, fontWeight: 600, alignSelf: 'end' }}>
                 See the public gallery →
               </Link>
             </div>

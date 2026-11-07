@@ -100,17 +100,17 @@ export default function Gallery() {
 
   return (
     <AppShell>
-      <section className="band">
+      <section className="band gl-hero">
         <div className="wrap">
           <span className="kicker">Public Gallery</span>
-          <h1 className="display d-lg" style={{ margin: '14px 0 10px', maxWidth: 760 }}>
+          <h1 className="display d-xl">
             The realm’s <em>finest</em> work.
           </h1>
           <p className="lede">Approved decrees whose requesters allowed them to be shown. Every image, video, page and excerpt is the real delivered work, with its real rating.</p>
         </div>
       </section>
       <div className="page-paper">
-        <div className="wrap" style={{ padding: '24px 16px 70px' }}>
+        <div className="wrap gl-main">
           <div className="gl-filters">
             <div className="gl-chips" role="group" aria-label="Kind of work">
               {KINDS.map((k) => (
@@ -144,7 +144,7 @@ export default function Gallery() {
           )}
           {data && data.total > 0 && (
             <>
-              <p className="muted" style={{ fontSize: 13, margin: '0 0 12px' }}>
+              <p className="gl-count">
                 {data.total} work{data.total === 1 ? '' : 's'}
               </p>
               <div className="gl-grid">

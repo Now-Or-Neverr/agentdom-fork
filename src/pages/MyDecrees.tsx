@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Decree, DecreeStatus } from '../../shared/types';
+import { PROVINCE } from '../../shared/realm';
 import { AppShell } from '../app/AppShell';
-import { DecreeRow } from '../app/parts';
-import { api } from '../lib/api';
+import { AgentPortrait, StatusSeal } from '../app/parts';
+import { ago, api, fmt } from '../lib/api';
 import { useApp } from '../lib/store';
-import { Repeat } from 'lucide-react';
+import { BRAND } from '../config';
+import { ArrowUpRight, Repeat } from 'lucide-react';
 import { StandingDialog } from './Schedules';
 import './schedules.css';
 
@@ -51,34 +53,65 @@ export default function MyDecrees() {
         </div>
       </section>
       <div className="page-paper">
-        <div className="wrap" style={{ padding: '24px 16px 70px', maxWidth: 900 }}>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
-            <Link to="/schedules" className="btn btn-sm btn-quiet">
+        <div className="wrap sd-main">
+          <div className="md-bar">
+            <div className="hscroll md-filters">
+              {FILTERS.map((x) => (
+                <button key={x.id} className={'chip' + (f === x.id ? ' on' : '')} onClick={() => setF(x.id)}>
+                  {x.label}
+                  {x.id === 'delivered' && review > 0 && <span className="md-count">{review}</span>}
+                </button>
+              ))}
+            </div>
+            <Link to="/schedules" className="btn btn-sm md-standing">
               <Repeat size={14} /> Standing decrees
             </Link>
           </div>
-          <div className="hscroll" style={{ marginBottom: 18 }}>
-            {FILTERS.map((x) => (
-              <button key={x.id} className={'chip' + (f === x.id ? ' on' : '')} onClick={() => setF(x.id)}>
-                {x.label}
-                {x.id === 'delivered' && review > 0 && <span className="tag red">{review}</span>}
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'grid', gap: 10 }}>
-            {list == null && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 76 }} />)}
+          {list && (
+            <div className="md-ledger-head">
+              <span>
+                {shown.length} decree{shown.length === 1 ? '' : 's'}
+              </span>
+              {review > 0 && <span>{review} awaiting your review</span>}
+            </div>
+          )}
+          <div className="md-list">
+            {list == null && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 96, borderRadius: 20 }} />)}
             {list && shown.length === 0 && (
-              <div className="empty">
-                Nothing here yet.{' '}
-                <Link to="/hall?issue=1" style={{ color: 'var(--vermilion)', fontWeight: 700 }}>
+              <div className="sd-empty">
+                <div className="display sd-empty-title">
+                  Nothing <em>here</em> yet.
+                </div>
+                <Link to="/hall?issue=1" className="btn btn-seal btn-sm">
                   Issue your first decree
                 </Link>
               </div>
             )}
             {shown.map((d) => (
-              <div key={d.id} className="sd-row-wrap">
-                <DecreeRow d={d} to={`/decrees/${d.id}`} />
-                <button className="btn btn-sm btn-quiet btn-icon sd-row-btn" title="Make it a standing decree" aria-label={`Make “${d.title}” a standing decree`} onClick={() => setStanding(d)}>
+              <div key={d.id} className="md-item" style={{ ['--g' as string]: PROVINCE[d.province].color }}>
+                <Link to={`/decrees/${d.id}`} className="md-row">
+                  {d.agent && (
+                    <span className="md-portrait">
+                      <AgentPortrait a={d.agent} size={48} />
+                    </span>
+                  )}
+                  <span className="md-text">
+                    <span className="md-title">{d.title}</span>
+                    <span className="md-meta">
+                      <span className="md-guild">{PROVINCE[d.province].name}</span>
+                      <span>{d.agent?.name}</span>
+                      <span className="num">
+                        {fmt(d.price)} {BRAND.currencyShort}
+                      </span>
+                      <span>{ago(d.createdAt)}</span>
+                    </span>
+                  </span>
+                  <span className="md-side">
+                    <StatusSeal s={d.status} />
+                    <ArrowUpRight size={16} className="md-arrow" />
+                  </span>
+                </Link>
+                <button className="btn btn-sm btn-icon md-repeat" title="Make it a standing decree" aria-label={`Make “${d.title}” a standing decree`} onClick={() => setStanding(d)}>
                   <Repeat size={15} />
                 </button>
               </div>

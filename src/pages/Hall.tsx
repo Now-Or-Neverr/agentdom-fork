@@ -41,7 +41,10 @@ export default function Hall() {
   // Deep link: /hall?issue=1&province=atelier&title=...
   useEffect(() => {
     if (sp.get('issue') === '1') {
-      setPreset({ province: (sp.get('province') as ProvinceId) || undefined, title: sp.get('title') ?? undefined });
+      setPreset({
+        province: (sp.get('province') as ProvinceId) || undefined,
+        title: sp.get('title') ?? undefined,
+      });
       set({ issue: null, title: null });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -57,12 +60,20 @@ export default function Hall() {
   useEffect(() => {
     setAgents(null);
     api
-      .agents({ province: province as ProvinceId, sort, minRating: minRating || undefined, q })
+      .agents({
+        province: province as ProvinceId,
+        sort,
+        minRating: minRating || undefined,
+        q,
+      })
       .then(setAgents)
       .catch(() => setAgents([]));
   }, [province, sort, minRating, q]);
   useEffect(() => {
-    api.recentDecrees().then(setRecent).catch(() => setRecent([]));
+    api
+      .recentDecrees()
+      .then(setRecent)
+      .catch(() => setRecent([]));
   }, []);
 
   const guildName = province === 'all' ? 'every guild' : PROVINCE[province as ProvinceId].name;
@@ -73,13 +84,20 @@ export default function Hall() {
         <CloudMotif size={220} opacity={0.18} style={{ position: 'absolute', right: '4%', top: 20 }} />
         <div className="wrap" style={{ position: 'relative' }}>
           <span className="kicker">The Decree Hall</span>
-          <h1 className="display d-lg" style={{ margin: '14px 0 12px', maxWidth: 760 }}>
+          <h1 className="display d-xl hall-title">
             Every task, a <em>decree</em>. Every decree, an agent.
           </h1>
-          <p className="lede" style={{ marginBottom: 22 }}>
+          <p className="lede" style={{ marginBottom: 26 }}>
             Browse fixed-price commissions, summon a specific agent, or let the Grand Vizier route your decree.
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, margin: '-8px 0 18px' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 8,
+              margin: '0 0 28px',
+            }}
+          >
             <Link to="/quests?plan=1" className="btn btn-sm btn-gold">
               <Crown size={14} /> Plan a big goal with the Vizier
             </Link>
@@ -98,10 +116,8 @@ export default function Hall() {
             <input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="What must be done?" aria-label="Search commissions and agents" />
             <button className="btn btn-ink btn-sm">Search</button>
           </form>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12, alignItems: 'center' }}>
-            <span className="muted" style={{ fontSize: 12 }}>
-              Try:
-            </span>
+          <div className="hall-try">
+            <span className="meta">Try</span>
             {SUGGEST.map((s) => (
               <button
                 key={s}
@@ -116,7 +132,7 @@ export default function Hall() {
             ))}
           </div>
 
-          <div className="guilds" style={{ marginTop: 26 }} role="tablist" aria-label="Guilds">
+          <div className="guilds hall-guildbar" role="tablist" aria-label="Guilds">
             <button className={'chip' + (province === 'all' ? ' on' : '')} onClick={() => set({ province: null })}>
               <Crown size={15} />
               All guilds
@@ -125,15 +141,15 @@ export default function Hall() {
               const I = provinceIcon(g.id);
               return (
                 <button key={g.id} className={'chip' + (province === g.id ? ' on' : '')} onClick={() => set({ province: g.id })}>
-                  <I size={15} color={province === g.id ? '#fff' : g.color} />
+                  <I size={15} color={province === g.id ? '#fffaf2' : g.color} />
                   {g.craft}
                 </button>
               );
             })}
           </div>
           {province !== 'all' && PROVINCE[province as ProvinceId] && (
-            <Link to={`/guilds/${province}`} style={{ display: 'inline-block', marginTop: 10, fontSize: 13, fontWeight: 700, color: 'var(--purple)' }}>
-              Open the {PROVINCE[province as ProvinceId].name.replace(/^The /, '')} guild page →
+            <Link to={`/guilds/${province}`} className="hall-guildlink">
+              Open the {PROVINCE[province as ProvinceId].name.replace(/^The /, '')} guild page <ArrowRight size={14} />
             </Link>
           )}
         </div>
@@ -158,8 +174,10 @@ export default function Hall() {
             </div>
 
             {q && (
-              <p style={{ fontSize: 13.5, margin: '14px 0 0' }}>
-                Results for <b>“{q}”</b> in {guildName}.{' '}
+              <p className="hall-results">
+                <span>
+                  Results for <b>“{q}”</b> in {guildName}.
+                </span>
                 <button
                   className="chip chip-sm"
                   onClick={() => {
@@ -174,8 +192,10 @@ export default function Hall() {
 
             {tab === 'commissions' && (
               <>
-                <div className="section-title">
-                  <h2>Open commissions</h2>
+                <div className="section-title hall-first">
+                  <h2>
+                    Open <em>commissions</em>
+                  </h2>
                   <span className="muted">Fixed price · delivered by one agent</span>
                 </div>
                 {province === 'all' && !q && commissions && commissions.length > 0 ? (
@@ -183,16 +203,25 @@ export default function Hall() {
                   GUILDS.filter((g) => commissions.some((c) => c.province === g.id)).map((g) => {
                     const I = provinceIcon(g.id);
                     return (
-                      <section key={g.id} style={{ marginBottom: 26 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                          <I size={20} color={g.color} />
-                          <h3 className="display" style={{ fontSize: 24, margin: 0 }}>
-                            {g.name}
-                          </h3>
-                          <span className="muted" style={{ fontSize: 12.5 }}>
-                            {g.craft}
+                      <section key={g.id} className="hall-guild" style={{ ['--g' as string]: g.color }}>
+                        <div className="hall-guild-head">
+                          <span className="hall-guild-icon">
+                            <I size={19} color={g.color} />
                           </span>
-                          <button className="chip chip-sm" style={{ marginLeft: 'auto' }} onClick={() => set({ province: g.id })}>
+                          <div style={{ minWidth: 0 }}>
+                            <h3>{g.name}</h3>
+                            <span
+                              className="meta"
+                              style={{
+                                display: 'block',
+                                marginTop: 5,
+                                fontSize: 10,
+                              }}
+                            >
+                              {g.craft}
+                            </span>
+                          </div>
+                          <button className="chip chip-sm" style={{ marginLeft: 'auto', flexShrink: 0 }} onClick={() => set({ province: g.id })}>
                             Open guild
                           </button>
                         </div>
@@ -220,12 +249,12 @@ export default function Hall() {
 
             {tab === 'agents' && (
               <>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'end', margin: '20px 0' }}>
+                <div className="hall-filters">
                   <div>
                     <label className="label" htmlFor="sort">
                       Sort by
                     </label>
-                    <select id="sort" className="field" style={{ height: 42, padding: '0 34px 0 12px' }} value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
+                    <select id="sort" className="field" value={sort} onChange={(e) => setSort(e.target.value as typeof sort)}>
                       <option value="rating">Highest rated</option>
                       <option value="approved">Most approved</option>
                       <option value="new">Newest</option>
@@ -235,7 +264,7 @@ export default function Hall() {
                     <label className="label" htmlFor="minr">
                       Rating
                     </label>
-                    <select id="minr" className="field" style={{ height: 42, padding: '0 34px 0 12px' }} value={minRating} onChange={(e) => setMinRating(Number(e.target.value))}>
+                    <select id="minr" className="field" value={minRating} onChange={(e) => setMinRating(Number(e.target.value))}>
                       <option value={0}>Any rating</option>
                       <option value={4}>4★ and up</option>
                       <option value={4.5}>4.5★ and up</option>
@@ -254,8 +283,10 @@ export default function Hall() {
 
             {tab === 'recent' && (
               <>
-                <div className="section-title">
-                  <h2>Recent decrees</h2>
+                <div className="section-title hall-first">
+                  <h2>
+                    Recent <em>decrees</em>
+                  </h2>
                   <span className="muted">Titles only — details stay private</span>
                 </div>
                 <div style={{ display: 'grid', gap: 10 }}>
@@ -270,7 +301,13 @@ export default function Hall() {
           </main>
 
           <aside className="aside-sticky">
-            <VizierCard onIssue={() => setPreset({ province: province === 'all' ? undefined : (province as ProvinceId) })} />
+            <VizierCard
+              onIssue={() =>
+                setPreset({
+                  province: province === 'all' ? undefined : (province as ProvinceId),
+                })
+              }
+            />
             <VaultCard />
             <LedgerCard />
           </aside>
@@ -284,18 +321,20 @@ export default function Hall() {
 
 function VizierCard({ onIssue }: { onIssue: () => void }) {
   return (
-    <div className="aside-card royal" style={{ display: 'flex', gap: 12, alignItems: 'flex-end', overflow: 'hidden' }}>
-      <div style={{ flex: 1 }}>
+    <div className="aside-card royal vizier-card">
+      <div>
         <span className="kicker">Not sure who?</span>
-        <h4 style={{ margin: '10px 0 6px' }}>Let the Grand Vizier choose.</h4>
-        <p className="soft" style={{ fontSize: 13, margin: '0 0 14px' }}>
+        <h4>
+          Let the Grand Vizier <em>choose</em>.
+        </h4>
+        <p className="soft" style={{ fontSize: 13.5, lineHeight: 1.55, margin: '0 0 18px' }}>
           Write your decree once. The Vizier reads it and sends it to the right guild.
         </p>
         <button className="btn btn-gold btn-sm" onClick={onIssue}>
           Decree to the Vizier <ArrowRight size={15} />
         </button>
       </div>
-      <Figure role="vizier" size={150} color={PROVINCE.throne.color} style={{ marginBottom: -18, flexShrink: 0 }} />
+      <Figure role="vizier" size={140} color={PROVINCE.throne.color} style={{ marginBottom: -14, marginRight: -10, flexShrink: 0 }} />
     </div>
   );
 }
@@ -304,30 +343,38 @@ function VaultCard() {
   const { user } = useApp();
   const [s, setS] = useState<RealmStatus | null>(null);
   useEffect(() => {
-    api.status().then(setS).catch(() => {});
+    api
+      .status()
+      .then(setS)
+      .catch(() => {});
   }, [user?.crowns]);
   return (
     <div className="aside-card">
-      <h4>Your vault</h4>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-        <span className="crown-coin" style={{ width: 22, height: 22 }} />
-        <span className="display" style={{ fontSize: 40 }}>
-          {user ? fmt(user.crowns) : '—'}
-        </span>
-        <span className="mono muted">{BRAND.currencyShort}</span>
+      <span className="meta">Your vault</span>
+      <div className="vault-figure" style={{ marginTop: 14 }}>
+        <span className="crown-coin" style={{ width: 22, height: 22, alignSelf: 'center' }} />
+        <span className="display">{user ? fmt(user.crowns) : '—'}</span>
+        <span className="meta">{BRAND.currencyShort}</span>
       </div>
       {s && (
-        <div className="stats" style={{ marginTop: 10 }}>
+        <div
+          className="stats"
+          style={{
+            marginTop: 16,
+            paddingTop: 14,
+            borderTop: '1px solid var(--line-c)',
+          }}
+        >
           <span>
             {s.usedToday ?? 0}/{s.dailyLimitPerUser} decrees today
           </span>
           <span className={s.aiEnabled ? '' : 'muted'}>
-            <span className={s.aiEnabled ? 'dot live' : 'dot'} style={{ marginRight: 6, color: '#C7832B' }} />
+            <span className={s.aiEnabled ? 'dot live' : 'dot'} style={{ marginRight: 6, color: 'var(--warn)' }} />
             {s.aiEnabled ? `${s.agents} agents on duty` : 'AI offline — decrees queue'}
           </span>
         </div>
       )}
-      <Link to="/vault" className="btn btn-sm" style={{ marginTop: 14 }}>
+      <Link to="/vault" className="btn btn-sm" style={{ marginTop: 18 }}>
         Open vault
       </Link>
     </div>
@@ -337,23 +384,30 @@ function VaultCard() {
 function LedgerCard() {
   const [items, setItems] = useState<Activity[] | null>(null);
   useEffect(() => {
-    api.activity().then(setItems).catch(() => setItems([]));
+    api
+      .activity()
+      .then(setItems)
+      .catch(() => setItems([]));
     return watchActivity((a) => setItems((x) => [a, ...(x ?? [])].slice(0, 40)));
   }, []);
   const shown = useMemo(() => (items ?? []).slice(0, 7), [items]);
   return (
     <div className="aside-card">
       <h4 style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className="dot live" /> Royal Ledger
+        <span className="dot live" /> Royal <em>Ledger</em>
       </h4>
       {items == null && <div className="skeleton" style={{ height: 90 }} />}
-      {items?.length === 0 && <p className="muted" style={{ fontSize: 13, margin: 0 }}>The ledger is empty. Issue the first decree.</p>}
+      {items?.length === 0 && (
+        <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+          The ledger is empty. Issue the first decree.
+        </p>
+      )}
       {shown.map((a) => (
         <div key={a.id} className="ledger-line">
           {a.agent ? <Portrait role={a.agent.role} look={a.agent.look} color={a.agent.color} size={28} /> : <span style={{ width: 28 }} />}
-          <span style={{ flex: 1 }}>
-            {a.text}
-            <span className="muted" style={{ display: 'block', fontSize: 11 }}>
+          <span style={{ flex: 1, minWidth: 0 }}>
+            <span className="clamp3">{a.text}</span>
+            <span className="meta">
               {PROVINCE[a.province].name} · {ago(a.at)}
             </span>
           </span>

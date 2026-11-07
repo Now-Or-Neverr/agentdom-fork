@@ -161,7 +161,9 @@ export default function Gazette() {
                 {ed?.next ? shortDate(ed.next) : 'Later'} <ArrowRight size={14} aria-hidden />
               </button>
             </div>
-            <h1 className="gz-title">The Royal Gazette</h1>
+            <h1 className="gz-title">
+              The Royal <em>Gazette</em>
+            </h1>
             <div className="gz-rule">
               <span>{ed ? longDate(ed.date) : date ? longDate(date) : '…'}</span>
               <span className="gz-motto">Every line checked against its source</span>

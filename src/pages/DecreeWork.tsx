@@ -2,7 +2,7 @@
 // Agent-made HTML only ever runs inside <iframe sandbox="allow-scripts" srcdoc> (no allow-same-origin),
 // so it gets an opaque origin and cannot touch this site's storage, cookies or DOM.
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Clapperboard, Code2, Download, ExternalLink, Gauge, Globe, Hourglass, Image as ImageIcon, Loader2, Maximize2, Megaphone, Rocket, Wrench, X } from 'lucide-react';
+import { AlertTriangle, Check, Clapperboard, Code2, Download, ExternalLink, Gauge, Globe, Hourglass, Image as ImageIcon, Loader2, Maximize2, Megaphone, Rocket, X } from 'lucide-react';
 import type { Decree, DecreeArtifact, DecreeStep } from '../../shared/types';
 import './decree.css';
 
@@ -89,17 +89,20 @@ export function WorkLog({ d }: { d: Decree }) {
   const ok = steps.filter((s) => s.status === 'ok').length;
   const bad = steps.filter((s) => s.status === 'error').length;
   return (
-    <section className="dw-section">
+    <section className="dw-section dw-log">
       <button type="button" className="dw-head" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
-        <Wrench size={16} />
-        <span className="display d-sm">Work log</span>
-        <span className="tag">
-          {steps.length} tool call{steps.length === 1 ? '' : 's'}
+        <span className="dw-head-title">
+          <span className="kicker">
+            Provenance
+          </span>
+          <span className="display dw-h2">Work log</span>
         </span>
-        {bad > 0 && <span className="tag red">{bad} failed</span>}
-        <span style={{ flex: 1 }} />
-        <span className="muted" style={{ fontSize: 12.5 }}>
-          {open ? 'Hide' : 'Show'}
+        <span className="dw-head-tags">
+          <span className="tag">
+            {steps.length} tool call{steps.length === 1 ? '' : 's'}
+          </span>
+          {bad > 0 && <span className="tag red">{bad} failed</span>}
+          <span className="dw-toggle">{open ? 'Hide' : 'Show'}</span>
         </span>
       </button>
       {open && (
@@ -361,10 +364,16 @@ export function Artifacts({ d }: { d: Decree }) {
   return (
     <section className="dw-section">
       <div className="dw-head static">
-        <ImageIcon size={16} />
-        <span className="display d-sm">Artifacts</span>
-        <span className="tag gold">
-          {arts.length} item{arts.length === 1 ? '' : 's'}
+        <span className="dw-head-title">
+          <span className="kicker">
+            Deliverables
+          </span>
+          <span className="display dw-h2">Artifacts</span>
+        </span>
+        <span className="dw-head-tags">
+          <span className="tag gold">
+            {arts.length} item{arts.length === 1 ? '' : 's'}
+          </span>
         </span>
       </div>
 
@@ -403,12 +412,13 @@ export function Artifacts({ d }: { d: Decree }) {
               poster={Array.isArray(a.meta.frames) && a.meta.frames.length ? String(a.meta.frames[0]) : undefined}
             />
             <figcaption>
-              <b>{a.title}</b>
-              <span className="muted">
-                {' '}
-                · {String(a.meta.durationSec ?? '?')} s · {a.meta.film ? `${String(a.meta.scenes ?? '?')} scenes` : `${String(a.meta.slides ?? '?')} slides`} · {String(a.meta.width)}×{String(a.meta.height)} · H.264 MP4
+              <span className="art-video-text">
+              <b className="art-cap-title">{a.title}</b>
+              <span className="art-cap-meta">
+                {String(a.meta.durationSec ?? '?')} s · {a.meta.film ? `${String(a.meta.scenes ?? '?')} scenes` : `${String(a.meta.slides ?? '?')} slides`} · {String(a.meta.width)}×{String(a.meta.height)} · H.264 MP4
                 {a.meta.film ? (a.meta.narration ? ' · narration' : '') + (a.meta.music ? ' · music' : '') + (!a.meta.narration && !a.meta.music ? ' · no sound' : '') : ''}
                 {a.meta.subtitles ? ' · captions (CC)' : ''}
+              </span>
               </span>
               <a className="btn btn-sm" href={a.url ?? '#'} download>
                 <Download size={14} /> Download .mp4
@@ -436,9 +446,8 @@ export function Artifacts({ d }: { d: Decree }) {
                   />
                 </a>
                 <figcaption>
-                  <b>
-                    Image {i + 1} · {a.title}
-                  </b>
+                  <span className="art-img-no">Image {String(i + 1).padStart(2, '0')}</span>
+                  <b className="art-cap-title">{a.title}</b>
                   {multi && <span className="wl-rev">rev {a.revision}</span>}
                   {typeof a.meta.alt === 'string' && a.meta.alt && (
                     <span className="art-alt">

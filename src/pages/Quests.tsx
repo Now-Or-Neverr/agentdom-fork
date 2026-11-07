@@ -107,20 +107,25 @@ export default function Quests() {
       </section>
 
       <main className="wrap qb-main">
-        <div className="vp-entry">
+        <div className="vp-entry dark qb-vizier">
           <div>
-            <h3 style={{ margin: 0 }}>Plan with the Vizier</h3>
-            <p className="soft" style={{ margin: '4px 0 0', fontSize: 14 }}>
+            <span className="qb-vizier-kicker">The Grand Vizier</span>
+            <h3>
+              Plan with the <em>Vizier</em>
+            </h3>
+            <p className="soft">
               Write one big goal. The Grand Vizier proposes 2–4 steps across guilds; you edit them before anything is charged.
             </p>
           </div>
-          <button className="btn btn-seal btn-sm" onClick={() => setPlanning(true)}>
+          <button className="btn btn-gold" onClick={() => setPlanning(true)}>
             <Sparkles size={15} /> Plan with the Vizier
           </button>
         </div>
 
         <div className="section-title">
-          <h2>Quest templates</h2>
+          <h2>
+            Quest <em>templates</em>
+          </h2>
           <span className="muted">{status ? `${status.dailyLimitPerUser} decrees per day · each step counts as one` : ''}</span>
         </div>
         <div className="qb-grid">
@@ -167,7 +172,9 @@ export default function Quests() {
         </div>
 
         <div className="section-title" id="qb-mine">
-          <h2>My quests</h2>
+          <h2>
+            My <em>quests</em>
+          </h2>
           {mine && mine.length > 0 && <span className="muted">{mine.length} total</span>}
         </div>
         <div className="qb-list">

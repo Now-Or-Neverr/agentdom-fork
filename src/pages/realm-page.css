@@ -6,9 +6,9 @@
   background: #cdeafa;
   color: var(--ink);
   font-family: var(--font-body);
-  --glass: rgba(255, 253, 249, 0.86);
-  --glass-b: rgba(27, 21, 48, 0.08);
-  --pill-shadow: 0 8px 24px rgba(27, 21, 48, 0.12), 0 1px 2px rgba(27, 21, 48, 0.06);
+  --glass: rgba(255, 251, 245, 0.84);
+  --glass-b: rgba(var(--ink-rgb), 0.09);
+  --pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 14px 34px -14px rgba(var(--ink-rgb), 0.38), 0 1px 2px rgba(var(--ink-rgb), 0.06);
 }
 .rp-canvas {
   position: absolute;
@@ -52,15 +52,15 @@
   padding: 8px 12px;
   border-radius: 999px;
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--ink-2);
   transition:
     background 0.2s,
     color 0.2s;
 }
 .rp-nav a:hover {
-  background: var(--purple-soft);
-  color: var(--purple-2);
+  background: rgba(var(--ink-rgb), 0.06);
+  color: var(--ink);
 }
 .rp-vault b {
   color: var(--ink);
@@ -82,20 +82,20 @@
   gap: 9px;
   height: 42px;
   padding: 0 14px 0 11px;
-  border-radius: 14px;
+  border-radius: 999px;
   border: 1px solid var(--line-c);
   background: var(--surface);
   color: var(--ink);
   transition: border-color 0.2s;
 }
 .rp-hour:hover {
-  border-color: var(--purple-3);
+  border-color: var(--line-c2);
 }
 .rp-hour svg {
   color: var(--gold-deep);
 }
 .rp.is-night .rp-hour svg {
-  color: var(--purple);
+  color: var(--purple-3);
 }
 .rp-hour-txt {
   display: flex;
@@ -105,8 +105,9 @@
 }
 .rp-hour-txt b {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 14px;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.005em;
 }
 .rp-hour-txt small {
   font-size: 10.5px;
@@ -118,9 +119,9 @@
   gap: 4px;
   height: 40px;
   padding: 0 12px;
-  border-radius: 13px;
+  border-radius: 999px;
   background: var(--gold-soft);
-  border: 1px solid #f4d58e;
+  border: 1px solid #ecd29b;
   font-size: 13.5px;
 }
 .rp-crowns small {
@@ -134,7 +135,7 @@
   display: none;
   width: 42px;
   height: 42px;
-  border-radius: 13px;
+  border-radius: 50%;
   border: 1px solid var(--line-c);
   background: var(--surface);
   align-items: center;
@@ -146,7 +147,7 @@
   right: 0;
   width: 230px;
   padding: 8px;
-  border-radius: 18px;
+  border-radius: 20px;
   background: var(--surface);
   border: 1px solid var(--line-c);
   box-shadow: var(--shadow-2);
@@ -162,15 +163,15 @@
   border-radius: 12px;
   border: 0;
   background: none;
-  font-weight: 700;
+  font-weight: 500;
   font-size: 14px;
   text-align: left;
   color: var(--ink);
 }
 .rp-menu a:hover,
 .rp-menu button:hover {
-  background: var(--purple-soft);
-  color: var(--purple-2);
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 /* ---------- province rail ---------- */
@@ -180,8 +181,8 @@
   left: 14px;
   top: 88px;
   width: 218px;
-  padding: 14px 8px 8px;
-  border-radius: 20px;
+  padding: 18px 8px 8px;
+  border-radius: 24px;
   background: var(--glass);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -192,7 +193,10 @@
     transform 0.3s var(--ease);
 }
 .rp-rail-title {
-  padding: 0 10px 8px;
+  padding: 0 12px 12px;
+  margin-bottom: 4px;
+  width: 100%;
+  border-bottom: 1px solid var(--line-c);
   font-size: 10.5px;
 }
 .rp-rail ol {
@@ -211,24 +215,27 @@
   min-height: 42px;
   padding: 0 10px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   background: transparent;
   color: var(--ink-2);
   font-size: 13.5px;
-  font-weight: 700;
+  font-weight: 500;
   text-align: left;
   transition:
     background 0.2s,
     color 0.2s;
 }
 .rp-rail button:hover {
-  background: rgba(var(--accent-rgb), 0.07);
+  background: rgba(var(--ink-rgb), 0.05);
   color: var(--ink);
 }
 .rp-rail button.on {
-  background: color-mix(in srgb, var(--accent) 14%, #fff);
-  color: var(--ink);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--ink);
+  color: #fffaf2;
+  box-shadow: 0 8px 18px -10px rgba(var(--ink-rgb), 0.6);
+}
+.rp-rail button.on .rp-rail-no {
+  color: var(--gold-2);
 }
 .rp-rail-no {
   font-size: 10.5px;
@@ -276,27 +283,30 @@
   height: 42px;
   border-radius: 50%;
   border: 1px solid var(--line-c);
-  background: #fff;
+  background: var(--surface);
   color: var(--ink);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 1px 2px rgba(var(--ink-rgb), 0.06);
   transition:
     background 0.2s,
     color 0.2s,
+    border-color 0.2s,
     transform 0.2s;
 }
 .rp-ctrl button:hover {
-  background: var(--purple-soft);
-  color: var(--purple-2);
+  background: #fffdf9;
+  border-color: var(--line-c2);
+  color: var(--ink);
 }
 .rp-ctrl button:active {
   transform: scale(0.94);
 }
 .rp-ctrl button.on {
-  background: var(--purple);
-  border-color: var(--purple);
-  color: #fff;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fffaf2;
 }
 .rp-ctrl i {
   width: 18px;
@@ -306,7 +316,9 @@
 }
 .rp-zoom {
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
   color: var(--ink-2);
 }
 
@@ -338,7 +350,10 @@
 }
 .rp-ticker-txt {
   min-width: 0;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 17px;
+  letter-spacing: -0.005em;
 }
 .rp-ticker .muted {
   flex-shrink: 0;
@@ -388,7 +403,7 @@
 }
 .rp-ledger-txt {
   font-size: 13.5px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.35;
 }
 .rp-ledger-row .muted {
@@ -485,9 +500,10 @@
   font-size: 14px;
 }
 .rp-tagline em {
-  font-style: normal;
+  font-style: italic;
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 400;
+  font-size: 18px;
 }
 .rp-note {
   margin: 0;
@@ -577,7 +593,7 @@
 }
 .rp-empty a {
   color: var(--purple);
-  font-weight: 700;
+  font-weight: 600;
 }
 .rp-actions {
   display: grid;
@@ -652,7 +668,7 @@
   border: 1.5px dashed var(--purple-3);
   background: var(--purple-soft);
   color: var(--purple-2);
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 .rp-file input {
@@ -718,10 +734,10 @@
   justify-content: center;
   /* a still of the realm under a soft veil, so the map feels present while it builds */
   background:
-    radial-gradient(60% 50% at 50% 40%, rgba(185, 160, 255, 0.35), transparent 70%),
-    linear-gradient(180deg, rgba(233, 245, 253, 0.72), rgba(247, 243, 236, 0.78)),
+    radial-gradient(60% 50% at 50% 42%, rgba(243, 211, 142, 0.38), transparent 70%),
+    linear-gradient(180deg, rgba(249, 242, 231, 0.8), rgba(246, 238, 226, 0.9)),
     url('/posters/realm-desk.webp') center / cover no-repeat,
-    linear-gradient(180deg, #e9f5fd, #f7f3ec);
+    linear-gradient(180deg, #e9f5fd, #f6eee2);
   transition:
     opacity 0.7s var(--ease),
     visibility 0.7s;
@@ -729,10 +745,10 @@
 @media (max-width: 760px) {
   .rp-veil {
     background:
-      radial-gradient(60% 50% at 50% 40%, rgba(185, 160, 255, 0.35), transparent 70%),
-      linear-gradient(180deg, rgba(233, 245, 253, 0.72), rgba(247, 243, 236, 0.78)),
+      radial-gradient(60% 50% at 50% 42%, rgba(243, 211, 142, 0.38), transparent 70%),
+      linear-gradient(180deg, rgba(249, 242, 231, 0.8), rgba(246, 238, 226, 0.9)),
       url('/posters/realm-mob.webp') center / cover no-repeat,
-      linear-gradient(180deg, #e9f5fd, #f7f3ec);
+      linear-gradient(180deg, #e9f5fd, #f6eee2);
   }
 }
 .rp-veil.gone {
@@ -812,14 +828,14 @@
   box-shadow: var(--pill-shadow);
   color: var(--ink);
   font-size: 12.5px;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
 }
 .rp-chip b {
-  font-weight: 800;
+  font-weight: 600;
 }
 .rp-chip .dot {
-  color: var(--ink-3, #9a94a8);
+  color: var(--ink-3);
 }
 .rp-chip-src {
   margin-left: 2px;
@@ -827,12 +843,12 @@
   font-weight: 700;
   color: var(--ink-2);
   text-decoration: underline;
-  text-decoration-color: rgba(27, 21, 48, 0.25);
+  text-decoration-color: rgba(var(--ink-rgb), 0.25);
   text-underline-offset: 2px;
 }
 .rp-chip-btn {
   cursor: pointer;
-  color: var(--purple-2, #5b3fd6);
+  color: var(--purple);
 }
 .rp-chip-btn:hover {
   background: #fff;
@@ -851,19 +867,19 @@
   color: var(--ink-2);
 }
 .rp.is-night .rp-chip {
-  background: rgba(22, 24, 40, 0.78);
+  background: rgba(31, 22, 17, 0.8);
   border-color: rgba(255, 255, 255, 0.1);
-  color: #eef0fa;
+  color: #fdf8f1;
 }
 .rp.is-night .rp-chip-src,
 .rp.is-night .rp-chip-soft {
-  color: #c9cce0;
+  color: rgba(253, 248, 241, 0.7);
 }
 .rp.is-night .rp-chip-btn {
-  color: color-mix(in srgb, #fff 60%, var(--purple-3));
+  color: var(--gold-2);
 }
 .rp.is-night .rp-chip-fest {
-  background: rgba(70, 22, 18, 0.85);
+  background: rgba(64, 30, 20, 0.86);
   color: #ffd9c9;
 }
 
@@ -874,11 +890,11 @@
   gap: 6px;
   margin-top: 4px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--ink-2);
 }
 .rp-agent-state .dot {
-  color: #b9b3c6;
+  color: var(--ink-3);
 }
 .rp-agent-state.is-working {
   color: #8a5a10;
@@ -979,7 +995,7 @@
     width: 40px;
     height: 40px;
     padding: 0;
-    border-radius: 13px;
+    border-radius: 50%;
   }
   .rp-issue span {
     display: none;
@@ -1138,5 +1154,211 @@
 @media (max-width: 380px) {
   .rp-hour-txt small {
     display: none;
+  }
+}
+
+/* ---------- luxury glass pass (cream control panel) ---------- */
+.rp-head {
+  border-radius: 999px;
+  padding-left: 18px;
+}
+.rp-head,
+.rp-rail,
+.rp-ctrl,
+.rp-ticker {
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
+}
+.rp-nav a.active,
+.rp-nav a[aria-current='page'] {
+  background: var(--ink);
+  color: #fffaf2;
+}
+.rp-vault b {
+  font-weight: 600;
+}
+.rp-rail-title {
+  color: var(--ink-2);
+}
+.rp-rail-no {
+  font-family: var(--font-mono);
+}
+.rp-zoom {
+  color: var(--ink-3);
+}
+.rp-ticker .muted {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+.rp-ticker {
+  transition:
+    box-shadow 0.3s var(--ease),
+    border-color 0.3s;
+}
+.rp-ticker:hover {
+  border-color: var(--line-c2);
+  box-shadow: var(--shadow-2);
+}
+.rp-ledger,
+.rp-scroll {
+  background: var(--surface);
+  border-color: var(--line-c);
+}
+.rp-ledger > header {
+  padding: 22px 22px 16px;
+}
+.rp-ledger-row {
+  border-bottom: 1px solid var(--line-c);
+  border-radius: 0;
+  padding: 12px 4px;
+}
+.rp-ledger-row:last-child {
+  border-bottom: 0;
+}
+.rp-ledger-row:hover {
+  background: transparent;
+}
+.rp-scroll::before {
+  height: 120px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent, var(--purple)) 12%, var(--surface)), transparent);
+}
+.rp-scroll-body {
+  padding: 24px 24px 26px;
+  gap: 16px;
+}
+.rp-scroll-titles h2 {
+  line-height: 1;
+  letter-spacing: -0.015em;
+}
+.rp-tagline,
+.rp-total,
+.rp-specs {
+  background: var(--surface-2);
+  border-color: var(--line-c);
+}
+.rp-tagline {
+  border-radius: 16px;
+  padding: 14px 16px;
+  line-height: 1.4;
+}
+.rp-note {
+  background: var(--surface-2);
+  border-color: var(--line-c);
+  border-left: 2px solid var(--gold);
+  border-radius: 4px 14px 14px 4px;
+}
+.rp-duty .label {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+}
+.rp-agent {
+  background: var(--surface);
+  border-radius: 18px;
+  padding: 10px 14px 10px 10px;
+}
+.rp-agent:hover {
+  border-color: var(--line-c2);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-1);
+}
+.rp-agent-t b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.1;
+}
+.rp-x {
+  background: var(--surface);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.rp-x:hover {
+  background: var(--surface-2);
+  border-color: var(--line-c2);
+  color: var(--ink);
+}
+.rp-specs dt {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  align-self: center;
+}
+.rp-specs dd {
+  font-weight: 500;
+}
+.rp-total b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  color: var(--ink);
+}
+.rp-file {
+  border: 1px dashed var(--line-c2);
+  background: var(--surface-2);
+  color: var(--ink);
+  border-radius: 14px;
+}
+.rp-file:hover {
+  border-color: var(--purple-3);
+}
+.rp-range {
+  accent-color: var(--ink);
+}
+.rp-task {
+  background: var(--surface-2);
+  border-color: var(--line-c);
+  border-radius: 16px;
+}
+.rp-task p {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.3;
+}
+.rp-task .rp-task-src {
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+.rp-hint {
+  background: rgba(31, 22, 17, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fdf8f1;
+  font-weight: 500;
+  border: 1px solid rgba(255, 240, 220, 0.12);
+}
+
+/* loading veil */
+.rp-veil-c .display {
+  font-size: clamp(30px, 4vw, 44px);
+}
+.rp-veil-bar {
+  width: 180px;
+  height: 2px;
+  background: rgba(var(--ink-rgb), 0.12);
+}
+.rp-veil-bar::after {
+  background: linear-gradient(90deg, var(--purple), var(--gold));
+}
+
+@media (max-width: 899px) {
+  .rp-head {
+    padding-left: 7px;
+  }
+  .rp-ticker-txt {
+    font-size: 15.5px;
+  }
+  .rp-scroll {
+    border-radius: 26px 26px 0 0;
+  }
+  .rp-scroll-body {
+    padding: 22px 18px 24px;
   }
 }

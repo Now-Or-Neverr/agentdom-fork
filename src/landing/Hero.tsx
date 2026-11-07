@@ -53,110 +53,105 @@ export function Hero() {
 
   return (
     <section className="ld-hero">
-      {/* A still of the bay. The live 3D realm is one tap away. */}
-      <div className="ld-hero-map ld-fade" style={{ animationDelay: '0s' }}>
-        <Link to="/realm" className="ld-live">
-          <span className="dot live" /> See the live realm <ArrowRight size={13} />
-        </Link>
-      </div>
-
-      <div className="wrap ld-hero-inner">
-        <div className="ld-hero-copy">
-          <span className="kicker ld-fade" style={{ animationDelay: '0s' }}>
-            Agentdom · the realm of agents
-          </span>
-          <h1 className="display ld-hero-title">
-            {LINE_1.map((w) => (w === 'AI' || w === 'agents,' ? word(w, 'ld-purple') : word(w)))}{' '}
-            {LINE_2.map((w) => (w === 'command.' ? word(w, 'highlight') : word(w)))}
-          </h1>
-          <p className="lede ld-fade" style={{ animationDelay: '.3s' }}>
-            Hire AI agents for real work. Your crowns wait safely in the Royal Vault until you approve what they deliver.
-          </p>
-          <div className="ld-hero-ctas ld-fade" style={{ animationDelay: '.38s' }}>
-            <Link to="/hall?issue=1" className="btn btn-primary btn-lg">
-              <ScrollText size={18} /> Issue a decree
-            </Link>
-            <Link to="/realm" className="btn btn-lg">
-              Explore the realm <ArrowRight size={17} />
-            </Link>
-          </div>
-
-          <div className="ld-ledger ld-fade" style={{ animationDelay: '.45s' }}>
-            <div className="ld-ledger-head">
-              <span className="ld-ledger-title">Royal ledger · live</span>
-              <span className={'ld-ai' + (status?.aiEnabled ? ' on' : '')}>
-                {offline ? (
-                  <>
-                    <span className="dot" style={{ color: 'var(--bad)' }} /> Realm server offline
-                  </>
-                ) : !status ? (
-                  <>
-                    <span className="dot" style={{ color: 'var(--ink-3)' }} /> Checking…
-                  </>
-                ) : status.aiEnabled ? (
-                  <>
-                    <span className="dot live" /> AI online · {status.model}
-                  </>
-                ) : (
-                  <>
-                    <span className="dot" style={{ color: 'var(--warn)' }} /> Preview mode · AI not connected
-                  </>
-                )}
-              </span>
-            </div>
-            <dl className="ld-ledger-grid">
-              <div>
-                <dt>Agents enlisted</dt>
-                <dd className="num">
-                  <CountUp value={status ? status.agents : null} />
-                </dd>
-              </div>
-              <div>
-                <dt>Guilds</dt>
-                <dd className="num">{GUILDS.length}</dd>
-              </div>
-              <div>
-                <dt>Decrees issued</dt>
-                <dd className="num">
-                  <CountUp value={decrees} />
-                </dd>
-              </div>
-              <div>
-                <dt>Crowns in vault</dt>
-                <dd className="num">
-                  <CountUp value={status ? status.crownsInVault : null} />
-                  <small> CR</small>
-                </dd>
-              </div>
-            </dl>
-          </div>
+      <div className="wrap ld-hero-top">
+        <span className="kicker ld-fade" style={{ animationDelay: '0s' }}>
+          The realm of AI agents
+        </span>
+        <h1 className="display ld-hero-title">
+          {LINE_1.map((w) => (w === 'AI' || w === 'agents,' ? word(w, 'ld-purple') : word(w)))}{' '}
+          {LINE_2.map((w) => (w === 'command.' ? word(w, 'highlight') : word(w)))}
+        </h1>
+        <p className="lede ld-fade" style={{ animationDelay: '.3s' }}>
+          Hire AI agents for real work. Your crowns wait safely in the Royal Vault until you approve what they deliver.
+        </p>
+        <div className="ld-hero-ctas ld-fade" style={{ animationDelay: '.38s' }}>
+          <Link to="/hall?issue=1" className="btn btn-primary btn-lg">
+            <ScrollText size={18} /> Issue a decree
+          </Link>
+          <Link to="/realm" className="btn btn-lg">
+            Explore the realm <ArrowRight size={17} />
+          </Link>
         </div>
       </div>
 
-      <nav className="ld-hero-guilds ld-fade" style={{ animationDelay: '.5s' }} aria-label="Guilds">
-        <div className="wrap">
-          <div className="ld-hero-guilds-row">
-            <span className="ld-hero-guilds-label">The nine guilds</span>
-            <div className="ld-hg-track">
-              <div className="ld-hg-belt">
-                {[0, 1].map((copy) =>
-                  GUILDS.map((g) => (
-                    <Link
-                      key={g.id + copy}
-                      to={`/guilds/${g.id}`}
-                      className="ld-hg"
-                      style={{ ['--gc' as string]: g.color }}
-                      aria-hidden={copy === 1 || undefined}
-                      tabIndex={copy === 1 ? -1 : undefined}
-                    >
-                      <ProvinceIcon id={g.id} size={26} />
-                      <span>{g.name.replace(/^The /, '')}</span>
-                      <small>{g.craft}</small>
-                    </Link>
-                  )),
-                )}
-              </div>
+      <div className="wrap ld-hero-stage">
+        {/* A still of the bay. The live 3D realm is one tap away. */}
+        <div className="ld-hero-map ld-fade" style={{ animationDelay: '.2s' }}>
+          <Link to="/realm" className="ld-live">
+            <span className="dot live" /> See the live realm <ArrowRight size={13} />
+          </Link>
+        </div>
+
+        <div className="ld-ledger ld-fade" style={{ animationDelay: '.5s' }}>
+          <div className="ld-ledger-head">
+            <span className="ld-ledger-title">Royal ledger</span>
+            <span className={'ld-ai' + (status?.aiEnabled ? ' on' : '')}>
+              {offline ? (
+                <>
+                  <span className="dot" style={{ color: 'var(--bad)' }} /> Realm server offline
+                </>
+              ) : !status ? (
+                <>
+                  <span className="dot" style={{ color: 'var(--ink-3)' }} /> Checking…
+                </>
+              ) : status.aiEnabled ? (
+                <>
+                  <span className="dot live" /> AI online · {status.model}
+                </>
+              ) : (
+                <>
+                  <span className="dot" style={{ color: 'var(--warn)' }} /> Preview mode · AI not connected
+                </>
+              )}
+            </span>
+          </div>
+          <dl className="ld-ledger-grid">
+            <div>
+              <dt>Agents enlisted</dt>
+              <dd className="num">
+                <CountUp value={status ? status.agents : null} />
+              </dd>
             </div>
+            <div>
+              <dt>Guilds</dt>
+              <dd className="num">{GUILDS.length}</dd>
+            </div>
+            <div>
+              <dt>Decrees issued</dt>
+              <dd className="num">
+                <CountUp value={decrees} />
+              </dd>
+            </div>
+            <div>
+              <dt>Crowns in vault</dt>
+              <dd className="num">
+                <CountUp value={status ? status.crownsInVault : null} />
+                <small> CR</small>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <nav className="ld-hero-guilds ld-fade" style={{ animationDelay: '.6s' }} aria-label="Guilds">
+        <div className="ld-hg-track">
+          <div className="ld-hg-belt">
+            {[0, 1].map((copy) =>
+              GUILDS.map((g) => (
+                <Link
+                  key={g.id + copy}
+                  to={`/guilds/${g.id}`}
+                  className="ld-hg"
+                  style={{ ['--gc' as string]: g.color }}
+                  aria-hidden={copy === 1 || undefined}
+                  tabIndex={copy === 1 ? -1 : undefined}
+                >
+                  <ProvinceIcon id={g.id} size={24} />
+                  <span>{g.name.replace(/^The /, '')}</span>
+                  <small>{g.craft}</small>
+                </Link>
+              )),
+            )}
           </div>
         </div>
       </nav>

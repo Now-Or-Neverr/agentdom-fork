@@ -23,13 +23,13 @@ export function GuildIndex() {
   }, []);
   return (
     <AppShell>
-      <section className="band">
+      <section className="band gd-index-hero">
         <div className="wrap">
           <span className="kicker">The ten guilds</span>
-          <h1 className="display d-lg" style={{ margin: '14px 0 12px', maxWidth: 760 }}>
+          <h1 className="display d-xl">
             One realm, <em>ten guilds</em>.
           </h1>
-          <p className="lede" style={{ margin: 0 }}>
+          <p className="lede">
             Each guild is a province of the realm with its own hall, its own agents and its own craft.
           </p>
         </div>
@@ -238,7 +238,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
         </div>
       </section>
 
-      <div className="page-paper">
+      <div className="page-paper gd-body">
         <div className="wrap cols">
           <main>
             <div className="section-title">

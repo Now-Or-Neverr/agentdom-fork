@@ -24,7 +24,10 @@ export default function Vault() {
   const [name, setName] = useState('');
 
   useEffect(() => {
-    api.ledger().then(setRows).catch(() => setRows([]));
+    api
+      .ledger()
+      .then(setRows)
+      .catch(() => setRows([]));
   }, [user?.crowns]);
 
   async function save() {
@@ -44,20 +47,32 @@ export default function Vault() {
   return (
     <AppShell>
       <section className="band">
-        <div className="wrap" style={{ display: 'flex', gap: 24, alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <div>
+        <div className="wrap vault-hero">
+          <div style={{ minWidth: 0 }}>
             <span className="kicker">Your vault</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+            <div className="vault-name">
               {editing ? (
                 <>
-                  <input className="field" style={{ maxWidth: 240, height: 40, padding: '0 12px' }} value={name} onChange={(e) => setName(e.target.value)} maxLength={40} aria-label="Your name" />
+                  <input
+                    className="field"
+                    style={{
+                      maxWidth: 240,
+                      height: 42,
+                      padding: '0 16px',
+                      borderRadius: 999,
+                    }}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={40}
+                    aria-label="Your name"
+                  />
                   <button className="btn btn-gold btn-sm" onClick={save}>
                     Save
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="soft">{user?.name}</span>
+                  <span>{user?.name}</span>
                   <button
                     className="btn btn-quiet btn-icon btn-sm"
                     onClick={() => {
@@ -71,84 +86,74 @@ export default function Vault() {
                 </>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 6 }}>
-              <span className="display d-xxl" style={{ color: 'var(--purple)' }}>
-                {user ? fmt(user.crowns) : '—'}
-              </span>
-              <span className="mono soft">{BRAND.currencyShort}</span>
+            <div className="vault-big">
+              <span className="display">{user ? fmt(user.crowns) : '—'}</span>
+              <span className="meta">{BRAND.currencyShort}</span>
             </div>
-            <p className="soft" style={{ fontSize: 13, maxWidth: 520 }}>
+            <p className="vault-note">
               {BRAND.currency} are a simulated currency inside {BRAND.name}. They are not money and not crypto.
             </p>
           </div>
-          <Seal size={110} rotate={-8}>
-            Royal
-            <br />
-            Vault
-          </Seal>
+          <div className="hide-sm">
+            <Seal size={110} rotate={-8}>
+              Royal
+              <br />
+              Vault
+            </Seal>
+          </div>
         </div>
       </section>
 
       <div className="page-paper">
-        <div className="wrap" style={{ padding: '26px 16px 70px', maxWidth: 900 }}>
-          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', marginBottom: 26 }}>
-            <div className="panel" style={{ padding: 16 }}>
-              <div className="label">Sealed for decrees & banners</div>
-              <div className="display d-md num">{fmt(spent)}</div>
+        <div className="wrap" style={{ paddingTop: 48, paddingBottom: 110 }}>
+          <div className="vault-stats">
+            <div className="vault-stat">
+              <span className="meta">Sealed for decrees &amp; banners</span>
+              <div className="display">{fmt(spent)}</div>
             </div>
-            <div className="panel" style={{ padding: 16 }}>
-              <div className="label">Returned & earned</div>
-              <div className="display d-md num">{fmt(back)}</div>
+            <div className="vault-stat">
+              <span className="meta">Returned &amp; earned</span>
+              <div className="display" style={{ color: 'var(--ok)' }}>
+                {fmt(back)}
+              </div>
             </div>
           </div>
 
-          <div className="section-title" style={{ marginTop: 0 }}>
-            <h2>Ledger</h2>
+          <div className="section-title">
+            <h2>
+              The <em>ledger</em>
+            </h2>
+            <span className="muted">{rows ? `${rows.length} entries` : 'Loading'}</span>
           </div>
-          <div className="panel" style={{ overflow: 'hidden' }}>
+          <div className="ledger-list">
             {rows == null && <div className="skeleton" style={{ height: 140, borderRadius: 0 }} />}
-            {rows?.length === 0 && <div className="empty" style={{ border: 0 }}>No entries yet.</div>}
-            {rows?.map((r, i) => (
-              <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', borderTop: i ? '1px solid var(--line)' : 0 }}>
-                <span
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: 8,
-                    transform: 'rotate(45deg)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: r.amount > 0 ? 'rgba(63,165,140,.15)' : 'rgba(194,59,34,.12)',
-                    color: r.amount > 0 ? 'var(--jade)' : 'var(--vermilion)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <span style={{ transform: 'rotate(-45deg)', display: 'inline-flex' }}>{r.amount > 0 ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}</span>
-                </span>
+            {rows?.length === 0 && (
+              <div className="empty" style={{ border: 0, borderRadius: 0 }}>
+                No entries yet.
+              </div>
+            )}
+            {rows?.map((r) => (
+              <div key={r.id} className="ledger-row">
+                <span className={'ledger-ic ' + (r.amount > 0 ? 'in' : 'out')}>{r.amount > 0 ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}</span>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>{KIND[r.kind]}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>
+                  <div className="t">{KIND[r.kind]}</div>
+                  <div className="m">
                     {ago(r.createdAt)}
                     {r.ref?.startsWith('dec_') && (
                       <>
                         {' · '}
-                        <Link to={`/decrees/${r.ref}`} style={{ textDecoration: 'underline' }}>
-                          view decree
-                        </Link>
+                        <Link to={`/decrees/${r.ref}`}>view decree</Link>
                       </>
                     )}
                     {r.ref?.startsWith('qst_') && (
                       <>
                         {' · '}
-                        <Link to="/quests" style={{ textDecoration: 'underline' }}>
-                          view quest
-                        </Link>
+                        <Link to="/quests">view quest</Link>
                       </>
                     )}
                   </div>
                 </div>
-                <span className="num" style={{ fontWeight: 700, color: r.amount > 0 ? 'var(--jade)' : 'var(--ink)' }}>
+                <span className="amt" style={{ color: r.amount > 0 ? 'var(--ok)' : 'var(--ink)' }}>
                   {r.amount > 0 ? '+' : ''}
                   {fmt(r.amount)}
                 </span>

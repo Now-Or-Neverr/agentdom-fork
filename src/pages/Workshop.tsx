@@ -1,6 +1,6 @@
 // /workshop — Guild Workshops: one real tool per guild. Every result comes from a live API
 // call made by our server and shows its source, a link to verify it, and when it was fetched.
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, ExternalLink, Loader2, Search } from 'lucide-react';
 import { PROVINCE, PROVINCES, isProvince, type ProvinceId } from '../../shared/realm';
@@ -769,6 +769,14 @@ export default function Workshop() {
   const active: ProvinceId = isProvince(g) ? g : 'scriptorium';
   const p = PROVINCE[active];
   const style = useMemo(() => ({ ['--g' as string]: p.color }) as CSSProperties, [p.color]);
+  const railRef = useRef<HTMLElement>(null);
+  // On phones the guild picker scrolls sideways: keep the chosen guild in view.
+  useEffect(() => {
+    const nav = railRef.current;
+    const on = nav?.querySelector<HTMLElement>('.ws-tab.on');
+    if (!nav || !on || nav.scrollWidth <= nav.clientWidth) return;
+    nav.scrollTo({ left: on.offsetLeft - nav.offsetLeft - (nav.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+  }, [active]);
   return (
     <AppShell>
       <section className="band">
@@ -788,31 +796,44 @@ export default function Workshop() {
       </section>
       <div className="page-paper">
         <div className="wrap ws-wrap-page">
-          <nav className="ws-tabs" aria-label="Guilds">
-            {PROVINCES.map((x) => (
-              <button
-                key={x.id}
-                className={'ws-tab' + (x.id === active ? ' on' : '')}
-                style={{ ['--g' as string]: x.color } as CSSProperties}
-                onClick={() => setParams({ guild: x.id }, { replace: true })}
-                aria-current={x.id === active ? 'page' : undefined}
-              >
-                <ProvinceIcon id={x.id} size={22} />
-                <span>
-                  <b>{x.name}</b>
-                  <small>{TOOLS[x.id].label}</small>
-                </span>
-              </button>
-            ))}
-          </nav>
+          <aside className="ws-rail">
+            <div className="ws-rail-label" aria-hidden>
+              <span>The guilds</span>
+              <span>{String(PROVINCES.length).padStart(2, '0')}</span>
+            </div>
+            <nav className="ws-tabs" aria-label="Guilds" ref={railRef}>
+              {PROVINCES.map((x, i) => (
+                <button
+                  key={x.id}
+                  className={'ws-tab' + (x.id === active ? ' on' : '')}
+                  style={{ ['--g' as string]: x.color } as CSSProperties}
+                  onClick={() => setParams({ guild: x.id }, { replace: true })}
+                  aria-current={x.id === active ? 'page' : undefined}
+                >
+                  <ProvinceIcon id={x.id} size={30} />
+                  <span>
+                    <b>{x.name}</b>
+                    <small>{TOOLS[x.id].label}</small>
+                  </span>
+                  <em className="ws-tab-n" aria-hidden>
+                    {String(i + 1).padStart(2, '0')}
+                  </em>
+                </button>
+              ))}
+            </nav>
+          </aside>
           <div className="ws-stage" style={style} key={active}>
             <div className="ws-stage-head">
-              <ProvinceIcon id={active} size={36} />
-              <div>
-                <div className="ws-craft">{p.craft}</div>
+              <span className="ws-stage-icon">
+                <ProvinceIcon id={active} size={48} />
+              </span>
+              <div className="ws-stage-title">
+                <div className="ws-craft">
+                  Workshop {String(PROVINCES.findIndex((x) => x.id === active) + 1).padStart(2, '0')} · <i>{p.craft}</i>
+                </div>
                 <h2>{p.name}</h2>
               </div>
-              <Link to={`/guilds/${active}`} className="btn btn-quiet btn-sm ws-push">
+              <Link to={`/guilds/${active}`} className="btn btn-sm ws-push">
                 Guild hall <ArrowRight size={14} />
               </Link>
             </div>

@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ArrowUpRight, Menu, ScrollText, X } from 'lucide-react';
 import { Wordmark } from '../components/Brand';
 import { useApp } from '../lib/store';
@@ -22,6 +22,7 @@ const NAV = [
 export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?: () => void }) {
   const { user } = useApp();
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
   return (
     <div className="light" style={{ minHeight: '100vh' }}>
       <header className="mast">
@@ -40,7 +41,7 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
             <Link to="/vault" className="purse" aria-label="Your vault">
               <span className="crown-coin" />
               {user ? fmt(user.crowns) : '—'}
-              <span style={{ opacity: 0.6 }}>{BRAND.currencyShort}</span>
+              <span className="purse-cur">{BRAND.currencyShort}</span>
             </Link>
             {onIssue ? (
               <button className="btn btn-seal btn-sm" onClick={onIssue}>
@@ -62,26 +63,34 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
 
       {open && (
         <div className="drawer" role="dialog" aria-label="Menu">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div className="drawer-top">
             <Wordmark size={30} tone="dark" />
             <button className="btn btn-icon" onClick={() => setOpen(false)} aria-label="Close menu">
               <X size={20} />
             </button>
           </div>
-          {[{ to: '/', label: 'Home' }, ...NAV, { to: '/vault', label: 'Vault' }].map((n) => (
-            <Link key={n.to} to={n.to} className="big" onClick={() => setOpen(false)}>
-              {n.label} <ArrowUpRight size={22} color="var(--purple)" />
-            </Link>
-          ))}
-          <p className="muted" style={{ marginTop: 'auto', fontSize: 12.5 }}>
-            {BRAND.currency} are a simulated currency. They are not money or crypto.
-          </p>
+          <nav aria-label="Menu links">
+            {[{ to: '/', label: 'Home' }, ...NAV, { to: '/vault', label: 'Vault' }].map((n) => (
+              <Link key={n.to} to={n.to} className={'big' + (pathname === n.to ? ' on' : '')} onClick={() => setOpen(false)}>
+                {n.label} <ArrowUpRight size={20} />
+              </Link>
+            ))}
+          </nav>
+          <p className="drawer-note">{BRAND.currency} are a simulated currency. They are not money or crypto.</p>
         </div>
       )}
 
       {children}
 
-      <footer className="wrap foot-note" style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+      <footer
+        className="wrap foot-note"
+        style={{
+          display: 'flex',
+          gap: 16,
+          flexWrap: 'wrap',
+          justifyContent: 'space-between',
+        }}
+      >
         <span>
           {BRAND.name} · {BRAND.currency} are simulated and carry no monetary value.
         </span>

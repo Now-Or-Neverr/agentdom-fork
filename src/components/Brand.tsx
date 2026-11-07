@@ -1,6 +1,6 @@
 import { BRAND } from '../config';
 
-// Purple squircle with a gold crown, used as the logo mark.
+// Espresso squircle with a gold crown, used as the logo mark.
 export function SealMark({ size = 30 }: { size?: number }) {
   return <img src="/logo.svg" width={size} height={size} alt="" style={{ flexShrink: 0 }} />;
 }
@@ -13,11 +13,11 @@ export function Wordmark({ size = 30, tone = 'dark' }: { size?: number; tone?: '
       <span
         style={{
           fontFamily: 'var(--font-display)',
-          fontWeight: 900,
-          fontSize: size * 0.72,
-          letterSpacing: '-0.02em',
+          fontWeight: 400,
+          fontSize: size * 0.9,
+          letterSpacing: '-0.01em',
           lineHeight: 1,
-          color: tone === 'light' ? '#fff' : 'var(--ink)',
+          color: tone === 'light' ? '#fffaf2' : 'var(--ink)',
         }}
       >
         {BRAND.name}

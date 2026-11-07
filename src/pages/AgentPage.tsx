@@ -16,14 +16,22 @@ import { AgentLessons } from '../components/AgentLessons';
 
 export default function AgentPage() {
   const { id = '' } = useParams();
-  const [data, setData] = useState<{ agent: Agent; commissions: Commission[]; decrees: Decree[]; works: Decree[] } | null>(null);
+  const [data, setData] = useState<{
+    agent: Agent;
+    commissions: Commission[];
+    decrees: Decree[];
+    works: Decree[];
+  } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [preset, setPreset] = useState<IssuePreset | null>(null);
   const [open, setOpen] = useState<string | null>(null);
 
   useEffect(() => {
     setData(null);
-    api.agent(id).then(setData).catch((e) => setErr(e.message));
+    api
+      .agent(id)
+      .then(setData)
+      .catch((e) => setErr(e.message));
   }, [id]);
 
   if (err || !data)
@@ -42,14 +50,14 @@ export default function AgentPage() {
 
   return (
     <AppShell onIssue={() => setPreset({ agent: a })}>
-      <section className="band" style={{ paddingBottom: 0 }}>
+      <section className="band ag-hero">
         <CloudMotif size={260} opacity={0.15} style={{ position: 'absolute', left: '-40px', bottom: 40 }} />
         <div className="wrap" style={{ position: 'relative' }}>
-          <Link to="/hall?tab=agents" className="soft" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600 }}>
-            <ArrowLeft size={15} /> All agents
+          <Link to="/hall?tab=agents" className="ag-back">
+            <ArrowLeft size={14} /> All agents
           </Link>
-          <div style={{ display: 'flex', gap: 28, alignItems: 'flex-end', flexWrap: 'wrap', marginTop: 18 }}>
-            <div style={{ position: 'relative', flexShrink: 0 }}>
+          <div className="ag-head">
+            <div className="ag-fig">
               <div
                 style={{
                   position: 'absolute',
@@ -60,18 +68,32 @@ export default function AgentPage() {
               />
               <Figure role={a.role} look={a.look} color={a.color} size={300} pose="work" style={{ position: 'relative' }} />
             </div>
-            <div style={{ flex: 1, minWidth: 260, paddingBottom: 34 }}>
+            <div className="ag-info">
               <ProvinceName id={a.province} />
-              <h1 className="display d-xl" style={{ margin: '12px 0 8px' }}>
-                {a.name}
-              </h1>
+              <h1 className="display d-xxl">{a.name}</h1>
               <p className="lede">{a.title}</p>
-              <div className="stats" style={{ marginTop: 16, fontSize: 13.5 }}>
+              <div className="ag-facts">
+                <div>
+                  <span className="meta">Rating</span>
+                  <b>
+                    <Stars value={a.rating} size={16} />
+                  </b>
+                </div>
+                <div>
+                  <span className="meta">Reviews</span>
+                  <b>{a.reviews}</b>
+                </div>
+                <div>
+                  <span className="meta">Approved</span>
+                  <b>{a.approved}</b>
+                </div>
+                <div>
+                  <span className="meta">On time</span>
+                  <b>{a.onTime == null ? <span className="ag-nodata">On-time rate: no data yet</span> : `${a.onTime}%`}</b>
+                </div>
+              </div>
+              <div className="ag-tags">
                 <span className="rank-seal">{a.rank}</span>
-                <Stars value={a.rating} size={15} />
-                <span>{a.reviews} reviews</span>
-                <span>{a.approved} approved</span>
-                <span>{a.onTime == null ? 'On-time rate: no data yet' : `${a.onTime}% on time`}</span>
                 <span className="tag">{a.model}</span>
                 {a.working && (
                   <span className="tag jade">
@@ -79,7 +101,14 @@ export default function AgentPage() {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', gap: 10, marginTop: 22, flexWrap: 'wrap' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  marginTop: 26,
+                  flexWrap: 'wrap',
+                }}
+              >
                 <button className="btn btn-seal" onClick={() => setPreset({ agent: a })}>
                   Issue a decree to {a.name}
                 </button>
@@ -94,10 +123,11 @@ export default function AgentPage() {
 
       <div className="page-paper">
         <div className="wrap cols">
-          <main style={{ minWidth: 0 }}>
-            <p className="display d-sm" style={{ fontWeight: 600, fontStyle: 'italic', margin: '6px 0 0', maxWidth: 680 }}>
-              “{a.bio}”
-            </p>
+          <main className="ag-main" style={{ minWidth: 0 }}>
+            <div className="ag-bio-wrap">
+              <span className="kicker">In {a.name}&rsquo;s words</span>
+              <p className="ag-bio">“{a.bio}”</p>
+            </div>
 
             <div className="section-title">
               <h2>Commissions</h2>
@@ -120,22 +150,24 @@ export default function AgentPage() {
             <div style={{ display: 'grid', gap: 10 }}>
               {works.length === 0 && <div className="empty">Nothing in the portfolio yet. Approved public decrees appear here.</div>}
               {works.map((w) => (
-                <div key={w.id} className="panel" style={{ padding: 16 }}>
-                  <button
-                    onClick={() => setOpen(open === w.id ? null : w.id)}
-                    style={{ all: 'unset', cursor: 'pointer', display: 'flex', width: '100%', alignItems: 'center', gap: 10 }}
-                    aria-expanded={open === w.id}
-                  >
-                    <b style={{ flex: 1 }}>{w.title}</b>
+                <div key={w.id} className="work-card">
+                  <button onClick={() => setOpen(open === w.id ? null : w.id)} aria-expanded={open === w.id}>
+                    <b>{w.title}</b>
                     <span style={{ display: 'inline-flex', gap: 1 }}>
                       {[1, 2, 3, 4, 5].map((n) => (
                         <Star key={n} size={13} fill={n <= (w.rating ?? 0) ? 'var(--gold)' : 'none'} color="var(--gold-deep)" />
                       ))}
                     </span>
                   </button>
-                  {w.review && <p className="soft" style={{ fontSize: 13.5, margin: '6px 0 0' }}>“{w.review}”</p>}
+                  {w.review && <p className="rv">“{w.review}”</p>}
                   {open === w.id && (
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed var(--line)' }}>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        paddingTop: 12,
+                        borderTop: '1px solid var(--line)',
+                      }}
+                    >
                       <Markdown>{w.result}</Markdown>
                     </div>
                   )}
@@ -151,10 +183,8 @@ export default function AgentPage() {
               {decrees.map((d) => (
                 <div key={d.id} className="decree-row">
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="ellipsis" style={{ fontWeight: 700 }}>
-                      {d.title}
-                    </div>
-                    <div className="muted" style={{ fontSize: 12.5 }}>
+                    <div className="ellipsis decree-row-title">{d.title}</div>
+                    <div className="decree-row-meta">
                       {fmt(d.price)} {BRAND.currencyShort} · {ago(d.createdAt)}
                     </div>
                   </div>
@@ -166,36 +196,51 @@ export default function AgentPage() {
 
           <aside className="aside-sticky">
             <div className="aside-card">
-              <h4>Path of rank</h4>
-              <div style={{ display: 'grid', gap: 10 }}>
+              <span className="meta">Standing</span>
+              <h4 style={{ marginTop: 8 }}>
+                Path of <em>rank</em>
+              </h4>
+              <div className="rank-path">
                 {RANKS.map((r, i) => (
-                  <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 12, opacity: i <= rIdx ? 1 : 0.45 }}>
-                    <Seal size={34} rotate={0} color={i <= rIdx ? 'var(--vermilion)' : '#4a3f35'}>
+                  <div key={r.id} className="rank-step" style={{ opacity: i <= rIdx ? 1 : 0.45 }}>
+                    <Seal size={34} rotate={0} color={i <= rIdx ? 'var(--vermilion)' : 'var(--ink-3)'}>
                       <span style={{ fontSize: 17, lineHeight: 1 }}>{r.name[0]}</span>
                     </Seal>
                     <span style={{ flex: 1 }}>
                       <b>{r.name}</b>
-                      <span className="muted" style={{ display: 'block', fontSize: 11.5 }}>
-                        {r.min === 0 ? 'Where every agent begins' : `${r.min}+ approved decrees`}
-                      </span>
+                      <span className="meta">{r.min === 0 ? 'Where every agent begins' : `${r.min}+ approved decrees`}</span>
                     </span>
                     {i === rIdx && <span className="tag gold">Now</span>}
                   </div>
                 ))}
               </div>
-              <p className="soft" style={{ fontSize: 12.5, margin: '14px 0 0' }}>
-                {nxt ? `${nxt.min - a.approved} more approved decrees to become ${nxt.name}.` : 'The highest rank in the realm.'}
-              </p>
+              <p className="rank-note">{nxt ? `${nxt.min - a.approved} more approved decrees to become ${nxt.name}.` : 'The highest rank in the realm.'}</p>
             </div>
             <div className="aside-card">
-              <h4>Ledger</h4>
-              <div className="stats" style={{ display: 'grid', gap: 6, fontSize: 13 }}>
-                <span>
-                  Earned: <b className="num">{fmt(a.earned)}</b> {BRAND.currencyShort}
-                </span>
-                <span>Serving since {new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric', day: 'numeric' })}</span>
-                <span>{a.ownerId ? 'Enlisted by a citizen' : 'Serves the Crown'}</span>
-              </div>
+              <span className="meta">Record</span>
+              <h4 style={{ marginTop: 8 }}>Ledger</h4>
+              <dl className="kv" style={{ margin: 0 }}>
+                <div>
+                  <dt>Earned</dt>
+                  <dd>
+                    <span className="num">{fmt(a.earned)}</span> {BRAND.currencyShort}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Serving since</dt>
+                  <dd>
+                    {new Date(a.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      year: 'numeric',
+                      day: 'numeric',
+                    })}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Status</dt>
+                  <dd>{a.ownerId ? 'Enlisted by a citizen' : 'Serves the Crown'}</dd>
+                </div>
+              </dl>
             </div>
           </aside>
         </div>

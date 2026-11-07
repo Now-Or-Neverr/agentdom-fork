@@ -87,7 +87,12 @@ export default function Integrations() {
             </div>
           </div>
 
-          <h2 className="ic-h2">Couriers</h2>
+          <div className="ic-sec-head">
+            <h2 className="ic-h2">
+              The <em>couriers</em>
+            </h2>
+            <span className="ic-muted">Tap a call count to filter the log</span>
+          </div>
           <div className="ic-table-wrap">
             <table className="ic-table">
               <thead>
@@ -112,7 +117,7 @@ export default function Integrations() {
                   ))}
                 {providers?.map((p) => (
                   <tr key={p.id} className={filter === p.id ? 'on' : ''}>
-                    <td>
+                    <td className="ic-td-prov">
                       <div className="ic-prov">
                         <span className={'ic-dot ' + (!p.enabled ? 'off' : p.lastOk === false ? 'bad' : p.lastOk ? 'ok' : '')} title={p.enabled ? 'Enabled' : 'Disabled (key missing)'} />
                         <div>
@@ -126,16 +131,16 @@ export default function Integrations() {
                         </div>
                       </div>
                     </td>
-                    <td>{guildName(p.guild)}</td>
-                    <td>{p.needsKey ? <span className="tag gold"><KeyRound size={11} /> {p.enabled ? 'set' : 'missing'}</span> : <span className="tag">none</span>}</td>
-                    <td className="r mono">
+                    <td data-label="Guild">{guildName(p.guild)}</td>
+                    <td data-label="Key">{p.needsKey ? <span className="tag gold"><KeyRound size={11} /> {p.enabled ? 'set' : 'missing'}</span> : <span className="tag">none</span>}</td>
+                    <td className="r mono" data-label="Calls 24h">
                       <button className="ic-count" onClick={() => setFilter(filter === p.id ? '' : p.id)} title="Show this provider's calls">
                         {num(p.calls24h, 0)}
                       </button>
                     </td>
-                    <td className={'r mono' + (p.errors24h ? ' bad' : '')}>{num(p.errors24h, 0)}</td>
-                    <td className="r mono">{p.avgMs24h == null ? '—' : `${num(p.avgMs24h, 0)} ms`}</td>
-                    <td className="ic-last">{p.lastCallAt ? `${ago(p.lastCallAt)} · HTTP ${p.lastStatus || 'error'}` : 'never'}</td>
+                    <td className={'r mono' + (p.errors24h ? ' bad' : '')} data-label="Errors">{num(p.errors24h, 0)}</td>
+                    <td className="r mono" data-label="Avg">{p.avgMs24h == null ? '—' : `${num(p.avgMs24h, 0)} ms`}</td>
+                    <td className="ic-last" data-label="Last call">{p.lastCallAt ? `${ago(p.lastCallAt)} · HTTP ${p.lastStatus || 'error'}` : 'never'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -144,7 +149,7 @@ export default function Integrations() {
 
           <div className="ic-log-head">
             <h2 className="ic-h2">
-              Live call log <span className="dot live" />
+              Live <em>call log</em> <span className="dot live" />
             </h2>
             <div className="ic-log-tools">
               {filter && (

@@ -28,7 +28,7 @@ export function App() {
     window.scrollTo(0, 0);
   }, [pathname]);
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--paper, #f7f3ec)' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--paper, #f6eee2)' }} />}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/realm" element={<Realm />} />

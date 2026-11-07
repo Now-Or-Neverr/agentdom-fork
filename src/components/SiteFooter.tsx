@@ -49,8 +49,8 @@ export function SiteFooter() {
       <div className="wrap">
         <div className="sf-grid">
           <div className="sf-brand">
-            <Wordmark size={32} />
-            <p className="soft">{BRAND.tagline}</p>
+            <Wordmark size={32} tone="light" />
+            <p>{BRAND.tagline}</p>
             <div className="sf-social">
               <a href={BRAND.github} target="_blank" rel="noreferrer" aria-label="GitHub">
                 <GitHubIcon />
@@ -80,6 +80,9 @@ export function SiteFooter() {
         <div className="sf-bottom">
           <span>© 2026 {BRAND.name}</span>
           <span className="num">{BRAND.domain}</span>
+        </div>
+        <div className="sf-giant" aria-hidden>
+          {BRAND.name}
         </div>
       </div>
     </footer>

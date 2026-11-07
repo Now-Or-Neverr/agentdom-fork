@@ -10,10 +10,22 @@ import { BRAND } from '../config';
 export function Stars({ value, size = 13, count }: { value: number | null; size?: number; count?: number }) {
   if (value == null) return <span className="tag">New</span>;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 700 }}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontWeight: 600,
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    >
       <Star size={size} fill="var(--gold)" color="var(--gold)" />
       {value.toFixed(1)}
-      {count != null && <span className="muted" style={{ fontWeight: 500 }}>({count})</span>}
+      {count != null && (
+        <span className="muted" style={{ fontWeight: 400 }}>
+          ({count})
+        </span>
+      )}
     </span>
   );
 }
@@ -42,21 +54,28 @@ export function CommissionSlip({ c, onOrder }: { c: Commission; onOrder?: (c: Co
         <p className="clamp2">{c.description}</p>
         <div className="slip-foot">
           {c.agent && (
-            <Link to={`/agents/${c.agent.id}`} style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <Link
+              to={`/agents/${c.agent.id}`}
+              className="slip-agent"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                minWidth: 0,
+              }}
+            >
               <AgentPortrait a={c.agent} size={30} />
               <span style={{ minWidth: 0 }}>
                 <b className="ellipsis" style={{ display: 'block', fontSize: 13 }}>
                   {c.agent.name}
                 </b>
-                <span className="muted" style={{ fontSize: 11 }}>
-                  {c.agent.rank}
-                </span>
+                <span className="muted">{c.agent.rank}</span>
               </span>
             </Link>
           )}
           <span className="price-seal">
             <b>
-              {fmt(c.price)} {BRAND.currencyShort}
+              {fmt(c.price)} <span>{BRAND.currencyShort}</span>
             </b>
             <small>
               <Clock size={10} style={{ display: 'inline', verticalAlign: -1 }} /> ~{c.etaMinutes} min
@@ -64,7 +83,7 @@ export function CommissionSlip({ c, onOrder }: { c: Commission; onOrder?: (c: Co
           </span>
         </div>
         {onOrder && (
-          <button className="btn btn-seal btn-sm btn-block" style={{ marginTop: 12 }} onClick={() => onOrder(c)}>
+          <button className="btn btn-seal btn-sm btn-block" style={{ marginTop: 16, ['--h' as string]: '42px' }} onClick={() => onOrder(c)}>
             Commission {c.agent?.name ?? 'this agent'}
           </button>
         )}
@@ -76,8 +95,8 @@ export function CommissionSlip({ c, onOrder }: { c: Commission; onOrder?: (c: Co
 export function AgentCard({ a, onDecree }: { a: Agent; onDecree?: (a: Agent) => void }) {
   const p = PROVINCE[a.province];
   return (
-    <article className="agent-card">
-      <Link to={`/agents/${a.id}`} aria-label={a.name}>
+    <article className="agent-card" style={{ ['--g' as string]: p.color }}>
+      <Link to={`/agents/${a.id}`} aria-label={a.name} className="agent-card-pic">
         <AgentPortrait a={a} size={64} />
       </Link>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -88,36 +107,40 @@ export function AgentCard({ a, onDecree }: { a: Agent; onDecree?: (a: Agent) => 
             <span className="rank-seal">{a.rank}</span>
           </h3>
         </Link>
-        <div className="muted ellipsis" style={{ fontSize: 12.5, margin: '3px 0 8px' }}>
-          <span style={{ color: p.color, fontWeight: 700 }}>{p.name}</span> · {a.title}
+        <div className="agent-card-sub ellipsis">
+          <b style={{ color: p.color }}>{p.name}</b> · {a.title}
         </div>
         <div className="stats">
           <Stars value={a.rating} count={a.reviews || undefined} />
           <span>{a.approved} approved</span>
           <span>{a.onTime == null ? 'On-time: no data yet' : `${a.onTime}% on time`}</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
-          <span className="tag">{a.model}</span>
-          {a.ownerId && <span className="tag jade">Citizen-owned</span>}
-          {a.working && <span className="tag jade">At work</span>}
-          {onDecree && (
-            <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => onDecree(a)}>
-              Issue decree
-            </button>
-          )}
-        </div>
+      </div>
+      <div className="agent-card-foot">
+        <span className="tag">{a.model}</span>
+        {a.ownerId && <span className="tag jade">Citizen-owned</span>}
+        {a.working && <span className="tag jade">At work</span>}
+        {onDecree && (
+          <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={() => onDecree(a)}>
+            Issue decree
+          </button>
+        )}
       </div>
     </article>
   );
 }
 
 const STATUS: Record<DecreeStatus, { label: string; bg: string; fg: string }> = {
-  queued: { label: 'In queue', bg: '#fbefd9', fg: '#a5650b' },
-  working: { label: 'Being crafted', bg: '#dff5ec', fg: '#1f7d60' },
-  delivered: { label: 'Awaiting approval', bg: 'var(--purple-soft)', fg: 'var(--purple-2)' },
-  approved: { label: 'Approved', bg: '#e3f4e9', fg: '#2f9e6b' },
-  failed: { label: 'Failed · refunded', bg: '#fbe3e3', fg: '#c03a3a' },
-  cancelled: { label: 'Cancelled', bg: '#eeeaf2', fg: '#6f6a80' },
+  queued: { label: 'In queue', bg: '#f8ecd6', fg: '#99600f' },
+  working: { label: 'Being crafted', bg: '#e4f0e6', fg: '#2f7a52' },
+  delivered: {
+    label: 'Awaiting approval',
+    bg: 'var(--purple-soft)',
+    fg: 'var(--purple-2)',
+  },
+  approved: { label: 'Approved', bg: '#e6f0e4', fg: '#33794f' },
+  failed: { label: 'Failed · refunded', bg: '#f6e2dc', fg: '#a8402f' },
+  cancelled: { label: 'Cancelled', bg: '#efe8df', fg: '#7d6d60' },
 };
 
 export function StatusSeal({ s }: { s: DecreeStatus }) {
@@ -136,10 +159,8 @@ export function DecreeRow({ d, to }: { d: Decree; to?: string }) {
     <>
       {d.agent && <AgentPortrait a={d.agent} size={42} />}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div className="ellipsis" style={{ fontWeight: 700 }}>
-          {d.title}
-        </div>
-        <div className="muted ellipsis" style={{ fontSize: 12.5 }}>
+        <div className="ellipsis decree-row-title">{d.title}</div>
+        <div className="ellipsis decree-row-meta">
           {d.agent?.name} · {p.name} · {fmt(d.price)} {BRAND.currencyShort} · {ago(d.createdAt)}
         </div>
       </div>
@@ -158,7 +179,15 @@ export function DecreeRow({ d, to }: { d: Decree; to?: string }) {
 export function ProvinceName({ id }: { id: ProvinceId }) {
   const p = PROVINCE[id];
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 700, color: p.color }}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        fontWeight: 600,
+        color: p.color,
+      }}
+    >
       <ProvinceIcon id={id} size={24} />
       {p.name}
     </span>
