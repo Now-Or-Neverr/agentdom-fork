@@ -44,10 +44,15 @@ export function Guilds() {
   const g = GUILDS[idx];
   const chips = useRef<HTMLDivElement>(null);
 
+  // Center the picked chip by scrolling only the chip row sideways. (scrollIntoView would
+  // also scroll the whole page down to this section on load.)
   useEffect(() => {
     if (desktop) return;
-    const el = chips.current?.children[idx] as HTMLElement | undefined;
-    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
+    const row = chips.current;
+    const el = row?.children[idx] as HTMLElement | undefined;
+    if (!row || !el) return;
+    const left = row.scrollLeft + (el.getBoundingClientRect().left - row.getBoundingClientRect().left) - (row.clientWidth - el.offsetWidth) / 2;
+    row.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
   }, [idx, desktop]);
 
   const info = (

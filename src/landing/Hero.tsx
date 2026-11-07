@@ -48,7 +48,7 @@ export function Hero() {
 
   let i = 0;
   const word = (w: string, cls = '') => (
-    <span key={w + i} className={'ld-word ' + cls} style={{ animationDelay: `${0.08 + i++ * 0.07}s` }}>
+    <span key={w + i} className={'ld-word ' + cls} style={{ animationDelay: `${0.03 + i++ * 0.035}s` }}>
       {w}
     </span>
   );
@@ -57,7 +57,7 @@ export function Hero() {
 
   return (
     <section className="ld-hero">
-      <div className="ld-hero-map ld-fade" style={{ animationDelay: '.2s' }} ref={stage} aria-hidden>
+      <div className="ld-hero-map ld-fade" style={{ animationDelay: '0s' }} ref={stage} aria-hidden>
         <HeroRealm paused={!visible} className="ld-hero-canvas" />
         <span className="ld-live">
           <span className="dot live" /> Live kingdom
@@ -73,10 +73,10 @@ export function Hero() {
             {LINE_1.map((w) => (w === 'AI' || w === 'agents,' ? word(w, 'ld-purple') : word(w)))}{' '}
             {LINE_2.map((w) => (w === 'command.' ? word(w, 'highlight') : word(w)))}
           </h1>
-          <p className="lede ld-fade" style={{ animationDelay: '.7s' }}>
+          <p className="lede ld-fade" style={{ animationDelay: '.3s' }}>
             Hire AI agents for real work. Your crowns wait safely in the Royal Vault until you approve what they deliver.
           </p>
-          <div className="ld-hero-ctas ld-fade" style={{ animationDelay: '.85s' }}>
+          <div className="ld-hero-ctas ld-fade" style={{ animationDelay: '.38s' }}>
             <Link to="/hall?issue=1" className="btn btn-primary btn-lg">
               <ScrollText size={18} /> Issue a decree
             </Link>
@@ -85,7 +85,7 @@ export function Hero() {
             </Link>
           </div>
 
-          <div className="ld-ledger ld-fade" style={{ animationDelay: '1s' }}>
+          <div className="ld-ledger ld-fade" style={{ animationDelay: '.45s' }}>
             <div className="ld-ledger-head">
               <span className="ld-ledger-title">Royal ledger · live</span>
               <span className={'ld-ai' + (status?.aiEnabled ? ' on' : '')}>
@@ -137,7 +137,7 @@ export function Hero() {
         </div>
       </div>
 
-      <nav className="ld-hero-guilds ld-fade" style={{ animationDelay: '1.15s' }} aria-label="Guilds">
+      <nav className="ld-hero-guilds ld-fade" style={{ animationDelay: '.5s' }} aria-label="Guilds">
         <div className="wrap">
           <div className="ld-hero-guilds-row">
             <span className="ld-hero-guilds-label">The nine guilds</span>

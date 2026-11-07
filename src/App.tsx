@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 // Each page is its own chunk so three.js only loads where it is used.
-const Landing = lazy(() => import('./pages/Landing'));
+// The landing page is the usual entry, so it ships with the main bundle (one round trip less).
+import Landing from './pages/Landing';
 const Realm = lazy(() => import('./pages/Realm'));
 const Hall = lazy(() => import('./pages/Hall'));
 const AgentPage = lazy(() => import('./pages/AgentPage'));
@@ -27,7 +28,7 @@ export function App() {
     window.scrollTo(0, 0);
   }, [pathname]);
   return (
-    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--lacquer)' }} />}>
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--paper, #f7f3ec)' }} />}>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/realm" element={<Realm />} />

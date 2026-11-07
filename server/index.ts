@@ -1,5 +1,6 @@
 import express, { type NextFunction, type Request, type Response } from 'express';
 import compression from 'compression';
+import { cloudflareRanges } from './cloudflare-ips';
 import fs from 'node:fs';
 import path from 'node:path';
 import { db, now, tx, uid, UPLOAD_DIR, type Row } from './db';
@@ -29,9 +30,16 @@ startDuties();
 
 const app = express();
 // Only trust X-Forwarded-For from a local proxy (e.g. cloudflared on this machine); override with TRUST_PROXY.
-// A number means "trust this many proxy hops" (e.g. 1 behind Railway, 2 behind Cloudflare + Railway).
+// A number means "trust this many proxy hops" (e.g. 2 behind Railway's edge).
+// With TRUST_CLOUDFLARE=1, hops from Cloudflare's published IP ranges are trusted as well, so the
+// client IP is right whether a visitor comes through the Cloudflare proxy or straight to Railway,
+// and a forged X-Forwarded-For can never pass as a Cloudflare hop.
 const trustProxy = (process.env.TRUST_PROXY ?? 'loopback').trim();
-app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+if (/^\d+$/.test(trustProxy) && process.env.TRUST_CLOUDFLARE === '1') {
+  const hops = Number(trustProxy);
+  const cf = cloudflareRanges();
+  app.set('trust proxy', (addr: string, i: number) => i < hops || cf.check(addr.replace(/^::ffff:/, ''), addr.includes(':') && !addr.startsWith('::ffff:') ? 'ipv6' : 'ipv4'));
+} else app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 // gzip text responses (HTML, JS, CSS, JSON); never buffer live event streams
 app.use(
   compression({

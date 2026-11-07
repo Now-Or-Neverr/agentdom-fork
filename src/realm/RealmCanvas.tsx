@@ -3,7 +3,7 @@ import type { Festival, RealmLive, Weather } from '../../shared/live';
 import type { Banner } from '../../shared/types';
 import { PROVINCES, type ProvinceId } from '../../shared/realm';
 import { provinceIcon } from '../components/ProvinceIcon';
-import { RealmEngine } from './engine';
+import { RealmEngine, isMobileDevice } from './engine';
 import { PreviewEngine } from './preview';
 import './realm.css';
 
@@ -94,32 +94,53 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
   useEffect(() => {
     const el = stage.current;
     if (!el) return;
-    if (!supportsWebGL()) {
+    // The landing hero on phones keeps its still image (CSS poster): a live 3D bay in a small
+    // box costs seconds of main-thread work and battery for little gain.
+    if (!supportsWebGL() || (mode === 'hero' && isMobileDevice())) {
       cbs.current.onReady?.();
       return;
     }
-    const e = new RealmEngine(el, mode, {
-      onPick: (p) => cbs.current.onPick?.(p),
-      onZoom: (z) => cbs.current.onZoom?.(z),
-      onReady: () => cbs.current.onReady?.(),
-      onNight: (n) => wrap.current?.style.setProperty('--night', n.toFixed(3)),
-    });
-    eng.current = e;
-    const l = live.current;
-    e.setTime(l.time ?? (mode === 'hero' ? 'day' : 'auto'));
-    e.setPaused(!!l.paused);
-    if (l.banners) e.setBanners(l.banners);
-    if (l.online) e.setOnline(l.online);
-    if (mode === 'full') {
-      e.setLabels(labelEls.current);
-      e.setAgentLayer(agentLayer.current);
-      e.setIconSource((id) => plaqueIcon(labelEls.current, id));
-      e.setLive(l.liveData);
-      e.setWeather(l.weather);
-      e.setFestival(l.festival);
-    }
+    let e: RealmEngine | null = null;
+    let disposed = false;
+    const start = () => {
+      if (disposed) return;
+      e = new RealmEngine(el, mode, {
+        onPick: (p) => cbs.current.onPick?.(p),
+        onZoom: (z) => cbs.current.onZoom?.(z),
+        onReady: () => cbs.current.onReady?.(),
+        onNight: (n) => wrap.current?.style.setProperty('--night', n.toFixed(3)),
+      });
+      eng.current = e;
+      const l = live.current;
+      e.setTime(l.time ?? (mode === 'hero' ? 'day' : 'auto'));
+      e.setPaused(!!l.paused);
+      if (l.banners) e.setBanners(l.banners);
+      if (l.online) e.setOnline(l.online);
+      if (mode === 'full') {
+        e.setLabels(labelEls.current);
+        e.setAgentLayer(agentLayer.current);
+        e.setIconSource((id) => plaqueIcon(labelEls.current, id));
+        e.setLive(l.liveData);
+        e.setWeather(l.weather);
+        e.setFestival(l.festival);
+      }
+    };
+    // On the landing page, build the bay after the hero text has animated in, so the
+    // build does not freeze the first second. The full realm starts right away.
+    let timer = 0;
+    let idle = 0;
+    const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void });
+    if (mode === 'hero') {
+      timer = window.setTimeout(() => {
+        if (ric.requestIdleCallback) idle = ric.requestIdleCallback(start, { timeout: 1500 });
+        else start();
+      }, 700);
+    } else start();
     return () => {
-      e.dispose();
+      disposed = true;
+      window.clearTimeout(timer);
+      if (idle) ric.cancelIdleCallback?.(idle);
+      e?.dispose();
       eng.current = null;
     };
   }, [mode]);

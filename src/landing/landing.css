@@ -85,9 +85,9 @@
   display: inline-block;
   margin-right: 0.22em;
   opacity: 0;
-  filter: blur(8px);
-  transform: translateY(18px);
-  animation: ld-word 0.9s var(--ease) forwards;
+  filter: blur(4px);
+  transform: translateY(10px);
+  animation: ld-word 0.55s var(--ease) forwards;
 }
 .ld-purple {
   color: var(--purple);
@@ -101,13 +101,13 @@
 }
 .ld-fade {
   opacity: 0;
-  transform: translateY(14px);
-  animation: ld-word 0.9s var(--ease) forwards;
+  transform: translateY(10px);
+  animation: ld-word 0.5s var(--ease) forwards;
 }
 .ld-hero-map.ld-fade {
   transform: none;
   animation-name: ld-mapin;
-  animation-duration: 1.4s;
+  animation-duration: 0.5s;
 }
 @keyframes ld-mapin {
   from {
