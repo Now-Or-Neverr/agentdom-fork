@@ -94,9 +94,7 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
   useEffect(() => {
     const el = stage.current;
     if (!el) return;
-    // The landing hero on phones keeps its still image (CSS poster): a live 3D bay in a small
-    // box costs seconds of main-thread work and battery for little gain.
-    if (!supportsWebGL() || (mode === 'hero' && isMobileDevice())) {
+    if (!supportsWebGL()) {
       cbs.current.onReady?.();
       return;
     }
@@ -107,7 +105,11 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
       e = new RealmEngine(el, mode, {
         onPick: (p) => cbs.current.onPick?.(p),
         onZoom: (z) => cbs.current.onZoom?.(z),
-        onReady: () => cbs.current.onReady?.(),
+        onReady: () => {
+          // Fade the live scene in over the still poster instead of swapping abruptly.
+          wrap.current?.classList.add('is-live');
+          cbs.current.onReady?.();
+        },
         onNight: (n) => wrap.current?.style.setProperty('--night', n.toFixed(3)),
       });
       eng.current = e;
@@ -134,7 +136,7 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
       timer = window.setTimeout(() => {
         if (ric.requestIdleCallback) idle = ric.requestIdleCallback(start, { timeout: 1500 });
         else start();
-      }, 700);
+      }, isMobileDevice() ? 500 : 700);
     } else start();
     return () => {
       disposed = true;

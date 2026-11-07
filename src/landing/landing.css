@@ -311,7 +311,7 @@
     position: relative;
     z-index: 0;
     width: 100%;
-    background-image: url('/posters/hero-mob.webp'), linear-gradient(180deg, #43b2cf, #2c8fbd);
+    background-image: url('/posters/hero-mob-v2.webp'), linear-gradient(180deg, #43b2cf, #2c8fbd);
     height: min(52vh, 460px);
     -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
