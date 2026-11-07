@@ -38,7 +38,20 @@ const trustProxy = (process.env.TRUST_PROXY ?? 'loopback').trim();
 if (/^\d+$/.test(trustProxy) && process.env.TRUST_CLOUDFLARE === '1') {
   const hops = Number(trustProxy);
   const cf = cloudflareRanges();
-  app.set('trust proxy', (addr: string, i: number) => i < hops || cf.check(addr.replace(/^::ffff:/, ''), addr.includes(':') && !addr.startsWith('::ffff:') ? 'ipv6' : 'ipv4'));
+  const isCf = (addr: string) => {
+    const a = addr.replace(/^::ffff:/, '');
+    return cf.check(a, a.includes(':') ? 'ipv6' : 'ipv4');
+  };
+  app.set('trust proxy', (addr: string, i: number) => i < hops || isCf(addr));
+  // When the nearest untrusted hop is still a Cloudflare edge (the request crossed two Cloudflare
+  // zones), Cloudflare's own CF-Connecting-IP header holds the visitor. It is only used when the
+  // request really arrived from Cloudflare, so it cannot be forged by calling Railway directly.
+  app.use((req, _res, next) => {
+    const via = req.ip ?? '';
+    const real = req.get('cf-connecting-ip');
+    if (real && isCf(via)) Object.defineProperty(req, 'ip', { value: real.trim(), configurable: true });
+    next();
+  });
 } else app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 // gzip text responses (HTML, JS, CSS, JSON); never buffer live event streams
 app.use(
