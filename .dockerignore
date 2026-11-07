@@ -1,0 +1,12 @@
+node_modules
+dist
+data
+.env
+.env.*
+!.env.example
+.git
+.claude
+preview
+TODO.md
+scripts/rekam-preview.mjs
+*.log

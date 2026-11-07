@@ -356,6 +356,15 @@ router.get(
   }),
 );
 
+/** How the server sees the caller's IP (to check TRUST_PROXY behind proxies). */
+router.get(
+  '/admin/ip',
+  h((req, res) => {
+    admin(req);
+    res.json({ ip: req.ip, ips: req.ips, forwardedFor: req.get('x-forwarded-for') ?? null, cfConnectingIp: req.get('cf-connecting-ip') ?? null, trustProxy: req.app.get('trust proxy') });
+  }),
+);
+
 /** Test message to Telegram + Discord. Dry run unless NOTIFY_ENABLED=1. */
 router.post(
   '/admin/notify/test',

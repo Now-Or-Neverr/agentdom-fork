@@ -28,7 +28,9 @@ startDuties();
 
 const app = express();
 // Only trust X-Forwarded-For from a local proxy (e.g. cloudflared on this machine); override with TRUST_PROXY.
-app.set('trust proxy', process.env.TRUST_PROXY ?? 'loopback');
+// A number means "trust this many proxy hops" (e.g. 1 behind Railway, 2 behind Cloudflare + Railway).
+const trustProxy = (process.env.TRUST_PROXY ?? 'loopback').trim();
+app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 app.use(express.json({ limit: '3mb' }));
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
 
