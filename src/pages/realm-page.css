@@ -716,12 +716,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* a still of the realm under a soft veil, so the map feels present while it builds */
   background:
     radial-gradient(60% 50% at 50% 40%, rgba(185, 160, 255, 0.35), transparent 70%),
+    linear-gradient(180deg, rgba(233, 245, 253, 0.72), rgba(247, 243, 236, 0.78)),
+    url('/posters/realm-desk.webp') center / cover no-repeat,
     linear-gradient(180deg, #e9f5fd, #f7f3ec);
   transition:
     opacity 0.7s var(--ease),
     visibility 0.7s;
+}
+@media (max-width: 760px) {
+  .rp-veil {
+    background:
+      radial-gradient(60% 50% at 50% 40%, rgba(185, 160, 255, 0.35), transparent 70%),
+      linear-gradient(180deg, rgba(233, 245, 253, 0.72), rgba(247, 243, 236, 0.78)),
+      url('/posters/realm-mob.webp') center / cover no-repeat,
+      linear-gradient(180deg, #e9f5fd, #f7f3ec);
+  }
 }
 .rp-veil.gone {
   opacity: 0;

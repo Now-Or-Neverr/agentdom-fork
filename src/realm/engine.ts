@@ -72,6 +72,15 @@ const NIGHT = {
 const _w0 = new THREE.Color();
 const _w1 = new THREE.Color();
 
+// Phones and small tablets: touch-first or a small screen.
+export function isMobileDevice() {
+  try {
+    return window.matchMedia('(pointer: coarse)').matches || Math.min(window.screen.width, window.screen.height) < 768;
+  } catch {
+    return false;
+  }
+}
+
 // Night between 18:00 and 06:00 local time (with a one-hour dusk / dawn fade).
 export function nightFromClock(d = new Date()) {
   const h = d.getHours() + d.getMinutes() / 60;
@@ -138,6 +147,9 @@ export class RealmEngine {
   private clock = 0;
   private inView = true;
   private ready = false;
+  private mobile = false;
+  private dpr = 1;
+  private perf = { frames: 0, time: 0, checks: 0, buildMs: 0 };
   private lastZoomPct = -1;
   private nightCheck = 0;
   private io: IntersectionObserver;
@@ -165,9 +177,13 @@ export class RealmEngine {
     private cb: EngineCb = {},
   ) {
     const hero = mode === 'hero';
+    const t0 = performance.now();
+    this.mobile = isMobileDevice();
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hero ? 1.5 : 2));
+    // Phones get a lower render scale; it drops further on its own if frames run slow.
+    this.dpr = Math.min(window.devicePixelRatio || 1, this.mobile ? 1.5 : hero ? 1.5 : 2);
+    this.renderer.setPixelRatio(this.dpr);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
@@ -183,6 +199,7 @@ export class RealmEngine {
     this.mats = makeMats();
     this.world = buildWorld(mode, this.mats);
     this.scene.add(this.world.group);
+    this.perf.buildMs = Math.round(performance.now() - t0);
 
     // light
     this.hemi = new THREE.HemisphereLight(DAY.hemiSky, DAY.hemiGround, 1.6);
@@ -190,14 +207,15 @@ export class RealmEngine {
     this.sun = new THREE.DirectionalLight(DAY.sun, 2.4);
     this.sun.position.set(-60, 90, 45);
     this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(hero ? 2048 : 4096, hero ? 2048 : 4096);
+    const shadow = this.mobile ? (hero ? 1024 : 2048) : hero ? 2048 : 4096;
+    this.sun.shadow.mapSize.set(shadow, shadow);
     Object.assign(this.sun.shadow.camera, { left: -95, right: 95, top: 85, bottom: -85, near: 10, far: 280 });
     this.sun.shadow.bias = -0.0008;
     this.sun.shadow.normalBias = 0.05;
     this.scene.add(this.sun, this.sun.target);
 
     // life
-    this.walkers = new Walkers(this.world.graph, hero ? 14 : 32, 1.0, { ground: this.world.ground, look: this.mats.look, ambient: hero ? 70 : 190 });
+    this.walkers = new Walkers(this.world.graph, hero ? 14 : 32, 1.0, { ground: this.world.ground, look: this.mats.look, ambient: hero ? (this.mobile ? 40 : 70) : this.mobile ? 110 : 190 });
     this.walkers.setStations(this.world.stations);
     this.walkers.setOnline(undefined);
     this.scene.add(this.walkers.group);
@@ -684,6 +702,25 @@ export class RealmEngine {
 
   // ---------- loop ----------
   private onVis = () => this.loop();
+  // Adaptive quality: every ~2 s of rendering, if the average frame rate is below
+  // ~40 fps, render at a lower pixel ratio (down to 1). Never raises it again.
+  private adapt(dt: number) {
+    const p = this.perf;
+    p.frames++;
+    p.time += dt;
+    if (p.time < 2) return;
+    const fps = p.frames / p.time;
+    p.frames = 0;
+    p.time = 0;
+    p.checks++;
+    (window as unknown as { __realmPerf?: unknown }).__realmPerf = { fps: Math.round(fps), dpr: this.dpr, buildMs: p.buildMs, mobile: this.mobile };
+    if (fps < 40 && this.dpr > 1) {
+      this.dpr = Math.max(1, Math.round((this.dpr - 0.25) * 100) / 100);
+      this.renderer.setPixelRatio(this.dpr);
+      this.renderer.setSize(this.w, this.h, false);
+    }
+  }
+
   private shouldRun() {
     return !this.disposed && !this.paused && this.inView && !document.hidden;
   }
@@ -702,7 +739,8 @@ export class RealmEngine {
     if (!this.ready) {
       this.ready = true;
       this.cb.onReady?.();
-    }
+    } else this.adapt(dt);
+
     this.raf = requestAnimationFrame(this.tick);
   };
 

@@ -44,7 +44,8 @@
   right: 0;
   bottom: 0;
   width: 66%;
-  background: linear-gradient(180deg, #43b2cf, #2c8fbd);
+  /* still of the scene, shown until the 3D bay has rendered */
+  background: url('/posters/hero-desk.webp') center / cover no-repeat, linear-gradient(180deg, #43b2cf, #2c8fbd);
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 13%, #000 30%), linear-gradient(180deg, #000 78%, transparent 100%);
   -webkit-mask-composite: source-in;
   mask-image: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.55) 13%, #000 30%), linear-gradient(180deg, #000 78%, transparent 100%);
@@ -310,6 +311,7 @@
     position: relative;
     z-index: 0;
     width: 100%;
+    background-image: url('/posters/hero-mob.webp'), linear-gradient(180deg, #43b2cf, #2c8fbd);
     height: min(52vh, 460px);
     -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
     mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
@@ -377,6 +379,22 @@
   background:
     radial-gradient(80% 60% at 50% 55%, #8fd4cf 0%, #3fa9c9 55%, #2a83b0 100%);
   will-change: clip-path;
+}
+/* still of the palace, shown until the 3D scene is ready */
+.ld-zoom-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/posters/zoom-desk.webp') center / cover no-repeat;
+  transition: opacity 0.9s var(--ease);
+}
+.ld-zoom-frame:has(.ld-zoom-stage.is-ready)::before {
+  opacity: 0;
+}
+@media (max-width: 760px) {
+  .ld-zoom-frame::before {
+    background-image: url('/posters/zoom-mob.webp');
+  }
 }
 .ld-zoom-stage {
   position: absolute;

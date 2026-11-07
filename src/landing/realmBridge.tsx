@@ -58,7 +58,8 @@ export function InkWash({ style, label }: { style?: CSSProperties; label?: strin
 }
 
 export function HeroRealm(p: HeroProps) {
-  const fb = <InkWash style={p.style} />;
+  // The hero box already shows a still of the bay (CSS poster), so nothing else is drawn while loading.
+  const fb = null;
   return (
     <Guard fallback={fb}>
       <Suspense fallback={fb}>

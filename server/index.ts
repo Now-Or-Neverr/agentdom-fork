@@ -1,4 +1,5 @@
 import express, { type NextFunction, type Request, type Response } from 'express';
+import compression from 'compression';
 import fs from 'node:fs';
 import path from 'node:path';
 import { db, now, tx, uid, UPLOAD_DIR, type Row } from './db';
@@ -31,6 +32,12 @@ const app = express();
 // A number means "trust this many proxy hops" (e.g. 1 behind Railway, 2 behind Cloudflare + Railway).
 const trustProxy = (process.env.TRUST_PROXY ?? 'loopback').trim();
 app.set('trust proxy', /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+// gzip text responses (HTML, JS, CSS, JSON); never buffer live event streams
+app.use(
+  compression({
+    filter: (req, res) => !String(res.getHeader('Content-Type') ?? '').includes('text/event-stream') && compression.filter(req, res),
+  }),
+);
 app.use(express.json({ limit: '3mb' }));
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
 
@@ -523,8 +530,13 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 
 const dist = path.resolve('dist');
 if (fs.existsSync(dist)) {
+  // hashed build assets never change; index.html is always revalidated
+  app.use('/assets', express.static(path.join(dist, 'assets'), { maxAge: '365d', immutable: true, fallthrough: false }));
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
-  app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+  app.get('*', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache');
+    res.sendFile(path.join(dist, 'index.html'));
+  });
 }
 
 app.listen(PORT, () => console.log(`[api] http://localhost:${PORT} · guilds: ${GUILDS.length}`));
