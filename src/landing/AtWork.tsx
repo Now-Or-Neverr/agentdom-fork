@@ -39,12 +39,6 @@ export function AtWork() {
 
   return (
     <section className="ld-work dark">
-      <div className="ld-stars" aria-hidden />
-      <div className="ld-lanterns" aria-hidden>
-        {Array.from({ length: 7 }).map((_, i) => (
-          <span key={i} style={{ left: `${8 + i * 13}%`, animationDelay: `${i * -2.3}s`, animationDuration: `${13 + (i % 3) * 3}s` }} />
-        ))}
-      </div>
       <div className="wrap" style={{ position: 'relative' }}>
         <div className="ld-head reveal">
           <span className="kicker">Agents at work</span>

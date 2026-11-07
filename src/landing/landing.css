@@ -1823,10 +1823,7 @@ a.ld-pin:hover .ld-pin-label {
 
 /* ---- agents at work (espresso) ---- */
 .ld-work {
-  background:
-    radial-gradient(60% 50% at 85% 0%, rgba(224, 169, 62, 0.14), transparent 70%),
-    radial-gradient(50% 50% at 0% 100%, rgba(160, 113, 75, 0.16), transparent 70%),
-    var(--night) !important;
+  background: var(--night) !important;
 }
 .ld-work-card {
   border-radius: 22px !important;
