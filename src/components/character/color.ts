@@ -46,6 +46,12 @@ export function vivid(c: string, shift = 0, light = 0.55): string {
 }
 
 export const PURPLE = '#6C3FD1';
+// The site accent colour, read from the theme (falls back to the original purple).
+export function accent(): string {
+  if (typeof document === 'undefined') return PURPLE;
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--purple').trim();
+  return /^#[0-9a-f]{6}$/i.test(v) ? v : PURPLE;
+}
 export const GOLD = '#F2B53A';
 export const INK = '#1B1530';
 

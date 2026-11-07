@@ -7,6 +7,7 @@ import { hall, roof, watchtower } from '../../realm/arch';
 import { flag } from '../../realm/buildings';
 import { buildKit } from '../../realm/world';
 import { softDot } from '../../realm/tex';
+import { accent } from '../../components/character/color';
 import { acquireBay, releaseBay, DUSK, type Bay, type BayView } from './bay';
 import { easeInOut, easeOut, lerp, span } from './cam';
 
@@ -91,7 +92,7 @@ function buildGate(bay: Bay) {
       k.redLantern(tf, 0, WH - base + 0.9 + 1.2, 1.7, 1.3);
     }
     // banners on the wall
-    for (const bx of [12, 17, 30, 36]) flag(k, Frame.at(s * bx, WH, GZ + 0.6), 0, 0, 3.2, s < 0 ? '#6c3fd1' : '#c9932a', 0, true);
+    for (const bx of [12, 17, 30, 36]) flag(k, Frame.at(s * bx, WH, GZ + 0.6), 0, 0, 3.2, s < 0 ? accent() : '#c9932a', 0, true);
   }
 
   // stone quay leading to the gate (over the shallows)

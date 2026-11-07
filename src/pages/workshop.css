@@ -99,7 +99,7 @@
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--g) 62%, #1b1530);
+  color: color-mix(in srgb, var(--g) 62%, var(--ink));
 }
 .ws-push {
   margin-left: auto;

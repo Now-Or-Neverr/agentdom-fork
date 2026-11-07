@@ -181,7 +181,7 @@
 }
 .ic-log {
   background: var(--night);
-  color: #e9e4f7;
+  color: color-mix(in srgb, #fff 88%, var(--purple-3));
   border-radius: var(--r-lg);
   padding: 8px;
   display: grid;
@@ -189,7 +189,7 @@
   font-size: 12.5px;
 }
 .ic-log .empty {
-  color: #b9b2d0;
+  color: color-mix(in srgb, #fff 62%, var(--purple-3));
 }
 .ic-call {
   display: grid;
@@ -210,16 +210,16 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #cfc6ec;
+  color: color-mix(in srgb, #fff 72%, var(--purple-3));
 }
 .ic-call .tag {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.14);
-  color: #e9e4f7;
+  color: color-mix(in srgb, #fff 88%, var(--purple-3));
 }
 .ic-time,
 .ic-ms {
-  color: #a79fc4;
+  color: color-mix(in srgb, #fff 52%, var(--purple-3));
 }
 .ic-pname {
   font-weight: 700;

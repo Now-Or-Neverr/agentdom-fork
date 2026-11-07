@@ -74,14 +74,14 @@
   display: inline-block;
   flex-shrink: 0;
 }
-.mast-burger {
+.mast .mast-burger {
   display: none;
 }
-@media (max-width: 1239px) {
+@media (max-width: 1339px) {
   .mast-nav {
     display: none;
   }
-  .mast-burger {
+  .mast .mast-burger {
     display: inline-flex;
   }
 }
@@ -89,7 +89,7 @@
   .mast-nav {
     display: none;
   }
-  .mast-burger {
+  .mast .mast-burger {
     display: inline-flex;
   }
   .mast-issue-label {
@@ -124,13 +124,13 @@
   padding: 40px 0 30px;
   border-radius: 0 0 var(--r-xl) var(--r-xl);
   background:
-    radial-gradient(70% 120% at 100% 0%, rgba(108, 63, 209, 0.16), transparent 60%),
+    radial-gradient(70% 120% at 100% 0%, rgba(var(--accent-rgb), 0.16), transparent 60%),
     radial-gradient(60% 100% at 0% 100%, rgba(242, 181, 58, 0.22), transparent 60%),
     linear-gradient(180deg, #fbf7f0, #f3ecdf);
 }
 .band.night {
   background:
-    radial-gradient(70% 120% at 100% 0%, rgba(143, 107, 240, 0.35), transparent 60%),
+    radial-gradient(70% 120% at 100% 0%, rgba(var(--accent-3-rgb), 0.35), transparent 60%),
     radial-gradient(60% 100% at 0% 100%, rgba(242, 181, 58, 0.18), transparent 60%),
     var(--night);
   color: #fbf8ff;
@@ -448,8 +448,8 @@
   font-size: 19px;
 }
 .aside-card.royal {
-  background: linear-gradient(150deg, #7e52e6, #5a30ba 70%);
-  border-color: #5a30ba;
+  background: linear-gradient(150deg, var(--purple-grad), var(--purple-2) 70%);
+  border-color: var(--purple-2);
   color: #fff;
   --fg: #fff;
   --fg-2: rgba(255, 255, 255, 0.82);
@@ -589,4 +589,10 @@
   padding-bottom: 40px;
   font-size: 12.5px;
   color: var(--ink-3);
+}
+
+/* keep the wordmark from being squeezed under the nav */
+.mast-row > a:first-child,
+.sh-row > a:first-child {
+  flex-shrink: 0;
 }

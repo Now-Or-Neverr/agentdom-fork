@@ -5,7 +5,7 @@
   gap: 10px;
   padding: 10px 14px;
   margin: 0 0 18px;
-  border: 1px solid #ddd0fa;
+  border: 1px solid var(--accent-line);
   background: var(--purple-soft);
   border-radius: 12px;
   font-size: 14px;
@@ -228,7 +228,7 @@ a.wl-src:hover {
   border: 1px solid var(--line-light);
   border-radius: 12px;
   overflow: hidden;
-  background: #120d22;
+  background: var(--night);
 }
 .art-video video {
   display: block;
@@ -255,7 +255,7 @@ a.wl-src:hover {
   border-radius: 12px;
   overflow: hidden;
   background: var(--card);
-  box-shadow: 0 10px 30px -18px rgba(60, 30, 120, 0.35);
+  box-shadow: 0 10px 30px -18px rgba(var(--accent-deep-rgb), 0.35);
 }
 .art-page-bar,
 .art-full-bar {
@@ -427,7 +427,7 @@ a.wl-src:hover {
   padding: 12px 14px;
   display: grid;
   gap: 8px;
-  box-shadow: 0 10px 30px -18px rgba(60, 30, 120, 0.35);
+  box-shadow: 0 10px 30px -18px rgba(var(--accent-deep-rgb), 0.35);
 }
 .art-card-row {
   display: flex;

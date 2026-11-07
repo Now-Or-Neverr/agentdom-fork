@@ -222,7 +222,7 @@
     color 0.2s;
 }
 .rp-rail button:hover {
-  background: rgba(108, 63, 209, 0.07);
+  background: rgba(var(--accent-rgb), 0.07);
   color: var(--ink);
 }
 .rp-rail button.on {
@@ -496,7 +496,7 @@
   padding: 12px 14px;
   border-radius: 14px;
   background: var(--purple-soft);
-  border: 1px solid #ddd0fa;
+  border: 1px solid var(--accent-line);
 }
 .rp-duty {
   display: flex;
@@ -748,7 +748,7 @@
 }
 .rp-veil-logo {
   animation: rp-bob 1.6s ease-in-out infinite;
-  filter: drop-shadow(0 12px 22px rgba(108, 63, 209, 0.35));
+  filter: drop-shadow(0 12px 22px rgba(var(--accent-rgb), 0.35));
 }
 @keyframes rp-bob {
   50% {
@@ -860,7 +860,7 @@
   color: #c9cce0;
 }
 .rp.is-night .rp-chip-btn {
-  color: #c9b8ff;
+  color: color-mix(in srgb, #fff 60%, var(--purple-3));
 }
 .rp.is-night .rp-chip-fest {
   background: rgba(70, 22, 18, 0.85);

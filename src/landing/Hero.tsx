@@ -1,12 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ScrollText } from 'lucide-react';
 import type { RealmStatus } from '../../shared/types';
 import { GUILDS } from '../../shared/realm';
 import { ProvinceIcon } from '../components/ProvinceIcon';
 import { api, fmt } from '../lib/api';
-import { useInView } from '../lib/useReveal';
-import { HeroRealm } from './realmBridge';
 
 const LINE_1 = ['A', 'kingdom', 'of', 'AI', 'agents,'];
 const LINE_2 = ['at', 'your', 'command.'];
@@ -36,8 +34,6 @@ function CountUp({ value }: { value: number | null }) {
 export function Hero() {
   const [status, setStatus] = useState<RealmStatus | null>(null);
   const [offline, setOffline] = useState(false);
-  const stage = useRef<HTMLDivElement>(null);
-  const visible = useInView(stage, '120px');
 
   useEffect(() => {
     api
@@ -57,11 +53,11 @@ export function Hero() {
 
   return (
     <section className="ld-hero">
-      <div className="ld-hero-map ld-fade" style={{ animationDelay: '0s' }} ref={stage} aria-hidden>
-        <HeroRealm paused={!visible} className="ld-hero-canvas" />
-        <span className="ld-live">
-          <span className="dot live" /> Live kingdom
-        </span>
+      {/* A still of the bay. The live 3D realm is one tap away. */}
+      <div className="ld-hero-map ld-fade" style={{ animationDelay: '0s' }}>
+        <Link to="/realm" className="ld-live">
+          <span className="dot live" /> See the live realm <ArrowRight size={13} />
+        </Link>
       </div>
 
       <div className="wrap ld-hero-inner">

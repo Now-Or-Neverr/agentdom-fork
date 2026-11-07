@@ -155,8 +155,8 @@ export function SpeakDecree() {
             <svg viewBox="0 0 360 360">
               <defs>
                 <radialGradient id="rm-glow">
-                  <stop offset="0" stopColor="#8F6BF0" stopOpacity=".35" />
-                  <stop offset="1" stopColor="#8F6BF0" stopOpacity="0" />
+                  <stop offset="0" stopColor="var(--purple-3)" stopOpacity=".35" />
+                  <stop offset="1" stopColor="var(--purple-3)" stopOpacity="0" />
                 </radialGradient>
               </defs>
               <circle cx={C} cy={C} r="150" fill="none" stroke="var(--line)" strokeDasharray="2 6" />
@@ -184,17 +184,17 @@ export function SpeakDecree() {
                 );
               })}
               <circle cx={C} cy={C} r="40" fill="url(#rm-glow)" />
-              <circle cx={C} cy={C} r="20" fill="#6C3FD1" stroke="#F2B53A" strokeWidth="2" />
+              <circle cx={C} cy={C} r="20" fill="var(--purple)" stroke="#F2B53A" strokeWidth="2" />
               <path d={`M${C - 9} ${C + 4} l3 -9 l6 5 l6 -5 l3 9 z`} fill="#F2B53A" />
               <text x={C} y={C + 40} textAnchor="middle" className="rm-label on">
                 Grand Vizier
               </text>
               {/* the decree token flies from the throne to the chosen guild */}
               <g className="rm-token" style={{ transform: `translate(${tokenAt[0]}px, ${tokenAt[1]}px)` }}>
-                <rect x="-9" y="-11" width="18" height="22" rx="2" fill="#fff" stroke="#6C3FD1" />
+                <rect x="-9" y="-11" width="18" height="22" rx="2" fill="#fff" stroke="var(--purple)" />
                 <rect x="-5" y="2" width="10" height="7" rx="1.5" fill="#F2B53A" />
-                <line x1="-5" y1="-6" x2="5" y2="-6" stroke="#8F6BF0" />
-                <line x1="-5" y1="-2" x2="3" y2="-2" stroke="#8F6BF0" />
+                <line x1="-5" y1="-6" x2="5" y2="-6" stroke="var(--purple-3)" />
+                <line x1="-5" y1="-2" x2="3" y2="-2" stroke="var(--purple-3)" />
               </g>
             </svg>
           </div>

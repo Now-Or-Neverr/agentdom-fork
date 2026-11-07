@@ -2,8 +2,8 @@
 
 .gz-page {
   --gz-paper: #fbf6ea;
-  --gz-ink: #1b1530;
-  --gz-rule: #2a2140;
+  --gz-ink: var(--ink);
+  --gz-rule: var(--night-3);
   background:
     radial-gradient(90% 60% at 50% 0%, rgba(242, 181, 58, 0.12), transparent 70%),
     linear-gradient(180deg, #f6efdf, var(--gz-paper) 260px);

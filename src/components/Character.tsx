@@ -4,7 +4,7 @@
 import { useId, useMemo, type CSSProperties } from "react";
 import type { Role } from "../../shared/realm";
 import { Pen, drawPerson } from "./character/chibi";
-import { PURPLE, lighten, vivid } from "./character/color";
+import { accent, lighten, vivid } from "./character/color";
 import "./character/character.css";
 
 export interface CharacterProps {
@@ -37,7 +37,7 @@ const useSvgId = () => "c" + useId().replace(/[^a-zA-Z0-9_-]/g, "");
 export function Portrait({
   role,
   look = 0,
-  color = PURPLE,
+  color = accent(),
   size = 56,
   style,
   className,
@@ -106,7 +106,7 @@ export function Portrait({
 export function Figure({
   role,
   look = 0,
-  color = PURPLE,
+  color = accent(),
   size = 220,
   style,
   className,
@@ -175,14 +175,14 @@ export function CharacterSheet({
           <Figure
             role={r}
             look={(look + i) % 4}
-            color={color ?? PURPLE}
+            color={color ?? accent()}
             size={size}
             pose={pose}
           />
           <Portrait
             role={r}
             look={(look + i) % 4}
-            color={color ?? PURPLE}
+            color={color ?? accent()}
             size={64}
           />
           <span>{ROLE_TITLE[r]}</span>

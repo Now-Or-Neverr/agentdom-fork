@@ -2,7 +2,7 @@
 
 .gd-hero {
   --g-soft: color-mix(in srgb, var(--g) 22%, transparent);
-  --g-ink: color-mix(in srgb, var(--g) 62%, #1b1530);
+  --g-ink: color-mix(in srgb, var(--g) 62%, var(--ink));
   padding-bottom: 26px;
   background:
     radial-gradient(70% 120% at 100% 0%, color-mix(in srgb, var(--g) 34%, transparent), transparent 62%),
@@ -344,7 +344,7 @@
   padding-bottom: 70px;
 }
 .gd-card {
-  --g-ink: color-mix(in srgb, var(--g) 62%, #1b1530);
+  --g-ink: color-mix(in srgb, var(--g) 62%, var(--ink));
   position: relative;
   display: flex;
   flex-direction: column;

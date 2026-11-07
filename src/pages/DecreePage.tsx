@@ -265,7 +265,7 @@ export default function DecreePage() {
                 {d.status === 'approved' ? 'Released to the agent' : d.status === 'failed' || d.status === 'cancelled' ? 'Returned to your vault' : 'Held in the Royal Vault'}
               </div>
               {d.routedBy !== 'requester' && d.routeReason && (
-                <div className="panel" style={{ padding: 12, marginTop: 14, fontSize: 12.5, display: 'flex', gap: 8, background: 'var(--purple-soft)', borderColor: '#ddd0fa' }}>
+                <div className="panel" style={{ padding: 12, marginTop: 14, fontSize: 12.5, display: 'flex', gap: 8, background: 'var(--purple-soft)', borderColor: 'var(--accent-line)' }}>
                   <Crown size={15} color="var(--gold)" style={{ flexShrink: 0, marginTop: 2 }} />
                   <span>
                     <b>{d.routedBy === 'vizier' ? 'Grand Vizier:' : 'Routed:'}</b> {d.routeReason}

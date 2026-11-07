@@ -14,6 +14,11 @@
   --purple-2: #5a30ba;
   --purple-3: #8f6bf0;
   --purple-soft: #efe8fc;
+  --purple-grad: #7e52e6;
+  --accent-line: #ddd0fa;
+  --accent-rgb: 108, 63, 209;
+  --accent-3-rgb: 143, 107, 240;
+  --accent-deep-rgb: 60, 30, 120;
   --gold: #f2b53a;
   --gold-2: #ffd27a;
   --gold-deep: #c98a12;
@@ -51,7 +56,7 @@
   --r-xl: 30px;
   --shadow-1: 0 1px 2px rgba(27, 21, 48, 0.05), 0 4px 14px rgba(27, 21, 48, 0.06);
   --shadow-2: 0 14px 40px rgba(27, 21, 48, 0.14);
-  --shadow-purple: 0 10px 26px rgba(108, 63, 209, 0.32);
+  --shadow-purple: 0 10px 26px rgba(var(--accent-rgb), 0.32);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-ink: cubic-bezier(0.65, 0, 0.35, 1);
 }
@@ -388,7 +393,7 @@ img {
 .tag.red,
 .tag.purple {
   background: var(--purple-soft);
-  border-color: #ddd0fa;
+  border-color: var(--accent-line);
   color: var(--purple-2);
 }
 .dot {
@@ -433,7 +438,7 @@ img {
 }
 .field:focus {
   border-color: var(--purple);
-  box-shadow: 0 0 0 3px rgba(108, 63, 209, 0.18);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.18);
 }
 textarea.field {
   min-height: 120px;
@@ -625,7 +630,7 @@ select.field {
 }
 .prose pre {
   background: var(--night);
-  color: #f1ecff;
+  color: color-mix(in srgb, #fff 90%, var(--purple-3));
   padding: 16px;
   border-radius: 14px;
   overflow-x: auto;

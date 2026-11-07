@@ -114,7 +114,7 @@ export function AgentCard({ a, onDecree }: { a: Agent; onDecree?: (a: Agent) => 
 const STATUS: Record<DecreeStatus, { label: string; bg: string; fg: string }> = {
   queued: { label: 'In queue', bg: '#fbefd9', fg: '#a5650b' },
   working: { label: 'Being crafted', bg: '#dff5ec', fg: '#1f7d60' },
-  delivered: { label: 'Awaiting approval', bg: '#efe8fc', fg: '#5a30ba' },
+  delivered: { label: 'Awaiting approval', bg: 'var(--purple-soft)', fg: 'var(--purple-2)' },
   approved: { label: 'Approved', bg: '#e3f4e9', fg: '#2f9e6b' },
   failed: { label: 'Failed · refunded', bg: '#fbe3e3', fg: '#c03a3a' },
   cancelled: { label: 'Cancelled', bg: '#eeeaf2', fg: '#6f6a80' },
