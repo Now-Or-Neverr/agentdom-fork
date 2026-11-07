@@ -55,7 +55,18 @@ export function SpeakDecree() {
   }, [text]);
 
   const target: ProvinceId | null = res?.province ?? null;
-  const tokenAt = useMemo(() => (target ? toMap(PROVINCE[target].pos) : ([C, C] as const)), [target]);
+
+  // While nothing is typed, the map plays by itself: the decree token flies from the Vizier
+  // to each guild in turn and back, so the section is never static.
+  const [demo, setDemo] = useState(0);
+  useEffect(() => {
+    if (target || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+    const h = window.setInterval(() => setDemo((d) => d + 1), 1300);
+    return () => clearInterval(h);
+  }, [target]);
+  const demoGuild = demo % 2 === 0 ? GUILDS[Math.floor(demo / 2) % GUILDS.length].id : null;
+  const mapTarget: ProvinceId | null = target ?? demoGuild;
+  const tokenAt = useMemo(() => (mapTarget ? toMap(PROVINCE[mapTarget].pos) : ([C, C] as const)), [mapTarget]);
   const p = target ? PROVINCE[target] : null;
 
   const seal = () => {
@@ -163,7 +174,7 @@ export function SpeakDecree() {
               <circle cx={C} cy={C} r="96" fill="none" stroke="var(--line)" />
               {GUILDS.map((g) => {
                 const [x, y] = toMap(g.pos);
-                const on = g.id === target;
+                const on = g.id === mapTarget;
                 return (
                   <g key={g.id}>
                     <line

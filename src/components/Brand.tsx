@@ -2,7 +2,7 @@ import { BRAND } from '../config';
 
 // Espresso squircle with a gold crown, used as the logo mark.
 export function SealMark({ size = 30 }: { size?: number }) {
-  return <img src="/logo.svg" width={size} height={size} alt="" style={{ flexShrink: 0 }} />;
+  return <img src="/logo.svg?v=mocha" width={size} height={size} alt="" style={{ flexShrink: 0 }} />;
 }
 
 // tone="light" = for dark backgrounds, tone="dark" = for light backgrounds

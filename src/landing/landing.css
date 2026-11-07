@@ -1711,11 +1711,11 @@ a.ld-pin:hover .ld-pin-label {
 .ld-court,
 .ld-how,
 .ld-work {
-  padding-top: clamp(84px, 10vw, 140px);
-  padding-bottom: clamp(84px, 10vw, 140px);
+  padding-top: clamp(56px, 7vw, 108px);
+  padding-bottom: clamp(48px, 6vw, 96px);
 }
 .ld-head {
-  margin-bottom: clamp(36px, 4vw, 56px);
+  margin-bottom: clamp(26px, 3.4vw, 48px);
 }
 .ld-head .display {
   margin: 18px 0 18px;
@@ -1747,8 +1747,7 @@ a.ld-pin:hover .ld-pin-label {
   text-transform: uppercase;
 }
 .ld-zoom-intro {
-  font-family: var(--font-mono);
-  letter-spacing: 0.04em;
+  font-weight: 500;
 }
 
 /* ---- guilds ---- */
@@ -1835,7 +1834,7 @@ a.ld-pin:hover .ld-pin-label {
   border: 1px solid rgba(255, 240, 220, 0.1) !important;
   padding: 22px 22px 18px !important;
   transition:
-    opacity 0.9s var(--ease),
+    opacity 0.45s ease-out,
     transform 0.4s var(--ease),
     border-color 0.3s,
     background 0.3s !important;
@@ -1899,7 +1898,7 @@ a.ld-pin:hover .ld-pin-label {
   border-radius: 26px !important;
   box-shadow: var(--shadow-1) !important;
   transition:
-    opacity 0.9s var(--ease),
+    opacity 0.45s ease-out,
     transform 0.45s var(--ease),
     box-shadow 0.45s var(--ease) !important;
 }
@@ -1947,7 +1946,7 @@ a.ld-pin:hover .ld-pin-label {
   padding: 26px 24px 24px !important;
   box-shadow: var(--shadow-1);
   transition:
-    opacity 0.9s var(--ease),
+    opacity 0.45s ease-out,
     transform 0.4s var(--ease),
     box-shadow 0.4s var(--ease) !important;
 }
@@ -1995,4 +1994,66 @@ a.ld-pin:hover .ld-pin-label {
   font-weight: 400 !important;
   letter-spacing: 0.08em;
   font-size: 12px !important;
+}
+
+/* route map: a slowly turning outer ring, and room for the labels on phones */
+.ld-routemap svg > circle[stroke-dasharray] {
+  transform-origin: 180px 180px;
+  animation: rm-turn 60s linear infinite;
+}
+@keyframes rm-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (max-width: 640px) {
+  .ld-routemap svg {
+    width: 84%;
+  }
+}
+
+/* ---- first paint: hero text is readable at once (no fade-from-dim), only the picture eases in ---- */
+.ld-hero .ld-word,
+.ld-hero-top .ld-fade {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  animation: ld-rise 0.5s var(--ease) both;
+}
+@keyframes ld-rise {
+  from {
+    transform: translateY(8px);
+  }
+}
+.ld-ledger.ld-fade,
+.ld-hero-guilds.ld-fade {
+  animation-duration: 0.45s;
+}
+
+/* the ledger rests just under the window instead of covering it */
+.ld-ledger {
+  margin-top: 20px;
+}
+@media (max-width: 760px) {
+  .ld-ledger {
+    width: 100%;
+    margin-top: 12px;
+  }
+  .ld-hero-map {
+    height: 300px;
+  }
+}
+
+@media (max-width: 760px) {
+  .ld-guilds:not(.is-desktop),
+  .ld-speak,
+  .ld-court,
+  .ld-how,
+  .ld-work {
+    padding-top: 48px;
+    padding-bottom: 40px;
+  }
+  .ld-zoom-intro {
+    font-size: 12.5px;
+  }
 }
