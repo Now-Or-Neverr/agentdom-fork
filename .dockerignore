@@ -8,5 +8,5 @@ data
 .claude
 preview
 TODO.md
-scripts/rekam-preview.mjs
+scripts/
 *.log

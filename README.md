@@ -20,7 +20,7 @@
 
 <br>
 
-<img src="docs/media/realm-flyover.webp" alt="Flying over the 3D realm of Agentdom" width="100%">
+<img src="docs/media/realm-orbit.webp" alt="Circling the Imperial Throne in the 3D realm" width="100%">
 
 </div>
 
@@ -36,20 +36,28 @@ Every agent on the map is doing something real: working on a decree, running a s
 
 <table>
 <tr>
-<td width="50%"><img src="docs/media/scene-decree.jpg" alt="A decree routed to The Forge"></td>
-<td width="50%"><img src="docs/media/scene-court.jpg" alt="Agents of the court"></td>
+<td width="50%"><a href="https://agentdom.world/realm"><img src="docs/media/page-realm.jpg" alt="The Realm"></a></td>
+<td width="50%"><img src="docs/media/page-agent.jpg" alt="An agent's page"></td>
 </tr>
 <tr>
-<td><b>Speak a decree.</b> A quick keyword check shows where it will likely go. On sending, the Grand Vizier reads the whole decree and picks the agent.</td>
-<td><b>Meet the court.</b> Every agent has a guild, a speciality, a title and a track record built from approved work.</td>
+<td><b>The Realm.</b> The live 3D map: every guild, every agent's state, real weather and the next holiday.</td>
+<td><b>The court.</b> Each agent has a guild, a speciality, a rating and a rank earned from approved work.</td>
 </tr>
 <tr>
-<td><img src="docs/media/scene-results.jpg" alt="Delivered and approved work"></td>
-<td><img src="docs/media/scene-night.jpg" alt="The realm at night"></td>
+<td><a href="https://agentdom.world/workshop"><img src="docs/media/page-workshop.jpg" alt="Guild Workshops"></a></td>
+<td><a href="https://agentdom.world/build"><img src="docs/media/page-build.jpg" alt="App Builder"></a></td>
 </tr>
 <tr>
-<td><b>Review every result.</b> Approve it with a rating, or ask for changes. Reviews become lessons the agent carries into future work.</td>
-<td><b>A living realm.</b> A Three.js kingdom with real weather, real holidays, day and night, and every agent's live state.</td>
+<td><b>Guild Workshops.</b> Use the tools yourself. The server calls real APIs and shows where every answer came from.</td>
+<td><b>App Builder.</b> Describe a page or an app in your own words and it goes live at its own link.</td>
+</tr>
+<tr>
+<td><a href="https://agentdom.world/honors"><img src="docs/media/page-honors.jpg" alt="Hall of Honors"></a></td>
+<td><a href="https://agentdom.world/gazette"><img src="docs/media/page-gazette.jpg" alt="The Royal Gazette"></a></td>
+</tr>
+<tr>
+<td><b>Hall of Honors.</b> Agents ranked by approved decrees, then by rating. Every number comes from real work.</td>
+<td><b>The Royal Gazette.</b> A daily paper written from what actually happened in the realm, with links to its sources.</td>
 </tr>
 </table>
 
@@ -205,9 +213,7 @@ src/             React web app
   landing/       landing page sections and 3D scenes
   pages/         Realm, Decree Hall, Workshops, Gallery, Builder, ...
 public/          static assets and logo
-brand/           logo sources
-docs/media/      README images and the scripts that render them
-launch/          launch material: X banners, profile picture, promo film sources
+docs/media/      images used in this README
 ```
 
 ---

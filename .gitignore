@@ -13,7 +13,7 @@ data/
 # Local tooling and notes
 .claude/
 preview/
-scripts/rekam-preview.mjs
+scripts/
 TODO.md
 *.log
 
@@ -23,10 +23,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Launch media: rendered videos and intermediates are rebuilt by the scripts in launch/.
-# Music and sound effects are Mixkit downloads and are not redistributed here (see launch/README.md).
-launch/**/*.mp4
-launch/**/*.wav
-launch/video/tmp/
-launch/promo/audio/
-launch/promo/versions/
+# Local-only material (launch media, logo drafts, render scripts)
+launch/
+brand/
+docs/media/*.mjs
+docs/media/realm-still.png
+docs/media/social-preview.png
