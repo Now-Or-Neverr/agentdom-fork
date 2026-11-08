@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Crown } from 'lucide-react';
 import { GUILDS, PROVINCE, type ProvinceId } from '../../shared/realm';
 import { provinceIcon } from '../components/ProvinceIcon';
+import { whenNear } from './near';
 import { useScrollProgress } from '../lib/useScrollProgress';
 import type { Anchor } from './scenes/zoomView';
 
@@ -40,7 +41,9 @@ export function Zoom() {
     if (!el) return;
     let off: (() => void) | null = null;
     let gone = false;
-    import('./scenes/zoomView')
+    // three.js is fetched only when the visitor nears this section
+    const stopNear = whenNear(el, () =>
+      import('./scenes/zoomView')
       .then((m) =>
         m.mountZoom({
           el,
@@ -81,9 +84,11 @@ export function Zoom() {
         if (gone) o();
         else off = o;
       })
-      .catch(() => {});
+      .catch(() => {}),
+    );
     return () => {
       gone = true;
+      stopNear();
       off?.();
     };
   }, []);

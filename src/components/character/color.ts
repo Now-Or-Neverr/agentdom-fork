@@ -49,7 +49,8 @@ export const PURPLE = '#6C3FD1';
 // The site accent colour, read from the theme (falls back to the original purple).
 export function accent(): string {
   if (typeof document === 'undefined') return PURPLE;
-  const v = getComputedStyle(document.documentElement).getPropertyValue('--purple').trim();
+  // fixed brand accent (not --purple, which turns caramel in dark mode) so art looks the same in both themes
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--brand-accent').trim();
   return /^#[0-9a-f]{6}$/i.test(v) ? v : PURPLE;
 }
 export const GOLD = '#F2B53A';

@@ -10,7 +10,9 @@ import { ago, api, fmt, watchDecree } from '../lib/api';
 import { useApp } from '../lib/store';
 import { BRAND } from '../config';
 import { FreeTag } from '../components/Free';
+import { NotifyButton } from '../components/NotifyButton';
 import { Artifacts, NowDoing, WorkLog } from './DecreeWork';
+import { DownloadTools, FollowUps, MakeYourOwn, PrintView, ShareCard, fetchDecreeView } from './DecreeExtras';
 
 const STEPS = [
   { s: 'queued', label: 'Sealed in the Royal Vault', free: 'Sealed and queued', icon: Lock },
@@ -40,11 +42,29 @@ export default function DecreePage() {
   const [review, setReview] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  // pub = a visitor opening a shared link: read-only result, never the brief.
+  const [pub, setPub] = useState(false);
 
   useEffect(() => {
     setD(null);
-    api.decree(id).then(setD).catch((e) => setErr(e.message));
-    return watchDecree(id, setD);
+    setErr(null);
+    setPub(false);
+    let alive = true;
+    let stop = () => {};
+    fetchDecreeView(id).then(
+      (v) => {
+        if (!alive) return;
+        setPub(v.mode === 'public');
+        setD(v.decree);
+        // Live updates only for the owner (the stream is owner-only).
+        if (v.mode === 'owner') stop = watchDecree(id, setD);
+      },
+      (e) => alive && setErr((e as Error).message),
+    );
+    return () => {
+      alive = false;
+      stop();
+    };
   }, [id]);
 
   const svgs = useMemo(() => (d ? svgBlocks(d.result) : []), [d?.result]);
@@ -99,9 +119,15 @@ export default function DecreePage() {
       <div className="page-paper dp">
         <div className="wrap dp-wrap">
           <header className="dp-head">
-            <Link to="/decrees" className="dp-back">
-              <ArrowLeft size={14} /> My decrees
-            </Link>
+            {pub ? (
+              <Link to="/hall" className="dp-back">
+                <ArrowLeft size={14} /> {BRAND.name}
+              </Link>
+            ) : (
+              <Link to="/decrees" className="dp-back">
+                <ArrowLeft size={14} /> My decrees
+              </Link>
+            )}
             <div className="dp-meta">
               <ProvinceName id={d.province} />
               <StatusSeal s={d.status} />
@@ -128,6 +154,7 @@ export default function DecreePage() {
 
           <div className="dp-cols">
             <main className="dp-main">
+              {!pub && (
               <section className="dp-brief">
                 <div className="dp-brief-body">
                   <span className="kicker">By order of the requester</span>
@@ -146,6 +173,7 @@ export default function DecreePage() {
                   </span>
                 </span>
               </section>
+              )}
 
               {d.status === 'queued' && (
                 <div className="dp-state">
@@ -175,6 +203,11 @@ export default function DecreePage() {
                 </div>
               )}
 
+              {(d.status === 'queued' || d.status === 'working') && (
+                <div style={{ margin: '12px 0 4px' }}>
+                  <NotifyButton owner={d.userId} />
+                </div>
+              )}
               <NowDoing d={d} />
               <Artifacts d={d} />
 
@@ -194,6 +227,7 @@ export default function DecreePage() {
                           <Copy size={14} /> Copy
                         </button>
                       )}
+                      {d.result && d.status !== 'working' && <DownloadTools d={d} toast={toast} />}
                     </div>
                   </div>
                   <article className="dp-doc">
@@ -224,7 +258,7 @@ export default function DecreePage() {
                 </section>
               )}
 
-              {d.status === 'delivered' && (
+              {d.status === 'delivered' && !pub && (
                 <section className="dp-review">
                   <span className="kicker">Your review</span>
                   {!mode && (
@@ -301,10 +335,14 @@ export default function DecreePage() {
                 </section>
               )}
 
+              {!pub && <FollowUps d={d} toast={toast} />}
+
               <WorkLog d={d} />
+              <PrintView d={d} />
             </main>
 
             <aside className="dp-aside">
+              {pub && <MakeYourOwn />}
               <div className="dp-card">
                 {d.agent && (
                   <Link to={`/agents/${d.agent.id}`} className="dp-agent">
@@ -342,6 +380,7 @@ export default function DecreePage() {
                   </div>
                 )}
               </div>
+              {!pub && <ShareCard d={d} toast={toast} />}
               <div className="dp-card">
                 <h3 className="display dp-card-title">Journey</h3>
                 <ol className="dp-steps">

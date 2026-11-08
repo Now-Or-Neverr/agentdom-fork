@@ -271,7 +271,7 @@
 tr.on .ic-count {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
 }
 .ic-last {
   white-space: nowrap;

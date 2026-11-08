@@ -138,16 +138,16 @@ export function AgentCard({ a, onDecree }: { a: Agent; onDecree?: (a: Agent) => 
 }
 
 const STATUS: Record<DecreeStatus, { label: string; bg: string; fg: string }> = {
-  queued: { label: 'In queue', bg: '#f8ecd6', fg: '#99600f' },
-  working: { label: 'Being crafted', bg: '#e4f0e6', fg: '#2f7a52' },
+  queued: { label: 'In queue', bg: 'var(--st-queued-bg, #f8ecd6)', fg: 'var(--st-queued-fg, #99600f)' },
+  working: { label: 'Being crafted', bg: 'var(--st-ok-bg, #e4f0e6)', fg: 'var(--st-ok-fg, #2f7a52)' },
   delivered: {
     label: 'Awaiting approval',
     bg: 'var(--purple-soft)',
     fg: 'var(--purple-2)',
   },
-  approved: { label: 'Approved', bg: '#e6f0e4', fg: '#33794f' },
-  failed: { label: 'Failed · refunded', bg: '#f6e2dc', fg: '#a8402f' },
-  cancelled: { label: 'Cancelled', bg: '#efe8df', fg: '#7d6d60' },
+  approved: { label: 'Approved', bg: 'var(--st-ok-bg, #e6f0e4)', fg: 'var(--st-ok-fg, #33794f)' },
+  failed: { label: 'Failed · refunded', bg: 'var(--st-bad-bg, #f6e2dc)', fg: 'var(--st-bad-fg, #a8402f)' },
+  cancelled: { label: 'Cancelled', bg: 'var(--st-off-bg, #efe8df)', fg: 'var(--st-off-fg, #7d6d60)' },
 };
 
 export function StatusSeal({ s }: { s: DecreeStatus }) {

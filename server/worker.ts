@@ -24,7 +24,7 @@ const CONCURRENCY = Math.max(1, Number(process.env.WORKER_CONCURRENCY) || 2);
 export const aiEnabled = () => Boolean(process.env.ANTHROPIC_API_KEY);
 
 let client: Anthropic | null = null;
-function getClient() {
+export function getClient() {
   if (!client) client = new Anthropic();
   return client;
 }

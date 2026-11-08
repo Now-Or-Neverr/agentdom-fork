@@ -79,7 +79,7 @@
 .gz-nav:hover:not(:disabled) {
   border-color: var(--ink);
   background: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
   transform: translateY(-1px);
 }
 .gz-nav:disabled {
@@ -165,7 +165,7 @@
   gap: 16px;
   margin-top: 22px;
   padding: 16px 20px;
-  border: 1px solid #ecd29b;
+  border: 1px solid var(--gold-line);
   background: linear-gradient(90deg, var(--gold-soft), var(--surface));
   border-radius: 18px;
   color: var(--gz-ink);

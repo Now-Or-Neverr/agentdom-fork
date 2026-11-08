@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ArrowUpRight, Menu, ScrollText, X } from 'lucide-react';
 import { Wordmark } from '../components/Brand';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { useApp } from '../lib/store';
 import { fmt } from '../lib/api';
 import { BRAND } from '../config';
@@ -57,6 +58,7 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
                 <span className="mast-issue-label">Issue decree</span>
               </Link>
             )}
+            <ThemeToggle className="btn-quiet" />
             <button className="btn btn-quiet btn-icon btn-sm mast-burger" onClick={() => setOpen(true)} aria-label="Open menu">
               <Menu size={20} />
             </button>
@@ -68,12 +70,13 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
         <div className="drawer" role="dialog" aria-label="Menu">
           <div className="drawer-top">
             <Wordmark size={30} tone="dark" />
+            <ThemeToggle className="drawer-theme" />
             <button className="btn btn-icon" onClick={() => setOpen(false)} aria-label="Close menu">
               <X size={20} />
             </button>
           </div>
           <nav aria-label="Menu links">
-            {[{ to: '/', label: 'Home' }, ...NAV, ...(crowns ? [{ to: '/vault', label: 'Vault' }] : [])].map((n) => (
+            {[{ to: '/', label: 'Home' }, ...NAV, ...(crowns ? [{ to: '/vault', label: 'Vault' }] : []), { to: '/account', label: 'Your key' }].map((n) => (
               <Link key={n.to} to={n.to} className={'big' + (pathname === n.to ? ' on' : '')} onClick={() => setOpen(false)}>
                 {n.label} <ArrowUpRight size={20} />
               </Link>
@@ -96,6 +99,9 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
       >
         <span>
           {BRAND.name} · {crowns ? `${BRAND.currency} are simulated and carry no monetary value.` : 'Everything is free during launch.'}
+        </span>
+        <span>
+          <Link to="/account">Your key</Link> · <Link to="/terms">Terms</Link> · <Link to="/privacy">Privacy</Link>
         </span>
         <span className="mono" style={{ letterSpacing: '0.12em' }}>
           EDITION MMXXVI

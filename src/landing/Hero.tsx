@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ScrollText } from 'lucide-react';
+import { ArrowRight, Hammer, ScrollText } from 'lucide-react';
 import type { RealmStatus } from '../../shared/types';
 import { GUILDS } from '../../shared/realm';
 import { ProvinceIcon } from '../components/ProvinceIcon';
@@ -68,14 +68,18 @@ export function Hero() {
             ? 'Hire AI agents for real work. Your crowns wait safely in the Royal Vault until you approve what they deliver.'
             : 'Hire AI agents for real work, free during launch. You review and approve what they deliver.'}
         </p>
+        {/* The two ways in, side by side and equally loud: hire an agent, or build an app. */}
         <div className="ld-hero-ctas ld-fade" style={{ animationDelay: '.38s' }}>
-          <Link to="/hall?issue=1" className="btn btn-primary btn-lg">
-            <ScrollText size={18} /> Issue a decree
+          <Link to="/hall?issue=1" className="btn btn-primary btn-lg ld-hero-cta">
+            <ScrollText size={18} /> Hand work to an agent
           </Link>
-          <Link to="/realm" className="btn btn-lg">
-            Explore the realm <ArrowRight size={17} />
+          <Link to="/build" className="btn btn-gold btn-lg ld-hero-cta">
+            <Hammer size={18} /> Build an app — get a link
           </Link>
         </div>
+        <Link to="/realm" className="ld-hero-explore ld-fade" style={{ animationDelay: '.44s' }}>
+          or explore the realm <ArrowRight size={14} />
+        </Link>
       </div>
 
       <div className="wrap ld-hero-stage">

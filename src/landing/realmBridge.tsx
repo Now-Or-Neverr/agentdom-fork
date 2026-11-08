@@ -1,6 +1,7 @@
 // Lazy, fault-tolerant wrappers around the 3D realm module.
 // The landing page must still render if WebGL is unavailable or the module fails to load.
-import { Component, lazy, Suspense, type CSSProperties, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useNear } from './near';
 import type { ProvinceId } from '../../shared/realm';
 
 type HeroProps = { paused?: boolean; style?: CSSProperties; className?: string };
@@ -71,6 +72,15 @@ export function HeroRealm(p: HeroProps) {
 
 export function ProvinceDiorama(p: PreviewProps & { fallback?: ReactNode }) {
   const fb = p.fallback ?? <InkWash style={p.style} />;
+  // the 3D module (three.js) is requested only once the diorama is near the viewport
+  const spot = useRef<HTMLDivElement>(null);
+  const near = useNear(spot, '0px 0px 50% 0px');
+  if (!near)
+    return (
+      <div ref={spot} className={p.className} style={{ position: 'relative', ...p.style }}>
+        {fb}
+      </div>
+    );
   return (
     <Guard fallback={fb}>
       <Suspense fallback={fb}>

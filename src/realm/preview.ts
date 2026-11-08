@@ -11,6 +11,7 @@ import { Nature, type Plant } from './nature';
 import { Smoke, Walkers } from './life';
 import { depthTexture, terrainGeometry, waterMaterial, type Bounds } from './terrain';
 import { buildKit, groundColor, makeMats, type Graph, type Mats } from './world';
+import { Throttle, maxDpr, quality } from './quality';
 
 interface Slot {
   id: ProvinceId;
@@ -58,13 +59,17 @@ export class PreviewEngine {
   private lookY = 3;
   private fitTop = 8;
   private tile = 11;
+  private throttle = new Throttle();
 
   constructor(private container: HTMLElement) {
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const q = quality();
+    const low = q.tier === 'low';
+    this.renderer = new THREE.WebGLRenderer({ antialias: !low, alpha: true });
     this.renderer.setClearColor(0x000000, 0);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.setPixelRatio(Math.min(maxDpr(q), 1.5));
+    this.renderer.shadowMap.enabled = !q.slow;
+    // low tier: plain PCF instead of the softer (costlier) variant
+    this.renderer.shadowMap.type = low ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
     const cv = this.renderer.domElement;
     cv.style.display = 'block';
     cv.style.width = '100%';
@@ -75,8 +80,8 @@ export class PreviewEngine {
     this.scene.add(new THREE.HemisphereLight('#e4ecf7', '#a08a62', 1.5));
     const sun = new THREE.DirectionalLight('#fff0d4', 2.5);
     sun.position.set(-14, 26, 12);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.castShadow = !q.slow;
+    sun.shadow.mapSize.set(low ? 512 : 1024, low ? 512 : 1024);
     sun.shadow.radius = 3;
     Object.assign(sun.shadow.camera, { left: -22, right: 22, top: 22, bottom: -22, near: 1, far: 80 });
     sun.shadow.bias = -0.0008;
@@ -221,11 +226,17 @@ export class PreviewEngine {
   private tick = (now: number) => {
     this.raf = 0;
     if (!this.shouldRun()) return;
+    // low tier / reduced motion: ~30 fps, except while a diorama grows in or out
+    const busy = this.slots.some((s) => s.dying !== null || this.t - s.born < 0.9);
+    if (this.throttle.skip(now - this.last, busy)) {
+      this.raf = requestAnimationFrame(this.tick);
+      return;
+    }
     const dt = Math.min(0.05, (now - this.last) / 1000);
     this.last = now;
     this.t += dt;
-    // gentle turntable sway around the front view
-    this.yaw = Math.sin(this.t * 0.3) * 0.38 - 0.2;
+    // gentle turntable sway around the front view (held still for reduced motion)
+    this.yaw = quality().reduced ? -0.2 : Math.sin(this.t * 0.3) * 0.38 - 0.2;
     this.placeCamera();
     for (const s of [...this.slots]) {
       if (s.dying !== null) {

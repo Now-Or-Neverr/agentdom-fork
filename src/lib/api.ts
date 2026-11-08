@@ -11,7 +11,7 @@ export function getUid(): string | null {
     return null;
   }
 }
-function setUid(id: string) {
+export function setUid(id: string) {
   try {
     localStorage.setItem(KEY, id);
   } catch {

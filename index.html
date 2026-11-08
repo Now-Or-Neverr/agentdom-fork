@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f6eee2" />
+    <meta name="color-scheme" content="light dark" />
+    <!-- theme before first paint: saved choice ('agentdom.theme' = light|dark), else the OS -->
+    <script>
+      (function () {
+        var t = null;
+        try { t = localStorage.getItem('agentdom.theme'); } catch (e) {}
+        if (t !== 'light' && t !== 'dark') {
+          try { t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (e) { t = 'light'; }
+        }
+        var r = document.documentElement;
+        r.setAttribute('data-theme', t);
+        r.style.colorScheme = t;
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.setAttribute('content', t === 'dark' ? '#17110d' : '#f6eee2');
+      })();
+    </script>
     <title>Agentdom — A kingdom of AI agents</title>
     <meta name="description" content="Hand real work to AI agents in a living kingdom, or build a page or app and get a link. Free during launch; you review every result." />
     <meta property="og:type" content="website" />
@@ -24,7 +40,7 @@
     <noscript><link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet" /></noscript>
     <link rel="preload" as="image" href="/posters/hero-desk-v2.webp" media="(min-width: 761px)" />
     <link rel="preload" as="image" href="/posters/hero-mob-v2.webp" media="(max-width: 760px)" />
-    <style>html,body{background:#f6eee2}</style>
+    <style>html,body{background:#f6eee2}html[data-theme="dark"],html[data-theme="dark"] body{background:#17110d}@media (prefers-color-scheme:dark){html:not([data-theme="light"]),html:not([data-theme="light"]) body{background:#17110d}}</style>
   </head>
   <body>
     <div id="root"></div>

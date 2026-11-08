@@ -108,7 +108,7 @@
 .bd-formats button.on {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
 }
 .bd-comp-row .btn-lg {
   flex-shrink: 0;
@@ -140,7 +140,7 @@
   margin-right: 4px;
 }
 .bd-ideas button {
-  background: rgba(255, 251, 245, 0.7);
+  background: rgba(var(--surface-rgb), 0.7);
 }
 
 /* progress */
@@ -307,7 +307,7 @@
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(255, 251, 245, 0.88);
+  background: rgba(var(--surface-rgb), 0.88);
   backdrop-filter: blur(4px);
 }
 
@@ -553,7 +553,7 @@
 .bd-how > div {
   padding: 24px 22px;
   border-radius: 22px;
-  background: rgba(255, 251, 245, 0.6);
+  background: rgba(var(--surface-rgb), 0.6);
   border: 1px solid var(--line-c);
 }
 .bd-no {
@@ -670,5 +670,199 @@
   }
   .bd-ideas {
     justify-content: flex-start;
+  }
+}
+
+/* owner tools: gallery opt-in and link name */
+.bd-origin {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+.bd-origin svg {
+  vertical-align: -2px;
+  margin-right: 4px;
+}
+.bd-origin a {
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.bd-owner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line-c);
+}
+.bd-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.bd-check input {
+  margin: 3px 0 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--purple);
+  flex-shrink: 0;
+}
+.bd-check b {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.bd-check small,
+.bd-rename small {
+  display: block;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.bd-rename {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.bd-rename label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.bd-rename-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line-c);
+  background: var(--surface-2);
+}
+.bd-rename-row:focus-within {
+  border-color: var(--line-c2);
+  outline: 2px solid rgba(var(--accent-rgb), 0.25);
+}
+.bd-rename-row span {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+.bd-rename-row input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 7px 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.bd-rename-row .bd-mini {
+  align-self: center;
+}
+.bd-mini:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* gallery */
+.bd-ggrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+.bd-gcard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--line-c);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition:
+    transform 0.3s var(--ease),
+    box-shadow 0.3s var(--ease);
+}
+.bd-gcard:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-2);
+}
+.bd-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line-c);
+}
+.bd-thumb iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 400%;
+  height: 400%;
+  border: 0;
+  transform: scale(0.25);
+  transform-origin: 0 0;
+  pointer-events: none;
+  background: var(--paper-white);
+}
+.bd-thumb-ext {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 44px;
+  color: var(--purple-3);
+  background: var(--purple-soft);
+}
+.bd-gbody {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px 6px;
+  min-width: 0;
+}
+.bd-gbody b {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.1;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.bd-gbody small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+.bd-gacts {
+  display: flex;
+  gap: 6px;
+  padding: 8px 16px 16px;
+  margin-top: auto;
+}
+.bd-gacts .bd-mini {
+  text-decoration: none;
+}
+.bd-gmore {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+@media (max-width: 759px) {
+  .bd-ggrid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

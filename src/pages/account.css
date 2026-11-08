@@ -1,0 +1,103 @@
+/* /account: recovery key page */
+.acct-lede {
+  margin-top: 14px;
+  max-width: 560px;
+}
+.acct-main {
+  display: grid;
+  grid-template-columns: minmax(0, 760px);
+  gap: 20px;
+  padding-top: 36px;
+  padding-bottom: 96px;
+}
+.acct-card {
+  padding: 24px;
+  min-width: 0;
+}
+.acct-card p {
+  margin: 8px 0 0;
+}
+.acct-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+}
+.acct-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1.1;
+}
+.acct-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+.acct-key {
+  display: block;
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px dashed var(--line-c2);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-family: var(--font-mono);
+  font-size: clamp(15px, 4.2vw, 21px);
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.acct-warn {
+  font-size: 13px;
+  color: var(--warn);
+  font-weight: 600;
+}
+.acct-label {
+  display: block;
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.acct-use {
+  margin-top: 8px;
+  flex-wrap: nowrap;
+}
+.acct-use .field {
+  flex: 1 1 auto;
+  letter-spacing: 0.04em;
+}
+.acct-use .btn {
+  flex: none;
+}
+.acct-err {
+  color: var(--bad);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.acct-small {
+  font-size: 12.5px;
+}
+.acct-small a {
+  color: var(--purple);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 520px) {
+  .acct-card {
+    padding: 20px 18px;
+  }
+  .acct-use {
+    flex-wrap: wrap;
+  }
+  .acct-use .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

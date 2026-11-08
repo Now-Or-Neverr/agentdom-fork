@@ -779,7 +779,7 @@ button.dw-head:hover .dw-toggle {
 .dp-step.done .dp-step-dot {
   background: var(--purple);
   border-color: var(--purple);
-  color: #fffaf2;
+  color: var(--on-accent);
 }
 .dp-step.now .dp-step-dot {
   background: var(--gold-soft);
@@ -1477,5 +1477,219 @@ a.wl-src:hover {
 @media (max-width: 520px) {
   .audit-scores {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- share card, visitor CTA ---------- */
+.dp-share,
+.dp-cta {
+  display: grid;
+  gap: 12px;
+}
+.dp-share .dp-card-title,
+.dp-cta .dp-card-title {
+  margin: 0;
+}
+.dp-share-text,
+.dp-share-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+.dp-share-note {
+  color: var(--fg-3);
+  font-size: 12.5px;
+}
+.dp-share-url {
+  width: 100%;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.dp-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dp-share-off {
+  justify-self: start;
+}
+.dp-cta .btn {
+  justify-self: start;
+}
+
+/* ---------- follow-up chat ---------- */
+.dp-fu {
+  display: grid;
+  gap: 16px;
+  padding: 26px 24px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow-1);
+  min-width: 0;
+}
+@media (min-width: 760px) {
+  .dp-fu {
+    padding: 30px 34px;
+  }
+}
+.dp-fu-head {
+  display: grid;
+  gap: 8px;
+}
+.dp-fu-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--fg-3);
+  max-width: 620px;
+}
+.dp-fu-thread {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.dp-fu-msg {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+.dp-fu-msg.user {
+  background: var(--purple-soft);
+  border-color: var(--accent-line);
+  margin-left: clamp(0px, 8%, 60px);
+}
+.dp-fu-msg.assistant {
+  margin-right: clamp(0px, 4%, 30px);
+}
+.dp-fu-msg .prose {
+  font-size: 14.5px;
+}
+.dp-fu-msg .prose pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.dp-fu-text {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 14.5px;
+  color: var(--fg);
+}
+.dp-fu-wait {
+  margin: 0;
+  color: var(--fg-3);
+  font-size: 13.5px;
+}
+.dp-fu-err {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bad);
+}
+.dp-fu-form {
+  display: grid;
+  gap: 10px;
+}
+.dp-fu-ideas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dp-fu-input {
+  min-height: 84px;
+  width: 100%;
+  resize: vertical;
+}
+.dp-fu-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.dp-fu-count {
+  font-size: 11.5px;
+  color: var(--fg-3);
+}
+.dp-fu-reason {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--fg-3);
+}
+
+/* ---------- print / save as PDF: only the print view is printed ---------- */
+.dp-print-root {
+  display: none;
+}
+@media print {
+  body > *:not(.dp-print-root) {
+    display: none !important;
+  }
+  /* Paper is always light, whatever the screen theme. */
+  html,
+  body {
+    background: white !important;
+  }
+  .dp-print-root {
+    display: block;
+    color: black;
+    font-family: var(--font-body);
+    font-size: 11.5pt;
+    line-height: 1.55;
+  }
+  .dp-print-root * {
+    color: black !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  .dp-print-title {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 28pt;
+    line-height: 1.1;
+    margin: 0 0 6pt;
+  }
+  .dp-print-meta {
+    margin: 0 0 18pt;
+    font-style: italic;
+  }
+  .dp-print-body pre,
+  .dp-print-body code {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .dp-print-body pre,
+  .dp-print-body table {
+    break-inside: avoid;
+  }
+  .dp-print-body table {
+    border-collapse: collapse;
+  }
+  .dp-print-body th,
+  .dp-print-body td {
+    border: 1px solid gray;
+    padding: 3pt 6pt;
+  }
+  .dp-print-body a {
+    text-decoration: underline;
+  }
+  .dp-print-foot {
+    margin-top: 24pt;
+    padding-top: 6pt;
+    border-top: 1px solid gray;
+    font-size: 9pt;
+  }
+  @page {
+    margin: 18mm 16mm;
   }
 }

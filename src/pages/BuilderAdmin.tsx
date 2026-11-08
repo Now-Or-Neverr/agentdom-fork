@@ -56,6 +56,15 @@ export default function BuilderAdmin() {
     }
   };
 
+  const unlist = async (slug: string) => {
+    try {
+      await buildApi.unlist(key, slug);
+      load();
+    } catch (e) {
+      setErr((e as Error).message);
+    }
+  };
+
   return (
     <AppShell>
       <div className="bd-page">
@@ -99,7 +108,7 @@ export default function BuilderAdmin() {
               </div>
 
               <p className="bd-limit" style={{ marginTop: 14, padding: 0 }}>
-                Designed images (agents): today {d.images.today.images}/{d.images.today.cap} · {usd(d.images.today.cost)} · all time {d.images.total.images} · {usd(d.images.total.cost)}. Builder figures below exclude images.
+                Designed images (agents and builder, shared cap): today {d.images.today.images}/{d.images.today.cap} · {usd(d.images.today.cost)} · all time {d.images.total.images} · {usd(d.images.total.cost)}. Builder figures include images painted inside built pages: {d.builderImages.n} so far · {usd(d.builderImages.cost)}.
               </p>
               <section className="bd-mine">
                 <div className="bd-mine-head">
@@ -124,13 +133,20 @@ export default function BuilderAdmin() {
                 </div>
                 <div className="card" style={{ padding: '6px 18px', borderRadius: 18 }}>
                   {d.recent.map((b) => (
-                    <div key={b.id} style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--line-c)', fontSize: 14 }}>
+                    <div key={b.id} style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--line-c)', fontSize: 14 }}>
                       <a href={`/p/${b.slug}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         <b>{b.title}</b> <small style={{ color: 'var(--ink-3)' }}>/p/{b.slug}</small>
                       </a>
                       <small style={{ color: 'var(--ink-3)', whiteSpace: 'nowrap' }}>
-                        {b.status} · {b.views} views · {b.reports} reports · {ago(b.created_at)}
+                        {b.status}
+                        {b.is_public ? ' · in gallery' : ''}
+                        {b.remixed_from ? ' · remix' : ''} · {b.views} views · {b.reports} reports · {ago(b.created_at)}
                       </small>
+                      {!!b.is_public && (
+                        <button className="bd-mini" onClick={() => unlist(b.slug)}>
+                          Remove from gallery
+                        </button>
+                      )}
                       {b.status === 'removed' ? (
                         <button className="bd-mini" onClick={() => act(b.slug, false)}>
                           Restore

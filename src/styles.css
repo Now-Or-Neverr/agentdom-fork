@@ -62,6 +62,146 @@
   --shadow-purple: 0 1px 0 rgba(255, 255, 255, 0.18) inset, 0 10px 24px -10px rgba(var(--accent-rgb), 0.7);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-ink: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* theme helpers (light values equal the hard-coded colours they replaced) */
+  color-scheme: light;
+  --on-accent: #fffaf2; /* text on accent fills */
+  --on-ink: #fffaf2; /* text on --ink fills */
+  --on-gold: #241a13; /* text on gold fills (same in both themes) */
+  --fg-rgb: 36, 26, 19; /* text-coloured tints (ink in light, cream in dark) */
+  --bg-rgb: 246, 238, 226; /* frosted page glass */
+  --surface-rgb: 255, 251, 245; /* frosted card glass */
+  --hi-rgb: 255, 255, 255; /* inset highlights and glass rims */
+  --hi-k: 1; /* their strength (dimmed in dark) */
+  --paper-white: #fff;
+  --gold-line: #ecd29b;
+  --gold-ink: #7a5410;
+  --jade-soft: #e3f1ea;
+  --jade-line: #c5e2d3;
+  --jade-ink: #2c6e52;
+  --hl: var(--gold-2); /* .highlight marker */
+  --night-edge: transparent; /* hairline around espresso sections (shows in dark) */
+  --brand-accent: #6b4226; /* fixed brand accent for character art (never follows the theme) */
+}
+
+/* ---------- dark theme: warm espresso ----------
+   On when <html data-theme="dark"> (set before paint by index.html), or by the OS
+   preference when no explicit light choice exists. Keep the two blocks identical. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #17110d;
+  --bg-2: #1f1712;
+  --surface: #211812;
+  --surface-2: #2a1f18;
+  --ink: #f4ebdf;
+  --ink-2: #cdbdaa;
+  --ink-3: #9c8a78;
+  --line-c: #382a20;
+  --line-c2: #4a382b;
+  --purple: #c99a6b;
+  --purple-2: #e2bf96;
+  --purple-3: #b08259;
+  --purple-soft: #33251b;
+  --purple-grad: #b88a5c;
+  --accent-line: #4f3b2b;
+  --accent-rgb: 201, 154, 107;
+  --accent-3-rgb: 176, 130, 89;
+  --accent-deep-rgb: 6, 4, 2;
+  --ink-rgb: 6, 4, 2;
+  --gold-deep: #e3b357;
+  --gold-soft: #3a2b16;
+  --jade: #4fb08c;
+  --rose: #d97083;
+  --ok: #5cb585;
+  --warn: #e0a040;
+  --bad: #e0705f;
+  --cream: #2a1f18;
+  --shadow-1: 0 1px 0 rgba(255, 240, 220, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 28px 60px -24px rgba(0, 0, 0, 0.75);
+  --shadow-purple: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 10px 24px -12px rgba(201, 154, 107, 0.4);
+  --on-accent: #1c130d;
+  --on-ink: #1c130d;
+  --fg-rgb: 244, 235, 223;
+  --bg-rgb: 23, 17, 13;
+  --surface-rgb: 33, 24, 18;
+  --hi-rgb: 255, 240, 220;
+  --hi-k: 0.1;
+  --paper-white: #261c15;
+  --gold-line: #5a4420;
+  --gold-ink: #ecc56f;
+  --jade-soft: #183026;
+  --jade-line: #2a4a3b;
+  --jade-ink: #8fd4b2;
+  --hl: rgba(224, 169, 62, 0.34);
+  --night-edge: rgba(243, 211, 142, 0.16);
+  --btn-end: #a87a4e;
+  --st-queued-bg: #3a2a14;
+  --st-queued-fg: #ecbf6a;
+  --st-ok-bg: #18301f;
+  --st-ok-fg: #8fd0a6;
+  --st-bad-bg: #3a1c17;
+  --st-bad-fg: #f0a090;
+  --st-off-bg: #2a211b;
+  --st-off-fg: #b3a392;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --bg: #17110d;
+    --bg-2: #1f1712;
+    --surface: #211812;
+    --surface-2: #2a1f18;
+    --ink: #f4ebdf;
+    --ink-2: #cdbdaa;
+    --ink-3: #9c8a78;
+    --line-c: #382a20;
+    --line-c2: #4a382b;
+    --purple: #c99a6b;
+    --purple-2: #e2bf96;
+    --purple-3: #b08259;
+    --purple-soft: #33251b;
+    --purple-grad: #b88a5c;
+    --accent-line: #4f3b2b;
+    --accent-rgb: 201, 154, 107;
+    --accent-3-rgb: 176, 130, 89;
+    --accent-deep-rgb: 6, 4, 2;
+    --ink-rgb: 6, 4, 2;
+    --gold-deep: #e3b357;
+    --gold-soft: #3a2b16;
+    --jade: #4fb08c;
+    --rose: #d97083;
+    --ok: #5cb585;
+    --warn: #e0a040;
+    --bad: #e0705f;
+    --cream: #2a1f18;
+    --shadow-1: 0 1px 0 rgba(255, 240, 220, 0.04) inset, 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
+    --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 28px 60px -24px rgba(0, 0, 0, 0.75);
+    --shadow-purple: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 10px 24px -12px rgba(201, 154, 107, 0.4);
+    --on-accent: #1c130d;
+    --on-ink: #1c130d;
+    --fg-rgb: 244, 235, 223;
+    --bg-rgb: 23, 17, 13;
+    --surface-rgb: 33, 24, 18;
+    --hi-rgb: 255, 240, 220;
+    --hi-k: 0.1;
+    --paper-white: #261c15;
+    --gold-line: #5a4420;
+    --gold-ink: #ecc56f;
+    --jade-soft: #183026;
+    --jade-line: #2a4a3b;
+    --jade-ink: #8fd4b2;
+    --hl: rgba(224, 169, 62, 0.34);
+    --night-edge: rgba(243, 211, 142, 0.16);
+    --btn-end: #a87a4e;
+    --st-queued-bg: #3a2a14;
+    --st-queued-fg: #ecbf6a;
+    --st-ok-bg: #18301f;
+    --st-ok-fg: #8fd0a6;
+    --st-bad-bg: #3a1c17;
+    --st-bad-fg: #f0a090;
+    --st-off-bg: #2a211b;
+    --st-off-fg: #b3a392;
+  }
 }
 
 * {
@@ -235,7 +375,7 @@ html {
 }
 .highlight {
   font-style: italic;
-  background: linear-gradient(transparent 70%, var(--gold-2) 70%, var(--gold-2) 92%, transparent 92%);
+  background: linear-gradient(transparent 70%, var(--hl) 70%, var(--hl) 92%, transparent 92%);
 }
 
 /* ---------- buttons ---------- */
@@ -279,9 +419,9 @@ html {
 /* primary = espresso (class names kept for compatibility) */
 .btn-seal,
 .btn-primary {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--purple) 86%, #fff), var(--purple-2));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--purple) 86%, #fff), var(--btn-end, var(--purple-2)));
   border-color: var(--purple-2);
-  color: #fffaf2;
+  color: var(--on-accent);
   box-shadow: var(--shadow-purple);
 }
 .btn-seal:hover,
@@ -295,7 +435,7 @@ html {
 .btn-gold {
   background: linear-gradient(180deg, var(--gold-2), var(--gold));
   border-color: color-mix(in srgb, var(--gold) 70%, var(--gold-deep));
-  color: var(--ink);
+  color: var(--on-gold);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.5) inset,
     0 10px 22px -10px rgba(169, 119, 28, 0.6);
@@ -307,12 +447,12 @@ html {
 .btn-ink {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
 }
 .dark .btn-ink {
   background: #fffaf2;
   border-color: #fffaf2;
-  color: var(--ink);
+  color: #241a13;
 }
 .btn-jade {
   background: var(--jade);
@@ -358,7 +498,7 @@ html {
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--r-md);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  box-shadow: 0 1px 0 rgba(var(--hi-rgb), calc(0.6 * var(--hi-k))) inset;
 }
 .dark .panel,
 .dark .card {
@@ -389,12 +529,12 @@ html {
 .chip.on {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
 }
 .dark .chip.on {
   background: var(--gold-2);
   border-color: var(--gold-2);
-  color: var(--ink);
+  color: #241a13;
 }
 .chip-sm {
   height: 28px;
@@ -416,13 +556,13 @@ html {
 }
 .tag.gold {
   background: var(--gold-soft);
-  border-color: #ecd29b;
-  color: #7a5410;
+  border-color: var(--gold-line);
+  color: var(--gold-ink);
 }
 .tag.jade {
-  background: #e3f1ea;
-  border-color: #c5e2d3;
-  color: #2c6e52;
+  background: var(--jade-soft);
+  border-color: var(--jade-line);
+  color: var(--jade-ink);
 }
 .tag.red,
 .tag.purple {
@@ -437,9 +577,9 @@ html {
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  background: #e3f1ea;
-  border-color: #c5e2d3;
-  color: #2c6e52;
+  background: var(--jade-soft);
+  border-color: var(--jade-line);
+  color: var(--jade-ink);
   padding: 2px 8px;
   line-height: 1.5;
 }
@@ -678,6 +818,7 @@ select.field {
 }
 .prose pre {
   background: var(--night);
+  box-shadow: inset 0 0 0 1px var(--night-edge);
   color: color-mix(in srgb, #fff 90%, var(--purple-3));
   padding: 16px;
   border-radius: 14px;
@@ -715,7 +856,7 @@ select.field {
   bottom: 24px;
   transform: translateX(-50%);
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   padding: 12px 18px;
   border-radius: 14px;
   font-size: 13.5px;
@@ -777,4 +918,46 @@ select.field {
 }
 ::-webkit-scrollbar-track {
   background: var(--bg);
+}
+
+/* dark one-offs: page-specific colours that had no shared token (light uses the fallback in place) */
+:root[data-theme='dark'] {
+  --gp-top: #1c1f29;
+  --gp-bot: #221810;
+  --band-top: #221913;
+  --cloud: #5e4632;
+  --on-seal: #1c130d;
+  --gold-ink-2: #ecc56f;
+  --gold-line-2: #5a4420;
+  --hover-hi: #2e231b;
+  --surface2-rgb: 42, 31, 24;
+  --veil-top: #1b2128;
+  --fest-bg: rgba(64, 30, 20, 0.9);
+  --fest-ink: #ffd9c9;
+  --working-ink: #f0c060;
+  --duty-ink: #d8b48a;
+  --task-bg: #2a1f18;
+  --glass-252-rgb: 33, 24, 18;
+  --glass-white-rgb: 33, 24, 18;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --gp-top: #1c1f29;
+    --gp-bot: #221810;
+    --band-top: #221913;
+    --cloud: #5e4632;
+    --on-seal: #1c130d;
+    --gold-ink-2: #ecc56f;
+    --gold-line-2: #5a4420;
+    --hover-hi: #2e231b;
+    --surface2-rgb: 42, 31, 24;
+    --veil-top: #1b2128;
+    --fest-bg: rgba(64, 30, 20, 0.9);
+    --fest-ink: #ffd9c9;
+    --working-ink: #f0c060;
+    --duty-ink: #d8b48a;
+    --task-bg: #2a1f18;
+    --glass-252-rgb: 33, 24, 18;
+    --glass-white-rgb: 33, 24, 18;
+  }
 }

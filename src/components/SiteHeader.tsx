@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { ArrowUpRight, Menu, X } from 'lucide-react';
 import { Wordmark } from './Brand';
+import { ThemeToggle } from './ThemeToggle';
 import { useApp } from '../lib/store';
 import { fmt } from '../lib/api';
 import { BRAND } from '../config';
@@ -63,6 +64,7 @@ export function SiteHeader() {
                 <span className="sh-cur">{BRAND.currencyShort}</span>
               </Link>
             )}
+            <ThemeToggle className="sh-theme" />
             <Link to="/realm" className="btn btn-primary btn-sm sh-enter">
               Enter the Realm
             </Link>
@@ -77,12 +79,13 @@ export function SiteHeader() {
         <div className="sh-drawer" role="dialog" aria-label="Menu">
           <div className="sh-drawer-top">
             <Wordmark size={28} />
+            <ThemeToggle className="sh-drawer-theme" />
             <button className="btn btn-icon btn-sm" onClick={() => setOpen(false)} aria-label="Close menu">
               <X size={19} />
             </button>
           </div>
           <nav>
-            {[...NAV, ...(crowns ? [{ to: '/vault', label: 'Vault' }] : []), { to: '/decrees', label: 'My decrees' }].map((n) => (
+            {[...NAV, ...(crowns ? [{ to: '/vault', label: 'Vault' }] : []), { to: '/decrees', label: 'My decrees' }, { to: '/account', label: 'Your key' }].map((n) => (
               <Link key={n.to} to={n.to} onClick={() => setOpen(false)}>
                 {n.label}
                 <ArrowUpRight size={20} />

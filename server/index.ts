@@ -12,6 +12,10 @@ import { router as courtRoutes } from './routes/court';
 import { router as mediaRoutes } from './routes/media';
 import { router as court2Routes } from './routes/court2';
 import { router as builderRoutes } from './routes/builder';
+import { router as cleanupRoutes } from './routes/adminCleanup';
+import { turnstileGuard, turnstileOn, turnstileSiteKey } from './turnstile';
+import { router as decreeExtraRoutes } from './decreeExtras';
+import { router as accountRoutes } from './routes/account';
 import { startDuties } from './duties';
 import { bus, decreeChanged, logActivity } from './events';
 import { MODEL, aiEnabled, runningDecrees, startWorker, vizierPick } from './worker';
@@ -61,6 +65,7 @@ app.use(
   }),
 );
 app.use(express.json({ limit: '3mb' }));
+app.use(turnstileGuard());
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
 
 import { AGENT_SQL, HttpError, agentById, allAgents, count, crownsEnabled, currentUser, h, ledger, lite, optionalUser, startOfDay, text, toActivity, toAgent, toCommission, toDecree, toUser, workingAgents } from './core';
@@ -69,7 +74,7 @@ import { AGENT_SQL, HttpError, agentById, allAgents, count, crownsEnabled, curre
 // Feature switches the client needs before rendering (crowns on/off).
 app.get('/api/config', (_req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
-  res.json({ crowns: crownsEnabled() });
+  res.json({ crowns: crownsEnabled(), turnstile: turnstileOn() ? turnstileSiteKey() : null });
 });
 
 // ---------------- users ----------------
@@ -213,7 +218,8 @@ app.get(
       db.prepare("SELECT * FROM decrees WHERE agent_id = ? AND status IN ('working','delivered','approved') ORDER BY created_at DESC LIMIT 20").all(a.id) as Row[]
     ).map((r) => toDecree(r, false, map));
     const works = (db.prepare("SELECT * FROM decrees WHERE agent_id = ? AND status = 'approved' AND is_public = 1 ORDER BY finished_at DESC LIMIT 6").all(a.id) as Row[]).map(
-      (r) => ({ ...toDecree(r, true, map), userId: '', tokensIn: 0, tokensOut: 0, routeReason: null }),
+      // Public portfolio: the result and files only; the brief, notes and work log stay private.
+      (r) => ({ ...toDecree(r, true, map), userId: '', brief: '', revisionNote: null, error: null, steps: [], nowDoing: null, tokensIn: 0, tokensOut: 0, routeReason: null }),
     );
     res.json({ agent: a, commissions, decrees, works });
   }),
@@ -557,7 +563,10 @@ app.use('/api', questRoutes);
 app.use('/api', courtRoutes);
 app.use('/api', mediaRoutes);
 app.use('/api', court2Routes);
+app.use('/api', decreeExtraRoutes);
+app.use('/api', accountRoutes);
 app.use(builderRoutes);
+app.use('/api', cleanupRoutes);
 
 // ---------------- errors & static ----------------
 app.use('/api', (_req, _res, next) => next(new HttpError(404, 'No such endpoint.')));

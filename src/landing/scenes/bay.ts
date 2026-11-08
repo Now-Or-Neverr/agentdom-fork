@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import { buildWorld, makeMats, type Mats, type World } from '../../realm/world';
 import * as Life from '../../realm/life';
 import { WATER_DAY, WATER_NIGHT } from '../../realm/terrain';
+import { FrameProbe, Throttle, maxDpr, onQuality, quality } from '../../realm/quality';
 
 export interface Mood {
   hemiSky: string;
@@ -153,13 +154,19 @@ export class Bay {
   private fogU = { c: { value: new THREE.Color() }, r: { value: new THREE.Vector2(1e4, 2e4) } };
   private skyMat: THREE.ShaderMaterial;
   private dirty = true;
+  private probe = new FrameProbe('bay');
+  private throttle = new Throttle();
+  private prevTick = 0;
+  private offQuality: () => void = () => {};
 
   constructor() {
     const mobile = window.matchMedia('(max-width: 760px)').matches;
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    const q = quality();
+    const low = q.tier === 'low';
+    this.renderer = new THREE.WebGLRenderer({ antialias: !low, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 1.75));
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.setPixelRatio(Math.min(maxDpr(q), mobile ? 1.5 : 1.75));
+    this.renderer.shadowMap.enabled = !q.slow;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     const cv = this.renderer.domElement;
@@ -189,8 +196,9 @@ export class Bay {
 
     this.hemi = new THREE.HemisphereLight(DAY.hemiSky, DAY.hemiGround, DAY.hemi);
     this.sun = new THREE.DirectionalLight(DAY.sun, DAY.sunI);
-    this.sun.castShadow = true;
-    this.sun.shadow.mapSize.set(mobile ? 1536 : 2048, mobile ? 1536 : 2048);
+    this.sun.castShadow = !q.slow;
+    const sm = low ? 1024 : mobile ? 1536 : 2048;
+    this.sun.shadow.mapSize.set(sm, sm);
     Object.assign(this.sun.shadow.camera, { left: -95, right: 95, top: 85, bottom: -85, near: 10, far: 320 });
     this.sun.shadow.bias = -0.0008;
     this.sun.shadow.normalBias = 0.05;
@@ -213,7 +221,7 @@ export class Bay {
         return undefined;
       }
     };
-    const walk = add('walkers', () => (L.Walkers ? new L.Walkers(Wd.graph, mobile ? 10 : 14, 1.0, { ground: Wd.ground, look: (this.mats as unknown as Record<string, unknown>).look, ambient: mobile ? 40 : 70 }) : undefined));
+    const walk = add('walkers', () => (L.Walkers ? new L.Walkers(Wd.graph, mobile ? 10 : 14, 1.0, { ground: Wd.ground, look: (this.mats as unknown as Record<string, unknown>).look, ambient: low ? 24 : mobile ? 40 : 70 }) : undefined));
     if (walk) {
       if (Wd.stations) walk.setStations?.(Wd.stations);
       walk.setOnline?.(undefined);
@@ -223,7 +231,7 @@ export class Bay {
     add('glows', () => (L.Glows && Wd.lights ? new L.Glows(Wd.lights) : undefined));
     if (Wd.incense) add('incense', () => (L.Smoke ? new L.Smoke(Wd.incense, { per: 7, rise: 2.2, size: 0.45, rate: 0.12, color: '#f6f2ea' }) : undefined));
     if (Wd.meadow) add('fireflies', () => (L.Fireflies ? new L.Fireflies(Wd.meadow) : undefined));
-    if (Wd.blossoms) add('petals', () => (L.Petals ? new L.Petals(Wd.blossoms, 3) : undefined));
+    if (Wd.blossoms) add('petals', () => (L.Petals ? new L.Petals(Wd.blossoms, low ? 2 : 3) : undefined));
     add('birds', () => (L.Birds ? new L.Birds() : undefined));
 
     this.skyMat = new THREE.ShaderMaterial({
@@ -264,6 +272,16 @@ export class Bay {
       this.invalidate();
     });
     document.addEventListener('visibilitychange', this.onVis);
+    this.offQuality = onQuality((nq) => {
+      if (this.disposed) return;
+      this.renderer.setPixelRatio(1);
+      this.resize();
+      if (nq.slow && this.sun.castShadow) {
+        this.sun.castShadow = false;
+        this.renderer.shadowMap.enabled = false;
+      }
+      this.invalidate();
+    });
   }
 
   register(v: BayView) {
@@ -384,11 +402,21 @@ export class Bay {
   private loop() {
     if (this.raf || !this.shouldRun()) return;
     this.last = performance.now();
+    this.prevTick = 0;
     this.raf = requestAnimationFrame(this.tick);
   }
   private tick = (now: number) => {
     this.raf = 0;
     if (!this.shouldRun()) return;
+    if (!this.still) {
+      this.probe.sample(Math.min(0.1, Math.max(0, now - (this.prevTick || now)) / 1000));
+      this.prevTick = now;
+      // low tier: ~30 fps
+      if (!this.dirty && this.throttle.skip(now - this.last, false)) {
+        this.raf = requestAnimationFrame(this.tick);
+        return;
+      }
+    }
     const dt = this.still ? 0 : Math.min(0.05, Math.max(0, (now - this.last) / 1000));
     this.last = now;
     this.t += dt;
@@ -441,6 +469,7 @@ export class Bay {
     this.io.disconnect();
     this.ro.disconnect();
     document.removeEventListener('visibilitychange', this.onVis);
+    this.offQuality();
     this.world.dispose();
     for (const { x } of this.life) {
       try {

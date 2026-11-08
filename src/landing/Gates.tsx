@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, UserPlus } from 'lucide-react';
+import { whenNear } from './near';
 import { useScrollProgress } from '../lib/useScrollProgress';
 
 const k01 = (p: number, a: number, b: number) => Math.min(1, Math.max(0, (p - a) / (b - a)));
@@ -21,15 +22,19 @@ export function Gates() {
     if (!el) return;
     let off: (() => void) | null = null;
     let gone = false;
-    import('./scenes/gateView')
+    // three.js is fetched only when the visitor nears this section
+    const stopNear = whenNear(el, () =>
+      import('./scenes/gateView')
       .then((m) => m.mountGate({ el, progress: () => pr.current, onReady: () => !gone && setReady(true) }))
       .then((o) => {
         if (gone) o();
         else off = o;
       })
-      .catch(() => {});
+      .catch(() => {}),
+    );
     return () => {
       gone = true;
+      stopNear();
       off?.();
     };
   }, []);

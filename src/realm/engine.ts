@@ -12,6 +12,7 @@ import type { AgentState, Festival, LiveAgent, RealmLive, Weather, WeatherKind }
 import { Heroes } from './heroes';
 import { WEATHER_LOOK, WeatherFx, type WeatherLook } from './weather';
 import { Champion, Festive } from './festival';
+import { FrameProbe, Throttle, maxDpr, onQuality, quality } from './quality';
 
 export type TimeMode = 'auto' | 'day' | 'night';
 export type Pick = { kind: 'hall'; province: ProvinceId } | { kind: 'banner'; bannerId: string } | { kind: 'agent'; agentId: string } | { kind: 'none' };
@@ -166,6 +167,10 @@ export class RealmEngine {
   private wheelTimer = 0;
   private tmp = new THREE.Vector3();
   private disposed = false;
+  private probe = new FrameProbe('realm');
+  private throttle = new Throttle();
+  private lastWheel = 0;
+  private offQuality: () => void = () => {};
   // element that receives CSS variables (--night, --px, --py) for the painted backdrop
   private get vars(): HTMLElement {
     return (this.container.closest('.realm-wrap') as HTMLElement | null) ?? this.container;
@@ -179,12 +184,14 @@ export class RealmEngine {
     const hero = mode === 'hero';
     const t0 = performance.now();
     this.mobile = isMobileDevice();
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+    const q = quality();
+    const low = q.tier === 'low';
+    this.renderer = new THREE.WebGLRenderer({ antialias: !low, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setClearColor(0x000000, 0);
-    // Phones get a lower render scale; it drops further on its own if frames run slow.
-    this.dpr = Math.min(window.devicePixelRatio || 1, this.mobile ? 1.5 : hero ? 1.5 : 2);
+    // Phones get a lower render scale (1 on the low tier); it drops further on its own if frames run slow.
+    this.dpr = Math.min(maxDpr(q), this.mobile ? 1.5 : hero ? 1.5 : 2);
     this.renderer.setPixelRatio(this.dpr);
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !q.slow;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     const cv = this.renderer.domElement;
@@ -206,8 +213,9 @@ export class RealmEngine {
     this.scene.add(this.hemi);
     this.sun = new THREE.DirectionalLight(DAY.sun, 2.4);
     this.sun.position.set(-60, 90, 45);
-    this.sun.castShadow = true;
-    const shadow = this.mobile ? (hero ? 1024 : 2048) : hero ? 2048 : 4096;
+    this.sun.castShadow = !q.slow;
+    // low tier: a smaller (softer) shadow map; dropped entirely once frames were measured slow
+    const shadow = low ? 1024 : this.mobile ? (hero ? 1024 : 2048) : hero ? 2048 : 4096;
     this.sun.shadow.mapSize.set(shadow, shadow);
     Object.assign(this.sun.shadow.camera, { left: -95, right: 95, top: 85, bottom: -85, near: 10, far: 280 });
     this.sun.shadow.bias = -0.0008;
@@ -215,7 +223,7 @@ export class RealmEngine {
     this.scene.add(this.sun, this.sun.target);
 
     // life
-    this.walkers = new Walkers(this.world.graph, hero ? 14 : 32, 1.0, { ground: this.world.ground, look: this.mats.look, ambient: hero ? (this.mobile ? 40 : 70) : this.mobile ? 110 : 190 });
+    this.walkers = new Walkers(this.world.graph, hero ? 14 : 32, 1.0, { ground: this.world.ground, look: this.mats.look, ambient: hero ? (low ? 24 : this.mobile ? 40 : 70) : low ? 60 : this.mobile ? 110 : 190 });
     this.walkers.setStations(this.world.stations);
     this.walkers.setOnline(undefined);
     this.scene.add(this.walkers.group);
@@ -229,7 +237,7 @@ export class RealmEngine {
     this.scene.add(this.incense.mesh);
     this.fireflies = new Fireflies(this.world.meadow);
     this.scene.add(this.fireflies.points);
-    this.petals = new Petals(this.world.blossoms, hero ? 3 : 6);
+    this.petals = new Petals(this.world.blossoms, low ? (hero ? 2 : 3) : hero ? 3 : 6);
     this.scene.add(this.petals.points);
     this.birds = new Birds();
     this.scene.add(this.birds.mesh);
@@ -265,6 +273,18 @@ export class RealmEngine {
     });
     this.io.observe(container);
     document.addEventListener('visibilitychange', this.onVis);
+    this.offQuality = onQuality((nq) => {
+      if (this.disposed) return;
+      if (this.dpr > 1) {
+        this.dpr = 1;
+        this.renderer.setPixelRatio(1);
+        this.renderer.setSize(this.w, this.h, false);
+      }
+      if (nq.slow && this.sun.castShadow) {
+        this.sun.castShadow = false;
+        this.renderer.shadowMap.enabled = false;
+      }
+    });
     this.resize(true);
     this.renderer.shadowMap.needsUpdate = true;
     if (import.meta.env.DEV && !hero) (window as unknown as { __realm?: RealmEngine }).__realm = this;
@@ -672,6 +692,7 @@ export class RealmEngine {
     this.zoomAt(clampZ(this.zoom * Math.exp(-d * 0.0009)), p.x, p.y);
     window.clearTimeout(this.wheelTimer);
     this.wheelTimer = window.setTimeout(() => this.push(), 280);
+    this.lastWheel = performance.now();
     this.container.dispatchEvent(new CustomEvent('realm-interact', { bubbles: true }));
   };
   private zoomAt(z: number, x: number, y: number) {
@@ -701,6 +722,7 @@ export class RealmEngine {
   }
 
   // ---------- loop ----------
+  private prevTick = 0;
   private onVis = () => this.loop();
   // Adaptive quality: every ~2 s of rendering, if the average frame rate is below
   // ~40 fps, render at a lower pixel ratio (down to 1). Never raises it again.
@@ -713,8 +735,10 @@ export class RealmEngine {
     p.frames = 0;
     p.time = 0;
     p.checks++;
-    (window as unknown as { __realmPerf?: unknown }).__realmPerf = { fps: Math.round(fps), dpr: this.dpr, buildMs: p.buildMs, mobile: this.mobile };
-    if (fps < 40 && this.dpr > 1) {
+    (window as unknown as { __realmPerf?: unknown }).__realmPerf = { fps: Math.round(fps), dpr: this.dpr, buildMs: p.buildMs, mobile: this.mobile, tier: quality().tier };
+    // the low tier / reduced motion run at ~30 fps on purpose
+    const q = quality();
+    if (fps < (q.tier === 'low' || q.reduced ? 24 : 40) && this.dpr > 1) {
       this.dpr = Math.max(1, Math.round((this.dpr - 0.25) * 100) / 100);
       this.renderer.setPixelRatio(this.dpr);
       this.renderer.setSize(this.w, this.h, false);
@@ -727,11 +751,20 @@ export class RealmEngine {
   private loop() {
     if (this.raf || !this.shouldRun()) return;
     this.last = performance.now();
+    this.prevTick = 0;
     this.raf = requestAnimationFrame(this.tick);
   }
   private tick = (now: number) => {
     this.raf = 0;
     if (!this.shouldRun()) return;
+    if (this.ready) this.probe.sample(Math.min(0.1, Math.max(0, now - (this.prevTick || now)) / 1000));
+    this.prevTick = now;
+    // low tier / reduced motion: ~30 fps unless the view is being moved
+    const busy = this.mode === 'full' && (this.ptrs.size > 0 || !!this.anim || this.inertia || now - this.lastWheel < 300);
+    if (this.ready && this.throttle.skip(now - this.last, busy)) {
+      this.raf = requestAnimationFrame(this.tick);
+      return;
+    }
     const dt = Math.min(0.05, Math.max(0, (now - this.last) / 1000));
     this.last = now;
     this.update(dt);
@@ -758,7 +791,7 @@ export class RealmEngine {
       this.applyNight();
     }
     if (this.mode === 'hero') {
-      this.yaw = Math.sin(t * 0.07) * 0.42;
+      if (!quality().reduced) this.yaw = Math.sin(t * 0.07) * 0.42;
     } else if (this.anim) {
       const a = this.anim;
       const k = Math.min(1, (t - a.start) / a.dur);
@@ -902,6 +935,7 @@ export class RealmEngine {
     this.io.disconnect();
     this.ro.disconnect();
     document.removeEventListener('visibilitychange', this.onVis);
+    this.offQuality();
     if (this.mode === 'full') this.unbindInput();
     this.world.dispose();
     this.walkers.dispose();

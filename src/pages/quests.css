@@ -393,8 +393,8 @@
 }
 .qb-badge-complete {
   background: var(--gold-soft);
-  border-color: #ecd29b;
-  color: #7a5410;
+  border-color: var(--gold-line);
+  color: var(--gold-ink);
 }
 .qb-badge-failed {
   background: color-mix(in srgb, var(--bad) 9%, var(--surface));
@@ -639,15 +639,15 @@
   gap: 12px;
   padding: 18px;
   border-radius: 18px;
-  border: 1px solid #ecd29b;
+  border: 1px solid var(--gold-line);
   background:
-    radial-gradient(80% 140% at 100% 0%, rgba(255, 255, 255, 0.6), transparent 60%),
+    radial-gradient(80% 140% at 100% 0%, rgba(var(--hi-rgb), calc(0.6 * var(--hi-k))), transparent 60%),
     var(--gold-soft);
 }
 .qb-rate .label {
   margin: 0;
   width: 100%;
-  color: #7a5410;
+  color: var(--gold-ink);
 }
 .qb-rate .field {
   flex: 1;

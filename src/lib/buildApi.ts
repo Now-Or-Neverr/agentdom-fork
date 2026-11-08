@@ -1,8 +1,8 @@
 // Client for the App Builder (/api/builds*, /api/builder/status, /api/admin/builder).
-import type { BuildView, BuilderStatus } from '../../server/builder';
+import type { BuildView, BuilderStatus, GalleryPage } from '../../server/builder';
 import { getUid } from './api';
 
-export type { BuildView, BuilderStatus };
+export type { BuildView, BuilderStatus, GalleryPage };
 export type BuildFormat = 'auto' | 'web' | 'md' | 'txt' | 'csv' | 'json' | 'svg';
 
 async function req<T>(path: string, init: RequestInit = {}, admin?: string): Promise<T> {
@@ -29,7 +29,8 @@ export interface AdminBuilder {
   inflight: number;
   images: { today: { images: number; cost: number; cap: number }; total: { images: number; cost: number } };
   credits: { total: number; used: number; left: number } | null;
-  recent: { id: string; slug: string; title: string; filename: string; status: string; reports: number; views: number; created_at: string }[];
+  builderImages: { n: number; cost: number };
+  recent: { id: string; slug: string; title: string; filename: string; status: string; reports: number; views: number; is_public: number; remixed_from: string | null; created_at: string }[];
 }
 
 export const buildApi = {
@@ -38,10 +39,15 @@ export const buildApi = {
   revise: (id: string, prompt: string) => post<{ id: string; slug: string }>(`/api/builds/${encodeURIComponent(id)}/revise`, { prompt }),
   restore: (id: string, version: number) => post<BuildView>(`/api/builds/${encodeURIComponent(id)}/restore`, { version }),
   get: (id: string) => req<BuildView>(`/api/builds/${encodeURIComponent(id)}`),
+  gallery: (offset = 0, limit = 12) => req<GalleryPage>(`/api/builds/gallery?offset=${offset}&limit=${limit}`),
+  remix: (from: string, prompt: string) => post<{ id: string; slug: string }>('/api/builds/remix', { from, prompt }),
+  setPublic: (id: string, on: boolean) => post<BuildView>(`/api/builds/${encodeURIComponent(id)}/public`, { public: on }),
+  rename: (id: string, slug: string) => post<BuildView>(`/api/builds/${encodeURIComponent(id)}/slug`, { slug }),
   mine: () => req<BuildView[]>('/api/builds/mine'),
   report: (slug: string, reason: string) => post<{ ok: true }>(`/api/builds/${encodeURIComponent(slug)}/report`, { reason }),
   admin: (key: string) => req<AdminBuilder>('/api/admin/builder', {}, key),
   remove: (key: string, slug: string) => post<{ ok: true }>(`/api/admin/builds/${encodeURIComponent(slug)}/remove`, {}, key),
+  unlist: (key: string, slug: string) => post<{ ok: true }>(`/api/admin/builds/${encodeURIComponent(slug)}/unlist`, {}, key),
   unremove: (key: string, slug: string) => post<{ ok: true }>(`/api/admin/builds/${encodeURIComponent(slug)}/restore`, {}, key),
 };
 

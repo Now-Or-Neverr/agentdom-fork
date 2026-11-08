@@ -112,7 +112,7 @@
   position: absolute;
   inset: 8px;
   border-radius: 19px;
-  border: 1px solid rgba(255, 251, 245, 0.45);
+  border: 1px solid rgba(var(--surface-rgb), 0.45);
   pointer-events: none;
 }
 .gd-preview {
@@ -129,7 +129,7 @@
   z-index: 1;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 251, 245, 0.88);
+  background: rgba(var(--surface-rgb), 0.88);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   font-size: 10.5px;
@@ -200,7 +200,7 @@
   grid-template-columns: repeat(5, minmax(0, 1fr));
   margin-top: 40px;
   border-radius: 22px;
-  background: rgba(255, 251, 245, 0.78);
+  background: rgba(var(--surface-rgb), 0.78);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border: 1px solid var(--line-c);

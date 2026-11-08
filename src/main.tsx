@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 import { AppProvider } from './lib/store';
 import './styles.css';
+import { installTurnstileFetch, setTurnstileKey } from './lib/turnstile';
 
 // After a new deploy, an open tab may ask for page chunks that no longer exist.
 // Reload once to pick up the new build instead of showing a broken page.
@@ -26,12 +27,21 @@ window.setTimeout(() => {
   }
 }, 15_000);
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <BrowserRouter>
-      <AppProvider>
-        <App />
-      </AppProvider>
-    </BrowserRouter>
-  </StrictMode>,
-);
+// Load the human-check key before the first request that may need it (creating a guest).
+function start() {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <BrowserRouter>
+        <AppProvider>
+          <App />
+        </AppProvider>
+      </BrowserRouter>
+    </StrictMode>,
+  );
+}
+installTurnstileFetch();
+fetch('/api/config')
+  .then((r) => r.json())
+  .then((c: { turnstile?: string | null }) => setTurnstileKey(c?.turnstile))
+  .catch(() => null)
+  .finally(start);

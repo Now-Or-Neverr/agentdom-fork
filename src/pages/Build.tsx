@@ -2,12 +2,13 @@
 // at its own link (/p/<slug>). Revise it in plain words, restore older versions, download it.
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Copy, Download, ExternalLink, FileText, Flag, History, Laptop, Loader2, RotateCcw, Smartphone, Sparkles, Wand2 } from 'lucide-react';
+import { ArrowRight, Check, Copy, Download, ExternalLink, FileText, Flag, History, Laptop, Loader2, RotateCcw, Shuffle, Smartphone, Sparkles, Wand2 } from 'lucide-react';
 import { AppShell } from '../app/AppShell';
 import { useApp } from '../lib/store';
 import { ago } from '../lib/api';
-import { buildApi, pageUrl, type BuildFormat, type BuildView, type BuilderStatus } from '../lib/buildApi';
+import { buildApi, pageUrl, type BuildFormat, type BuildView, type BuilderStatus, type GalleryPage } from '../lib/buildApi';
 import './build.css';
+import { NotifyButton } from '../components/NotifyButton';
 
 const FORMATS: { id: BuildFormat; label: string }[] = [
   { id: 'auto', label: 'Let it decide' },
@@ -44,7 +45,8 @@ function useStatus() {
 function Progress({ b }: { b: BuildView }) {
   const secs = b.progress?.seconds ?? 0;
   const chars = b.progress?.chars ?? 0;
-  const stage = STAGES[Math.min(STAGES.length - 1, chars < 200 ? 0 : chars < 1500 ? 1 : chars < 9000 ? 2 : chars < 20000 ? 3 : 4)];
+  const painting = b.progress?.stage === 'images';
+  const stage = painting ? 'Painting images' : STAGES[Math.min(STAGES.length - 1, chars < 200 ? 0 : chars < 1500 ? 1 : chars < 9000 ? 2 : chars < 20000 ? 3 : 4)];
   return (
     <div className="bd-progress" role="status" aria-live="polite">
       <div className="bd-loom" aria-hidden>
@@ -55,15 +57,190 @@ function Progress({ b }: { b: BuildView }) {
       <div>
         <b>{stage}…</b>
         <p>
-          {chars > 0 ? `${chars.toLocaleString('en')} characters written` : 'Starting up'} · {secs}s
+          {painting
+            ? `The page is written. Painting its pictures${b.progress?.images ? ` (${b.progress.images} done)` : ''}`
+            : chars > 0
+              ? `${chars.toLocaleString('en')} characters written`
+              : 'Starting up'}{' '}
+          · {secs}s
         </p>
         <small>Big pages can take a minute or two. You can leave this page; your build keeps going and stays in “Your builds”.</small>
+        {b.mine && (
+          <div style={{ marginTop: 10 }}>
+            <NotifyButton />
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function Result({ b, onChange, status }: { b: BuildView; onChange: (b: BuildView) => void; status: BuilderStatus | null }) {
+function OwnerTools({ b, onChange }: { b: BuildView; onChange: (b: BuildView) => void }) {
+  const { toast } = useApp();
+  const [name, setName] = useState(b.slug);
+  const [saving, setSaving] = useState(false);
+  const [pub, setPub] = useState(false);
+  useEffect(() => setName(b.slug), [b.slug]);
+  const clean = name.trim().toLowerCase();
+  const valid = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(clean) && clean.length >= 3 && clean.length <= 40 && !clean.includes('--');
+
+  const togglePublic = async (on: boolean) => {
+    setPub(true);
+    try {
+      onChange(await buildApi.setPublic(b.id, on));
+      toast(on ? 'It is in the gallery now.' : 'Taken out of the gallery.');
+    } catch (err) {
+      toast((err as Error).message);
+    } finally {
+      setPub(false);
+    }
+  };
+  const rename = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!valid || clean === b.slug) return;
+    setSaving(true);
+    try {
+      onChange(await buildApi.rename(b.id, clean));
+      toast('New link saved. The old link still works.');
+    } catch (err) {
+      toast((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="bd-owner">
+      <label className="bd-check">
+        <input type="checkbox" checked={b.isPublic} disabled={pub} onChange={(e) => togglePublic(e.target.checked)} />
+        <span>
+          <b>Show in the gallery</b>
+          <small>Anyone can find it under “Made with Agentdom” and remix it.</small>
+        </span>
+      </label>
+      <form className="bd-rename" onSubmit={rename}>
+        <label htmlFor="bd-slug">Link name</label>
+        <div className="bd-rename-row">
+          <span aria-hidden>/p/</span>
+          <input
+            id="bd-slug"
+            value={name}
+            onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 40))}
+            spellCheck={false}
+            autoComplete="off"
+            aria-describedby="bd-slug-help"
+          />
+          <button className="bd-mini" disabled={saving || !valid || clean === b.slug}>
+            {saving ? <Loader2 size={12} className="spin" /> : <Check size={12} />} Save
+          </button>
+        </div>
+        <small id="bd-slug-help">3 to 40 lowercase letters, numbers or dashes. Old links keep working.</small>
+      </form>
+    </div>
+  );
+}
+
+function RemixBox({ b, status, onRemixed }: { b: BuildView; status: BuilderStatus | null; onRemixed: (id: string) => void }) {
+  const { toast } = useApp();
+  const [ask, setAsk] = useState('');
+  const [busy, setBusy] = useState(false);
+  const go = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!ask.trim()) return;
+    setBusy(true);
+    try {
+      const r = await buildApi.remix(b.slug, ask.trim());
+      setAsk('');
+      onRemixed(r.id);
+    } catch (err) {
+      toast((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <form className="bd-revise" onSubmit={go}>
+      <label htmlFor="bd-remix">Remix this</label>
+      <p className="bd-fine" style={{ margin: 0 }}>
+        Start your own build from this file. Say what to change; the original stays as it is.
+      </p>
+      <textarea
+        id="bd-remix"
+        value={ask}
+        onChange={(e) => setAsk(e.target.value)}
+        placeholder="e.g. make it for my coffee shop in Bandung, switch to a dark theme"
+        rows={3}
+        maxLength={2000}
+      />
+      <button className="btn btn-primary" disabled={busy || !ask.trim() || (status ? !status.open : false)}>
+        {busy ? <Loader2 size={15} className="spin" /> : <Shuffle size={15} />} Remix it
+      </button>
+    </form>
+  );
+}
+
+function Gallery({ onRemix }: { onRemix: (slug: string) => void }) {
+  const [items, setItems] = useState<GalleryPage['items'] | null>(null);
+  const [more, setMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const load = useCallback((offset: number) => {
+    setLoading(true);
+    buildApi
+      .gallery(offset, 12)
+      .then((p) => {
+        setItems((prev) => (offset ? [...(prev ?? []), ...p.items] : p.items));
+        setMore(p.more);
+      })
+      .catch(() => setItems((prev) => prev ?? []))
+      .finally(() => setLoading(false));
+  }, []);
+  useEffect(() => load(0), [load]);
+  if (!items || !items.length) return null;
+  return (
+    <section className="bd-mine bd-gallery" aria-labelledby="bd-gallery-h">
+      <div className="bd-mine-head">
+        <h2 id="bd-gallery-h">Made with Agentdom</h2>
+        <span>Shared by their makers</span>
+      </div>
+      <div className="bd-ggrid">
+        {items.map((g) => (
+          <article key={g.slug} className="bd-gcard">
+            <a className="bd-thumb" href={`/p/${g.slug}`} target="_blank" rel="noopener noreferrer" aria-label={`Open ${g.title}`}>
+              {g.ext === 'html' ? (
+                <iframe src={`/p/${g.slug}?thumb=1`} title="" loading="lazy" tabIndex={-1} aria-hidden sandbox="allow-scripts" scrolling="no" />
+              ) : (
+                <span className="bd-thumb-ext">.{g.ext}</span>
+              )}
+            </a>
+            <div className="bd-gbody">
+              <b>{g.title}</b>
+              <small>
+                {g.ext.toUpperCase()} · {g.views.toLocaleString('en')} views{g.remixes ? ` · ${g.remixes} ${g.remixes === 1 ? 'remix' : 'remixes'}` : ''}
+              </small>
+            </div>
+            <div className="bd-gacts">
+              <a className="bd-mini" href={`/p/${g.slug}`} target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={12} /> Open
+              </a>
+              <button className="bd-mini" onClick={() => onRemix(g.slug)}>
+                <Shuffle size={12} /> Remix
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+      {more && (
+        <div className="bd-gmore">
+          <button className="btn btn-quiet" disabled={loading} onClick={() => load(items.length)}>
+            {loading ? <Loader2 size={15} className="spin" /> : null} More
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Result({ b, onChange, status, onRemixed }: { b: BuildView; onChange: (b: BuildView) => void; status: BuilderStatus | null; onRemixed?: (id: string) => void }) {
   const { toast } = useApp();
   const [view, setView] = useState<'desktop' | 'mobile'>('desktop');
   const [ask, setAsk] = useState('');
@@ -161,6 +338,17 @@ function Result({ b, onChange, status }: { b: BuildView; onChange: (b: BuildView
           </a>
         </div>
         {b.error && <p className="bd-error">{b.error}</p>}
+        {b.remixedFrom && (
+          <p className="bd-origin">
+            <Shuffle size={13} /> Remixed from{' '}
+            <a href={`/p/${b.remixedFrom.slug}`} target="_blank" rel="noopener noreferrer">
+              {b.remixedFrom.title}
+            </a>
+          </p>
+        )}
+
+        {b.mine && b.status === 'live' && <OwnerTools b={b} onChange={onChange} />}
+        {!b.mine && b.status === 'live' && onRemixed && <RemixBox b={b} status={status} onRemixed={onRemixed} />}
 
         {b.mine && (
           <form className="bd-revise" onSubmit={revise}>
@@ -280,6 +468,33 @@ export default function Build() {
       .then(setCurrent)
       .catch(() => setParams({}, { replace: true }));
   }, [openId]);
+
+  // open ?remix=<slug> (from the gallery or the Remix link in a page's badge)
+  const remixSlug = params.get('remix');
+  useEffect(() => {
+    if (!remixSlug || openId) return;
+    buildApi
+      .get(remixSlug)
+      .then((b) => {
+        setCurrent(b);
+        setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      })
+      .catch(() => {
+        toast('That page is not available to remix.');
+        setParams({}, { replace: true });
+      });
+  }, [remixSlug, openId]);
+
+  const onRemixed = async (id: string) => {
+    try {
+      setCurrent(await buildApi.get(id));
+    } catch {
+      /* the poller picks it up */
+    }
+    setParams({ b: id });
+    loadStatus();
+    setTimeout(() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
 
   // poll while building
   useEffect(() => {
@@ -402,7 +617,7 @@ export default function Build() {
                 )}
               </div>
             )}
-            {current && current.version > 0 && current.status !== 'failed' && <Result b={current} onChange={setCurrent} status={status} />}
+            {current && current.version > 0 && current.status !== 'failed' && <Result b={current} onChange={setCurrent} status={status} onRemixed={onRemixed} />}
           </div>
 
           {others.length > 0 && (
@@ -433,6 +648,8 @@ export default function Build() {
               </div>
             </section>
           )}
+
+          <Gallery onRemix={(slug) => setParams({ remix: slug })} />
 
           <section className="bd-how">
             <div>

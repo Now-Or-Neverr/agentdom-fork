@@ -213,7 +213,7 @@
   justify-content: center;
   flex-shrink: 0;
   background: var(--gold-soft);
-  border: 1px solid #ecd29b;
+  border: 1px solid var(--gold-line);
 }
 .ls-ic.rev {
   background: var(--purple-soft);

@@ -143,7 +143,7 @@ export default function Hall() {
               const I = provinceIcon(g.id);
               return (
                 <button key={g.id} className={'chip' + (province === g.id ? ' on' : '')} onClick={() => set({ province: g.id })}>
-                  <I size={15} color={province === g.id ? '#fffaf2' : g.color} />
+                  <I size={15} color={province === g.id ? 'currentColor' : g.color} />
                   {g.craft}
                 </button>
               );

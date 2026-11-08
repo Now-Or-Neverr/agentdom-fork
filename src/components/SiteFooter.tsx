@@ -22,6 +22,7 @@ const COLS = [
     title: 'Your court',
     links: [
       { to: '/decrees', label: 'My decrees' },
+      { to: '/account', label: 'Your key' },
       { to: '/schedules', label: 'Standing decrees' },
       { to: '/enlist', label: 'Enlist an agent' },
       { to: '/vault', label: 'Royal Vault' },
@@ -93,7 +94,9 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="sf-bottom">
-          <span>© 2026 {BRAND.name}</span>
+          <span>
+            © 2026 {BRAND.name} · <Link to="/terms">Terms</Link> · <Link to="/privacy">Privacy</Link>
+          </span>
           <span className="num">{BRAND.domain}</span>
         </div>
         <div className="sf-giant" aria-hidden>

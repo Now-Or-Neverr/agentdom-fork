@@ -9,6 +9,12 @@ import { isAdmin } from '../herald';
 import {
   FORMATS,
   adminStats,
+  aliasTarget,
+  gallery,
+  inlineLocalImages,
+  renameSlug,
+  setPublic,
+  startRemix,
   builderStatus,
   buildView,
   extOf,
@@ -23,7 +29,9 @@ export const router = Router();
 const REPORT_HIDE = Number(process.env.BUILDER_REPORT_HIDE) || 5;
 
 const byId = (id: string) => db.prepare('SELECT * FROM builds WHERE id = ?').get(id) as any;
-const bySlug = (slug: string) => db.prepare('SELECT * FROM builds WHERE slug = ?').get(slug) as any;
+const bySlugOnly = (slug: string) => db.prepare('SELECT * FROM builds WHERE slug = ?').get(slug) as any;
+// old (renamed) slugs keep working everywhere
+const bySlug = (slug: string) => bySlugOnly(slug) ?? aliasTarget(slug);
 const ipOf = (req: Request) => req.ip ?? '';
 
 router.get(
@@ -61,6 +69,46 @@ router.post(
     const v = Number(req.body?.version);
     if (!Number.isInteger(v) || v < 1) throw new HttpError(400, 'Pick a version.');
     restoreVersion(String(u.id), req.params.id, v);
+    res.json(buildView(byId(req.params.id), String(u.id)));
+  }),
+);
+
+router.post(
+  '/api/builds/remix',
+  h((req, res) => {
+    const u = currentUser(req);
+    const prompt = text(req.body?.prompt, 2000, 'What to change');
+    if (prompt.length < 4) throw new HttpError(400, 'Say what to change in a few words.');
+    const src = bySlug(String(req.body?.from ?? '')) ?? byId(String(req.body?.from ?? ''));
+    if (!src || src.status !== 'live' || !src.content || Number(src.reports) >= REPORT_HIDE) throw new HttpError(404, 'That page cannot be remixed.');
+    res.json(startRemix(String(u.id), ipOf(req), src, prompt));
+  }),
+);
+
+router.get(
+  '/api/builds/gallery',
+  h((req, res) => {
+    const offset = Math.max(0, Math.min(10_000, Math.floor(Number(req.query.offset) || 0)));
+    const limit = Math.max(1, Math.min(24, Math.floor(Number(req.query.limit) || 12)));
+    res.setHeader('Cache-Control', 'no-cache');
+    res.json(gallery(offset, limit, REPORT_HIDE));
+  }),
+);
+
+router.post(
+  '/api/builds/:id/public',
+  h((req, res) => {
+    const u = currentUser(req);
+    setPublic(String(u.id), req.params.id, !!req.body?.public);
+    res.json(buildView(byId(req.params.id), String(u.id)));
+  }),
+);
+
+router.post(
+  '/api/builds/:id/slug',
+  h((req, res) => {
+    const u = currentUser(req);
+    renameSlug(String(u.id), req.params.id, req.body?.slug);
     res.json(buildView(byId(req.params.id), String(u.id)));
   }),
 );
@@ -133,6 +181,16 @@ router.post(
   }),
 );
 router.post(
+  '/api/admin/builds/:slug/unlist',
+  h((req, res) => {
+    admin(req);
+    const b = bySlug(req.params.slug) ?? byId(req.params.slug);
+    if (!b) throw new HttpError(404, 'Build not found.');
+    db.prepare('UPDATE builds SET is_public = 0 WHERE id = ?').run(b.id);
+    res.json({ ok: true });
+  }),
+);
+router.post(
   '/api/admin/builds/:slug/restore',
   h((req, res) => {
     admin(req);
@@ -162,8 +220,9 @@ const CSP = [
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
 const json = (x: unknown) => JSON.stringify(x).replace(/</g, '\\u003c');
 
-function badge(slug: string) {
-  return `<div id="agentdom-badge" style="all:initial;position:fixed;right:12px;bottom:12px;z-index:2147483647;display:flex;gap:6px;align-items:center;padding:6px 8px 6px 12px;border-radius:999px;background:rgba(31,22,17,.86);color:#fffaf2;font:500 12px/1 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25)"><a href="/build" target="_blank" rel="noopener" style="all:unset;cursor:pointer;color:#f3d38e">Built with Agentdom</a><a href="/build?report=${esc(slug)}" target="_blank" rel="noopener" title="Report this page" style="all:unset;cursor:pointer;padding:3px 7px;border-radius:999px;background:rgba(255,250,242,.12);color:#fffaf2;font-size:11px">Report</a></div>`;
+function badge(slug: string, remix = false) {
+  const pill = 'all:unset;cursor:pointer;padding:3px 7px;border-radius:999px;background:rgba(255,250,242,.12);color:#fffaf2;font-size:11px';
+  return `<div id="agentdom-badge" style="all:initial;position:fixed;right:12px;bottom:12px;z-index:2147483647;display:flex;gap:6px;align-items:center;padding:6px 8px 6px 12px;border-radius:999px;background:rgba(31,22,17,.86);color:#fffaf2;font:500 12px/1 system-ui,-apple-system,Segoe UI,sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.25)"><a href="/build" target="_blank" rel="noopener" style="all:unset;cursor:pointer;color:#f3d38e">Built with Agentdom</a>${remix ? `<a href="/build?remix=${esc(slug)}" target="_blank" rel="noopener" title="Make your own version of this page" style="${pill}">Remix</a>` : ''}<a href="/build?report=${esc(slug)}" target="_blank" rel="noopener" title="Report this page" style="all:unset;cursor:pointer;padding:3px 7px;border-radius:999px;background:rgba(255,250,242,.12);color:#fffaf2;font-size:11px">Report</a></div>`;
 }
 
 function shell(title: string, slug: string, body: string, head = '') {
@@ -172,12 +231,14 @@ function shell(title: string, slug: string, body: string, head = '') {
 <body><main><div class="bar"><span>${esc(title)}</span><a href="?download=1" target="_blank" rel="noopener">Download</a></div><div class="doc">${body}</div></main>${badge(slug)}</body></html>`;
 }
 
-function render(b: any): { type: string; body: string } {
+function render(b: any, opts: { thumb: boolean; local: boolean }): { type: string; body: string } {
   const ext = extOf(b.filename);
   const c: string = b.content;
   if (ext === 'html') {
-    const i = c.toLowerCase().lastIndexOf('</body>');
-    const html = i >= 0 ? c.slice(0, i) + badge(b.slug) + c.slice(i) : c + badge(b.slug);
+    const src = opts.local ? inlineLocalImages(c) : c;
+    const tag = opts.thumb ? '' : badge(b.slug, true);
+    const i = src.toLowerCase().lastIndexOf('</body>');
+    const html = i >= 0 ? src.slice(0, i) + tag + src.slice(i) : src + tag;
     return { type: 'text/html; charset=utf-8', body: html };
   }
   if (ext === 'svg') return { type: 'image/svg+xml; charset=utf-8', body: c };
@@ -223,7 +284,16 @@ function notice(res: Response, status: number, title: string, line: string) {
 }
 
 router.get('/p/:slug', (req, res) => {
-  const b = bySlug(req.params.slug);
+  const b = bySlugOnly(req.params.slug);
+  if (!b) {
+    // a renamed build: the old link keeps working
+    const moved = aliasTarget(req.params.slug);
+    if (moved && moved.status !== 'removed') {
+      const q = req.originalUrl.indexOf('?');
+      res.setHeader('Cache-Control', 'no-cache');
+      return res.redirect(302, `/p/${encodeURIComponent(moved.slug)}${q >= 0 ? req.originalUrl.slice(q) : ''}`);
+    }
+  }
   if (!b || b.status === 'removed') return notice(res, 404, 'Nothing here', 'This page does not exist or was taken down.');
   if (!b.content) return notice(res, 404, b.status === 'building' ? 'Still building' : 'Nothing here', b.status === 'building' ? 'This page is being built. Refresh in a moment.' : 'This build did not finish.');
   if (Number(b.reports) >= REPORT_HIDE) return notice(res, 451, 'Under review', 'This page was reported by visitors and is hidden while we review it.');
@@ -239,8 +309,10 @@ router.get('/p/:slug', (req, res) => {
     res.setHeader('Content-Security-Policy', "sandbox; default-src 'none'");
     return res.send(b.content);
   }
-  if (!req.header('x-agentdom-preview')) db.prepare('UPDATE builds SET views = views + 1 WHERE id = ?').run(b.id);
-  const r = render(b);
+  const thumb = req.query.thumb !== undefined;
+  if (!thumb && !req.header('x-agentdom-preview')) db.prepare('UPDATE builds SET views = views + 1 WHERE id = ?').run(b.id);
+  // without https (local dev) the CSP's img-src https: would block our absolute image URLs
+  const r = render(b, { thumb, local: req.protocol !== 'https' });
   res.setHeader('Content-Type', r.type);
   res.setHeader('Content-Security-Policy', CSP);
   res.send(r.body);

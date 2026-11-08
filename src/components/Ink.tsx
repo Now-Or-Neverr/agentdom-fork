@@ -22,7 +22,7 @@ export function Seal({ children, size = 64, rotate = -6, color = 'var(--purple)'
         justifyContent: 'center',
         textAlign: 'center',
         background: color,
-        color: '#fff',
+        color: 'var(--on-seal, #fff)',
         borderRadius: size * 0.3,
         boxShadow: `0 ${size * 0.08}px ${size * 0.2}px rgba(27,21,48,.18), inset 0 0 0 ${Math.max(2, size * 0.045)}px rgba(255,255,255,.35)`,
         transform: `rotate(${rotate}deg)`,
@@ -51,10 +51,10 @@ export function KnotRule({ style }: { style?: CSSProperties }) {
 }
 
 // Puffy cloud decoration.
-export function CloudMotif({ size = 120, color = '#ffffff', opacity = 0.9, style }: { size?: number; color?: string; opacity?: number; style?: CSSProperties }) {
+export function CloudMotif({ size = 120, color = 'var(--cloud, #ffffff)', opacity = 0.9, style }: { size?: number; color?: string; opacity?: number; style?: CSSProperties }) {
   return (
     <svg width={size} height={size * 0.5} viewBox="0 0 200 100" style={{ opacity, ...style }} aria-hidden>
-      <path d="M30 90 C8 90 4 64 26 60 C24 36 56 28 70 46 C76 18 122 14 130 44 C150 30 180 42 176 66 C196 70 194 92 172 90 Z" fill={color} />
+      <path d="M30 90 C8 90 4 64 26 60 C24 36 56 28 70 46 C76 18 122 14 130 44 C150 30 180 42 176 66 C196 70 194 92 172 90 Z" style={{ fill: color }} />
     </svg>
   );
 }

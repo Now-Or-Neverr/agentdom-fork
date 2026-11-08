@@ -6,9 +6,9 @@
   background: #cdeafa;
   color: var(--ink);
   font-family: var(--font-body);
-  --glass: rgba(255, 251, 245, 0.84);
-  --glass-b: rgba(var(--ink-rgb), 0.09);
-  --pill-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 14px 34px -14px rgba(var(--ink-rgb), 0.38), 0 1px 2px rgba(var(--ink-rgb), 0.06);
+  --glass: rgba(var(--surface-rgb), 0.84);
+  --glass-b: rgba(var(--fg-rgb), 0.09);
+  --pill-shadow: 0 1px 0 rgba(var(--hi-rgb), calc(0.7 * var(--hi-k))) inset, 0 14px 34px -14px rgba(var(--ink-rgb), 0.38), 0 1px 2px rgba(var(--ink-rgb), 0.06);
 }
 .rp-canvas {
   position: absolute;
@@ -59,7 +59,7 @@
     color 0.2s;
 }
 .rp-nav a:hover {
-  background: rgba(var(--ink-rgb), 0.06);
+  background: rgba(var(--fg-rgb), 0.06);
   color: var(--ink);
 }
 .rp-vault b {
@@ -121,12 +121,12 @@
   padding: 0 12px;
   border-radius: 999px;
   background: var(--gold-soft);
-  border: 1px solid #ecd29b;
+  border: 1px solid var(--gold-line);
   font-size: 13.5px;
 }
 .rp-crowns small {
   font-size: 10.5px;
-  color: #7a5208;
+  color: var(--gold-ink-2, #7a5208);
 }
 .rp-issue {
   height: 42px;
@@ -226,12 +226,12 @@
     color 0.2s;
 }
 .rp-rail button:hover {
-  background: rgba(var(--ink-rgb), 0.05);
+  background: rgba(var(--fg-rgb), 0.05);
   color: var(--ink);
 }
 .rp-rail button.on {
   background: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
   box-shadow: 0 8px 18px -10px rgba(var(--ink-rgb), 0.6);
 }
 .rp-rail button.on .rp-rail-no {
@@ -296,7 +296,7 @@
     transform 0.2s;
 }
 .rp-ctrl button:hover {
-  background: #fffdf9;
+  background: var(--hover-hi, #fffdf9);
   border-color: var(--line-c2);
   color: var(--ink);
 }
@@ -306,7 +306,7 @@
 .rp-ctrl button.on {
   background: var(--ink);
   border-color: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
 }
 .rp-ctrl i {
   width: 18px;
@@ -417,7 +417,7 @@
   height: 40px;
   border-radius: 50%;
   border: 1px solid var(--line-c);
-  background: #fff;
+  background: var(--paper-white);
   color: var(--ink);
   display: inline-flex;
   align-items: center;
@@ -452,7 +452,7 @@
   right: 0;
   top: 0;
   height: 96px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--accent, var(--purple)) 18%, #fff), transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent, var(--purple)) 18%, var(--paper-white)), transparent);
   pointer-events: none;
 }
 @keyframes rp-in {
@@ -531,8 +531,8 @@
   padding: 11px 13px;
   border-radius: 13px;
   background: var(--gold-soft);
-  border: 1px solid #f4d58e;
-  color: #7a5208;
+  border: 1px solid var(--gold-line-2, #f4d58e);
+  color: var(--gold-ink-2, #7a5208);
   font-size: 13px;
   font-weight: 600;
 }
@@ -552,7 +552,7 @@
   padding: 9px 12px 9px 9px;
   border-radius: 16px;
   border: 1px solid var(--line-c);
-  background: #fff;
+  background: var(--paper-white);
   transition:
     border-color 0.2s,
     transform 0.2s var(--ease),
@@ -633,7 +633,7 @@
   border: 1px solid var(--line-c);
   border-radius: 16px;
   overflow: hidden;
-  background: #fff;
+  background: var(--paper-white);
 }
 .rp-specs > div {
   display: flex;
@@ -712,7 +712,7 @@
   padding: 10px 16px;
   border-radius: 999px;
   background: var(--ink);
-  color: #fff;
+  color: var(--on-ink);
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
@@ -735,9 +735,9 @@
   /* a still of the realm under a soft veil, so the map feels present while it builds */
   background:
     radial-gradient(60% 50% at 50% 42%, rgba(243, 211, 142, 0.38), transparent 70%),
-    linear-gradient(180deg, rgba(249, 242, 231, 0.8), rgba(246, 238, 226, 0.9)),
+    linear-gradient(180deg, rgba(var(--surface2-rgb, 249, 242, 231), 0.8), rgba(var(--bg-rgb), 0.9)),
     url('/posters/realm-desk.webp') center / cover no-repeat,
-    linear-gradient(180deg, #e9f5fd, #f6eee2);
+    linear-gradient(180deg, var(--veil-top, #e9f5fd), var(--bg));
   transition:
     opacity 0.7s var(--ease),
     visibility 0.7s;
@@ -746,9 +746,9 @@
   .rp-veil {
     background:
       radial-gradient(60% 50% at 50% 42%, rgba(243, 211, 142, 0.38), transparent 70%),
-      linear-gradient(180deg, rgba(249, 242, 231, 0.8), rgba(246, 238, 226, 0.9)),
+      linear-gradient(180deg, rgba(var(--surface2-rgb, 249, 242, 231), 0.8), rgba(var(--bg-rgb), 0.9)),
       url('/posters/realm-mob.webp') center / cover no-repeat,
-      linear-gradient(180deg, #e9f5fd, #f6eee2);
+      linear-gradient(180deg, var(--veil-top, #e9f5fd), var(--bg));
   }
 }
 .rp-veil.gone {
@@ -843,7 +843,7 @@
   font-weight: 700;
   color: var(--ink-2);
   text-decoration: underline;
-  text-decoration-color: rgba(var(--ink-rgb), 0.25);
+  text-decoration-color: rgba(var(--fg-rgb), 0.25);
   text-underline-offset: 2px;
 }
 .rp-chip-btn {
@@ -851,7 +851,7 @@
   color: var(--purple);
 }
 .rp-chip-btn:hover {
-  background: #fff;
+  background: var(--paper-white);
 }
 .rp-chip-btn:disabled {
   opacity: 0.7;
@@ -859,8 +859,8 @@
 }
 .rp-chip-fest {
   border-color: rgba(192, 57, 43, 0.35);
-  background: linear-gradient(180deg, rgba(255, 244, 232, 0.95), rgba(255, 233, 214, 0.92));
-  color: #8a2a1e;
+  background: var(--fest-bg, linear-gradient(180deg, rgba(255, 244, 232, 0.95), rgba(255, 233, 214, 0.92)));
+  color: var(--fest-ink, #8a2a1e);
 }
 .rp-chip-soft {
   font-weight: 500;
@@ -897,14 +897,14 @@
   color: var(--ink-3);
 }
 .rp-agent-state.is-working {
-  color: #8a5a10;
+  color: var(--working-ink, #8a5a10);
 }
 .rp-agent-state.is-working .dot {
   background: #f2b52e;
   box-shadow: 0 0 8px rgba(242, 181, 46, 0.8);
 }
 .rp-agent-state.is-duty {
-  color: #6a4a2a;
+  color: var(--duty-ink, #6a4a2a);
 }
 .rp-agent-state.is-duty .dot {
   color: #c9963e;
@@ -914,7 +914,7 @@
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid rgba(140, 104, 52, 0.25);
-  background: #fffaf0;
+  background: var(--task-bg, #fffaf0);
 }
 .rp-task.is-working {
   border-color: rgba(242, 181, 46, 0.55);
@@ -1172,7 +1172,7 @@
 .rp-nav a.active,
 .rp-nav a[aria-current='page'] {
   background: var(--ink);
-  color: #fffaf2;
+  color: var(--on-ink);
 }
 .rp-vault b {
   font-weight: 600;
@@ -1342,7 +1342,7 @@
 .rp-veil-bar {
   width: 180px;
   height: 2px;
-  background: rgba(var(--ink-rgb), 0.12);
+  background: rgba(var(--fg-rgb), 0.12);
 }
 .rp-veil-bar::after {
   background: linear-gradient(90deg, var(--purple), var(--gold));
