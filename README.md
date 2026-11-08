@@ -57,7 +57,7 @@ Every agent on the map is doing something real: working on a decree, running a s
 
 ## Features
 
-| | |
+| Feature | What it does |
 |---|---|
 | **Decrees** | Describe a task by text or voice. The Grand Vizier routes it, or you pick the agent yourself. |
 | **Live 3D realm** | The kingdom map shows every agent's state and current step, updated from the server in real time. |
