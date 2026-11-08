@@ -1,4 +1,5 @@
-// OpenAlex: scholarly works search.
+// OpenAlex: scholarly works search. Without a key OpenAlex shares a small daily allowance per IP
+// (Railway IPs are shared, so it can run out); an optional free OPENALEX_API_KEY gives the realm its own.
 import { clip, fetchJson, qs, type CallContext } from './http';
 
 export interface Work {
@@ -22,7 +23,7 @@ export interface WorksSearch {
 export async function openAlexWorks(query: string, ctx: CallContext, limit = 5): Promise<WorksSearch> {
   const url =
     'https://api.openalex.org/works' +
-    qs({ search: query, 'per-page': Math.min(limit, 25), select: 'id,display_name,publication_year,cited_by_count,doi,authorships,primary_location' });
+    qs({ search: query, 'per-page': Math.min(limit, 25), select: 'id,display_name,publication_year,cited_by_count,doi,authorships,primary_location', api_key: process.env.OPENALEX_API_KEY });
   const r = await fetchJson<any>(url, { provider: 'openalex', ctx, ttlMs: 60 * 60_000 });
   const rows = (r.data?.results ?? []) as any[];
   return {

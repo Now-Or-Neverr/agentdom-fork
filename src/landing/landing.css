@@ -1342,7 +1342,38 @@ a.ld-pin:hover .ld-pin-label {
   gap: 16px;
   padding: 10px max(16px, calc((100vw - 1180px) / 2 + 28px)) 30px;
   scroll-snap-type: x mandatory;
-  scroll-padding: 0 16px;
+  /* snap cards to the same left edge as the heading */
+  scroll-padding: 0 max(16px, calc((100vw - 1180px) / 2 + 28px));
+}
+.ld-court-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.ld-court-nav {
+  display: flex;
+  gap: 8px;
+}
+.ld-court-arrow {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line-c);
+  box-shadow: var(--shadow-1);
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.ld-court-arrow:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+.ld-court-arrow:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 .ld-court-skel {
   width: 250px;

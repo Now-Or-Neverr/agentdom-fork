@@ -1,5 +1,5 @@
-// Free Dictionary API (dictionaryapi.dev) and Datamuse.
-import { clip, fetchJson, qs, type CallContext } from './http';
+// Free Dictionary API (dictionaryapi.dev), Wiktionary as its backup, and Datamuse.
+import { clip, fetchJson, qs, stripHtml, type CallContext } from './http';
 
 export interface Definition {
   word: string;
@@ -11,11 +11,22 @@ export interface Definition {
   fetchedAt: string;
 }
 
-/** English definitions. `found: false` when the dictionary has no entry. */
+/** English definitions. Falls back to Wiktionary when dictionaryapi.dev is down or has no entry. */
 export async function define(word: string, ctx: CallContext): Promise<Definition> {
   const w = word.trim().toLowerCase();
   const url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w);
-  const r = await fetchJson<any>(url, { provider: 'dictionary', ctx, ttlMs: 24 * 60 * 60_000, okStatuses: [404] });
+  let r: Awaited<ReturnType<typeof fetchJson<any>>>;
+  try {
+    r = await fetchJson<any>(url, { provider: 'dictionary', ctx, ttlMs: 24 * 60 * 60_000, okStatuses: [404] });
+  } catch (e) {
+    const wk = await wiktionary(w, ctx).catch(() => null);
+    if (wk) return wk;
+    throw e;
+  }
+  if (!Array.isArray(r.data) || !r.data.length) {
+    const wk = await wiktionary(w, ctx).catch(() => null);
+    if (wk) return wk;
+  }
   const entries = Array.isArray(r.data) ? (r.data as any[]) : [];
   const e = entries[0];
   const meanings = entries
@@ -37,6 +48,25 @@ export async function define(word: string, ctx: CallContext): Promise<Definition
     sourceUrl: e?.sourceUrls?.[0] ?? `https://en.wiktionary.org/wiki/${encodeURIComponent(w)}`,
     fetchedAt: r.fetchedAt,
   };
+}
+
+/** Wiktionary's REST definitions (English section only). null when it has no English entry. */
+async function wiktionary(w: string, ctx: CallContext): Promise<Definition | null> {
+  const r = await fetchJson<any>('https://en.wiktionary.org/api/rest_v1/page/definition/' + encodeURIComponent(w), { provider: 'wiktionary', ctx, ttlMs: 24 * 60 * 60_000, okStatuses: [404] });
+  const clean = (h: string) => stripHtml(String(h ?? '').replace(/<style[\s\S]*?<\/style>/gi, ''));
+  const meanings = ((r.data?.en ?? []) as any[])
+    .map((m) => ({
+      partOfSpeech: String(m.partOfSpeech ?? '').toLowerCase(),
+      definitions: ((m.definitions ?? []) as any[])
+        .map((d) => ({ text: clip(clean(d.definition), 300), example: d.examples?.[0] ? clip(clean(d.examples[0]), 200) : null }))
+        .filter((d) => d.text)
+        .slice(0, 3),
+      synonyms: [] as string[],
+    }))
+    .filter((m) => m.definitions.length)
+    .slice(0, 5);
+  if (!meanings.length) return null;
+  return { word: w, found: true, phonetic: null, audio: null, meanings, sourceUrl: `https://en.wiktionary.org/wiki/${encodeURIComponent(w)}`, fetchedAt: r.fetchedAt };
 }
 
 export type WordRelation = 'synonyms' | 'rhymes' | 'related' | 'antonyms';
