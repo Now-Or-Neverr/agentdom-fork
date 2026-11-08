@@ -41,7 +41,7 @@ export function grain() {
   grainTex = new THREE.CanvasTexture(c);
   grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
   grainTex.colorSpace = THREE.SRGBColorSpace;
-  grainTex.anisotropy = 4;
+  grainTex.anisotropy = 8;
   return grainTex;
 }
 

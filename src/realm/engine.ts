@@ -192,7 +192,8 @@ export class RealmEngine {
     this.dpr = Math.min(maxDpr(q), this.mobile ? 1.5 : hero ? 1.5 : 2);
     this.renderer.setPixelRatio(this.dpr);
     this.renderer.shadowMap.enabled = !q.slow;
-    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    // soft shadow edges where the device can afford them (the map is only re-rendered on demand)
+    this.renderer.shadowMap.type = !low && !this.mobile ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
     this.renderer.shadowMap.autoUpdate = false;
     const cv = this.renderer.domElement;
     cv.style.display = 'block';

@@ -54,7 +54,7 @@ export function signAtlas() {
   const g = c.getContext('2d')!;
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   let alive = true;
   PROVINCES.forEach((p, i) => {
     const col = '#' + neon(p.color).getHexString();

@@ -73,7 +73,7 @@ export function quality(): Quality {
 
 /** Highest pixel ratio a scene may use on this tier (scenes may cap lower). */
 export function maxDpr(q = quality()) {
-  return Math.min(window.devicePixelRatio || 1, q.tier === 'low' ? 1 : 1.75);
+  return Math.min(window.devicePixelRatio || 1, q.tier === 'low' ? 1 : 2);
 }
 
 /** Switch to the low tier for the rest of the visit (frames measured slow). */

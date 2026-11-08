@@ -132,6 +132,17 @@ interface Mover {
   boat: boolean;
   loop: boolean;
   dir: number;
+  /** fishing boats stop now and then to fish: seconds left in the current stop */
+  fishing?: { next: number; left: number };
+  /** current speed factor (eases in and out of stops) */
+  cur: number;
+  heel: number;
+}
+
+function pathLength(path: THREE.Vector3[]) {
+  let L = 0;
+  for (let i = 0; i < path.length; i++) L += path[i].distanceTo(path[(i + 1) % path.length]);
+  return L;
 }
 
 export class Movers {
@@ -144,19 +155,30 @@ export class Movers {
     const pens = PROVINCES.map((p) => p.color);
     const big = lanes.filter((l) => !l.fishing);
     const small = lanes.filter((l) => l.fishing);
+    // Junks on the same lane share one speed and are spread evenly around it, so they never
+    // catch up with each other; lanes themselves never cross (see planLanes in world.ts).
+    const perLane = big.map(() => 0);
+    for (let i = 0; i < nJunks && big.length; i++) perLane[i % big.length]++;
+    const laneSpeed = big.map(() => 1.1 + r() * 0.5);
+    const laneStart = big.map(() => r());
+    const seen = big.map(() => 0);
     for (let i = 0; i < nJunks && big.length; i++) {
-      const ln = big[i % big.length];
+      const li = i % big.length;
+      const ln = big[li];
+      const path = ln.pts.map((p) => new THREE.Vector3(p.x, -0.16, p.y));
       const g = junkGeo(sails[i % sails.length], ribs[i % ribs.length], pens[i % pens.length]).build(mats.s)!;
-      g.castShadow = true;
       g.scale.setScalar(1.4);
-      this.add(g, ln.pts.map((p) => new THREE.Vector3(p.x, -0.16, p.y)), r() * 1000, 1.1 + r() * 0.5, true, true);
+      this.contact(g, 1.25, 3.2, 0.0);
+      const at = (laneStart[li] + seen[li]++ / perLane[li]) % 1;
+      this.add(g, path, at * pathLength(path), laneSpeed[li], true, true);
       this.wake(g, -1.95, 4.6, 2.6, (0.03 + 0.16) / 1.4);
     }
     const canopies = ['#7a6a48', '#6b5a3c', '#8a7350'];
     for (const ln of small) {
       const g = sampanGeo(canopies[Math.floor(r() * canopies.length)]).build(mats.s)!;
-      g.castShadow = true;
+      this.contact(g, 0.8, 1.9, 0.0);
       this.add(g, ln.pts.map((p) => new THREE.Vector3(p.x, -0.1, p.y)), r() * 1000, 0.5 + r() * 0.3, true, true);
+      this.list[this.list.length - 1].fishing = { next: 6 + r() * 14, left: 0 };
       this.wake(g, -1.1, 2.8, 1.3, 0.13);
     }
     const loads = ['#c9b07a', '#8a6446', '#a7593a', '#d8c8a6'];
@@ -164,10 +186,36 @@ export class Movers {
       const path = carts[i % carts.length];
       const pal = i % 3 === 1;
       const g = (pal ? palanquinGeo(['#7a3a28', '#5d6e60', '#8a6446'][i % 3]) : oxCartGeo(loads[i % loads.length])).build(mats.s)!;
-      g.castShadow = true;
       g.scale.setScalar(0.85);
+      this.contact(g, 0.9, 1.4, 0.03);
       this.add(g, path, r() * 1000, pal ? 0.8 + r() * 0.2 : 0.55 + r() * 0.2, false, false);
     }
+  }
+  // Soft contact shadow under a moving thing. The sun's shadow map is only re-rendered on demand,
+  // so anything that moves must not cast into it (it would leave a ghost shadow where it was).
+  private shadowMat: THREE.MeshBasicMaterial | null = null;
+  private shadowGeo: THREE.PlaneGeometry | null = null;
+  private contact(obj: THREE.Mesh, halfW: number, halfL: number, y: number) {
+    if (!this.shadowMat) {
+      const c = document.createElement('canvas');
+      c.width = c.height = 64;
+      const g = c.getContext('2d')!;
+      const gr = g.createRadialGradient(32, 32, 2, 32, 32, 31);
+      gr.addColorStop(0, 'rgba(0,0,0,0.55)');
+      gr.addColorStop(0.55, 'rgba(0,0,0,0.25)');
+      gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr;
+      g.fillRect(0, 0, 64, 64);
+      this.shadowMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, opacity: 0.6 });
+      this.shadowGeo = new THREE.PlaneGeometry(1, 1);
+      this.shadowGeo.rotateX(-Math.PI / 2);
+    }
+    const m = new THREE.Mesh(this.shadowGeo!, this.shadowMat);
+    const sc = obj.scale.x || 1;
+    m.scale.set((halfW * 2) / sc, 1, (halfL * 2) / sc);
+    m.position.y = y / sc + 0.02;
+    m.renderOrder = 1;
+    obj.add(m);
   }
   private wakeMat: THREE.MeshBasicMaterial | null = null;
   private wakeGeo: THREE.PlaneGeometry | null = null;
@@ -204,22 +252,35 @@ export class Movers {
     m.scale.set(w, 1, len);
     m.position.set(0, y, stern - len / 2 + 0.3);
     m.renderOrder = 2;
+    m.userData.wake = { len, stern, w };
     boat.add(m);
   }
   setNight(n: number) {
     if (this.wakeMat) this.wakeMat.opacity = 0.5 - n * 0.36;
+    if (this.shadowMat) this.shadowMat.opacity = 0.6 - n * 0.35;
   }
   private add(mesh: THREE.Mesh, path: THREE.Vector3[], s: number, v: number, boat: boolean, loop: boolean) {
     const n = loop ? path.length : path.length - 1;
     const lens: number[] = [];
     for (let i = 0; i < n; i++) lens.push(path[i].distanceTo(path[(i + 1) % path.length]) || 1e-3);
     const total = lens.reduce((a, b) => a + b, 0);
-    this.list.push({ mesh, path, lens, total, s: s % total, v, boat, loop, dir: 1 });
+    this.list.push({ mesh, path, lens, total, s: s % total, v, boat, loop, dir: 1, cur: 1, heel: 0 });
     this.group.add(mesh);
   }
   update(dt: number, t: number) {
     for (const m of this.list) {
-      if (m.loop) m.s = (m.s + m.v * dt) % m.total;
+      // fishing boats: sail a while, then stop to fish for a few seconds
+      let want = 1;
+      if (m.fishing) {
+        const f = m.fishing;
+        if (f.left > 0) {
+          f.left -= dt;
+          want = 0;
+          if (f.left <= 0) f.next = 10 + Math.random() * 18;
+        } else if ((f.next -= dt) <= 0) f.left = 4 + Math.random() * 6;
+      }
+      m.cur += (want - m.cur) * Math.min(1, dt * 1.2);
+      if (m.loop) m.s = (m.s + m.v * m.cur * dt) % m.total;
       else {
         m.s += m.v * dt * m.dir;
         if (m.s > m.total) {
@@ -245,17 +306,35 @@ export class Movers {
       const head = Math.atan2(b.x - a.x, b.z - a.z) + (m.dir < 0 ? Math.PI : 0);
       let dh = head - m.mesh.rotation.y;
       dh = Math.atan2(Math.sin(dh), Math.cos(dh));
-      m.mesh.rotation.y += dh * Math.min(1, dt * 3 + (t < 0.1 ? 1 : 0));
+      const turn = dh * Math.min(1, dt * 3 + (t < 0.1 ? 1 : 0));
+      m.mesh.rotation.y += turn;
       if (m.boat) {
-        m.mesh.position.set(x, y + Math.sin(t * 1.4 + m.s) * 0.05, z);
-        m.mesh.rotation.z = Math.sin(t * 1.1 + m.s) * 0.035;
+        // a sailing hull leans out of a turn (more with speed), and settles when it stops
+        const rate = dt > 0 ? turn / dt : 0;
+        const target = Math.max(-0.09, Math.min(0.09, -rate * 0.18 * m.cur));
+        m.heel += (target - m.heel) * Math.min(1, dt * 2);
+        const swell = 0.6 + 0.4 * (1 - m.cur); // a stopped boat rocks a little more
+        m.mesh.position.set(x, y + Math.sin(t * 1.4 + m.s) * 0.05 * swell, z);
+        m.mesh.rotation.z = m.heel + Math.sin(t * 1.1 + m.s) * 0.035 * swell;
         m.mesh.rotation.x = Math.sin(t * 0.9 + m.s * 0.7) * 0.02;
+        // the foam trail shortens as the boat slows and fades out when it stops
+        for (const c of m.mesh.children) {
+          const wk = c.userData.wake as { len: number; stern: number; w: number } | undefined;
+          if (!wk) continue;
+          const L = Math.max(0.01, wk.len * m.cur);
+          c.visible = m.cur > 0.06;
+          c.scale.set(wk.w * (0.6 + 0.4 * m.cur), 1, L);
+          c.position.z = wk.stern - L / 2 + 0.3;
+        }
       } else m.mesh.position.set(x, y + Math.abs(Math.sin(t * 6 + m.s)) * 0.02, z);
     }
   }
   dispose() {
     this.list.forEach((m) => m.mesh.geometry.dispose());
     this.wakeGeo?.dispose();
+    this.shadowGeo?.dispose();
+    this.shadowMat?.map?.dispose();
+    this.shadowMat?.dispose();
     this.wakeMat?.map?.dispose();
     this.wakeMat?.dispose();
   }

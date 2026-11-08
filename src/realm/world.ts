@@ -379,28 +379,130 @@ function bridge(k: Kit, pts: [number, number][]) {
   return out;
 }
 
-// Junk sailing lanes: ellipses nudged into open water.
-function lane(cx: number, cz: number, rx: number, rz: number, n = 36, depth = 1.6, rev = false) {
-  const pts: THREE.Vector2[] = [];
-  for (let i = 0; i < n; i++) {
-    const a = ((rev ? -1 : 1) * i * Math.PI * 2) / n;
-    let x = cx + Math.sin(a) * rx;
-    let z = cz + Math.cos(a) * rz;
-    for (let s = 0; s < 40 && height(x, z) > -depth; s++) {
-      x += (cx - x) * 0.06;
-      z += (cz - z) * 0.06;
-    }
-    pts.push(new THREE.Vector2(x, z));
+// ---------- sailing lanes ----------
+// A lane is a closed loop through open water. Every point ALONG the loop (not just its corners)
+// must be deep enough for the hull, keep the hull's half-width off the shore, and stay clear of
+// piers, moored boats, stilt huts and bridges. Lanes also keep apart from each other, so boats on
+// different lanes never sail through one another.
+type Circle = [number, number, number]; // x, z, radius
+interface LaneSpec {
+  cx: number;
+  cz: number;
+  rx: number;
+  rz: number;
+  n: number;
+  depth: number;
+  rev: boolean;
+  fishing: boolean;
+}
+
+function waterClear(x: number, z: number, depth: number, rad: number, obs: Circle[]) {
+  if (height(x, z) > -depth) return false;
+  for (let q = 0; q < 8; q++) {
+    const a = (q / 8) * Math.PI * 2;
+    if (height(x + Math.sin(a) * rad, z + Math.cos(a) * rad) > -depth * 0.45) return false;
   }
-  // relax
+  for (const [ox, oz, or] of obs) if (Math.hypot(x - ox, z - oz) < or + rad) return false;
+  return true;
+}
+
+function segClear(a: THREE.Vector2, b: THREE.Vector2, depth: number, rad: number, obs: Circle[]) {
+  const steps = Math.max(1, Math.ceil(a.distanceTo(b) / 0.6));
+  for (let s = 0; s <= steps; s++) {
+    const t = s / steps;
+    if (!waterClear(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, depth, rad, obs)) return false;
+  }
+  return true;
+}
+
+// Moves a point towards the lane centre until it is clear (or gives up).
+function pullIn(x: number, z: number, cx: number, cz: number, depth: number, rad: number, obs: Circle[]) {
+  for (let s = 0; s < 50; s++) {
+    if (waterClear(x, z, depth, rad, obs)) return new THREE.Vector2(x, z);
+    x += (cx - x) * 0.05;
+    z += (cz - z) * 0.05;
+  }
+  return null;
+}
+
+function buildLane(sp: LaneSpec, rad: number, obs: Circle[]): THREE.Vector2[] | null {
+  const pts: THREE.Vector2[] = [];
+  for (let i = 0; i < sp.n; i++) {
+    const a = ((sp.rev ? -1 : 1) * i * Math.PI * 2) / sp.n;
+    const p = pullIn(sp.cx + Math.sin(a) * sp.rx, sp.cz + Math.cos(a) * sp.rz, sp.cx, sp.cz, sp.depth, rad, obs);
+    if (p) pts.push(p);
+  }
+  if (pts.length < 8) return null;
+  // smooth the corners where it stays clear
   for (let it = 0; it < 3; it++)
-    for (let i = 0; i < n; i++) {
-      const p = pts[(i + n - 1) % n];
-      const q = pts[(i + 1) % n];
-      const m = new THREE.Vector2((p.x + q.x) / 2, (p.y + q.y) / 2);
-      if (height(m.x, m.y) < -depth) pts[i].lerp(m, 0.5);
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[(i + pts.length - 1) % pts.length];
+      const q = pts[(i + 1) % pts.length];
+      const m = new THREE.Vector2((p.x + q.x) / 2, (p.y + q.y) / 2).lerp(pts[i], 0.5);
+      if (waterClear(m.x, m.y, sp.depth, rad, obs)) pts[i].copy(m);
     }
+  // repair segments that cut a corner of land: add a pulled-in point in the middle
+  for (let pass = 0; pass < 5; pass++) {
+    let fixed = true;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      if (segClear(a, b, sp.depth, rad, obs)) continue;
+      fixed = false;
+      const mid = pullIn((a.x + b.x) / 2, (a.y + b.y) / 2, sp.cx, sp.cz, sp.depth, rad, obs);
+      if (!mid) return null;
+      pts.splice(i + 1, 0, mid);
+      i++;
+    }
+    if (fixed) break;
+  }
+  for (let i = 0; i < pts.length; i++) if (!segClear(pts[i], pts[(i + 1) % pts.length], sp.depth, rad, obs)) return null;
   return pts;
+}
+
+// Closest distance between two closed polylines (sampled).
+function laneGap(a: THREE.Vector2[], b: THREE.Vector2[]) {
+  // far apart bounding boxes: no need to compare every sample
+  const box = (pts: THREE.Vector2[]) => pts.reduce((o, p) => [Math.min(o[0], p.x), Math.min(o[1], p.y), Math.max(o[2], p.x), Math.max(o[3], p.y)], [Infinity, Infinity, -Infinity, -Infinity]);
+  const [ax0, az0, ax1, az1] = box(a);
+  const [bx0, bz0, bx1, bz1] = box(b);
+  const boxGap = Math.hypot(Math.max(0, bx0 - ax1, ax0 - bx1), Math.max(0, bz0 - az1, az0 - bz1));
+  if (boxGap > 6) return boxGap;
+  let best = Infinity;
+  const sample = (pts: THREE.Vector2[]) => {
+    const out: THREE.Vector2[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i];
+      const q = pts[(i + 1) % pts.length];
+      const n = Math.max(1, Math.ceil(p.distanceTo(q) / 0.8));
+      for (let s = 0; s < n; s++) out.push(p.clone().lerp(q, s / n));
+    }
+    return out;
+  };
+  const sa = sample(a);
+  const sb = sample(b);
+  for (const p of sa) for (const q of sb) best = Math.min(best, p.distanceTo(q));
+  return best;
+}
+
+// Builds every lane; one that cannot fit (land, obstacles or another lane too close) is tried a
+// little smaller or larger, and left out if nothing fits.
+function planLanes(specs: LaneSpec[], obs: Circle[]) {
+  const JUNK_R = 1.9; // half-width of a junk plus a margin
+  const SAMPAN_R = 1.0;
+  const out: { pts: THREE.Vector2[]; fishing: boolean }[] = [];
+  for (const sp of specs) {
+    const rad = sp.fishing ? SAMPAN_R : JUNK_R;
+    for (const f of [1, 0.88, 1.12, 0.76, 1.24, 0.64]) {
+      const pts = buildLane({ ...sp, rx: sp.rx * f, rz: sp.rz * f }, rad, obs);
+      if (!pts) continue;
+      const ok = out.every((o) => laneGap(pts, o.pts) > rad + (o.fishing ? SAMPAN_R : JUNK_R) + 0.6);
+      if (!ok) continue;
+      out.push({ pts, fishing: sp.fishing });
+      break;
+    }
+  }
+  return out;
 }
 
 const TREE_KINDS: TreeKind[] = ['pine', 'fir', 'oak', 'round', 'blossom', 'autumn'];
@@ -566,6 +668,7 @@ export function buildWorld(mode: 'hero' | 'full', mats: Mats): World {
   }
   // fishing huts on stilts along the shores
   let huts = 0;
+  const hutObs: Circle[] = [];
   for (let tries = 0; tries < 900 && huts < (hero ? 6 : 10); tries++) {
     const x = (r() * 2 - 1) * (MAP_X - 16);
     const z = (r() * 2 - 1) * (MAP_Z - 14);
@@ -581,7 +684,13 @@ export function buildWorld(mode: 'hero' | 'full', mats: Mats): World {
     if (land < 0) continue;
     house(k, Frame.at(x, 0, z, 0), 0, 0, 1.8, 1.5, land + Math.PI, r, { stilts: 0.7, wall: '#a27b55' });
     blocked.push([x, z, 2.2]);
-    if (r() < 0.7) boat(k, x + Math.sin(land + Math.PI) * 2.0, z + Math.cos(land + Math.PI) * 2.0, land + Math.PI / 2, 0.9);
+    hutObs.push([x, z, 1.8]);
+    if (r() < 0.7) {
+      const bx = x + Math.sin(land + Math.PI) * 2.0;
+      const bz = z + Math.cos(land + Math.PI) * 2.0;
+      boat(k, bx, bz, land + Math.PI / 2, 0.9);
+      hutObs.push([bx, bz, 1.4]);
+    }
     huts++;
   }
 
@@ -813,21 +922,35 @@ export function buildWorld(mode: 'hero' | 'full', mats: Mats): World {
   }
 
   // --- sailing lanes ---
-  const lanes = [
-    { pts: lane(0, -6, 15, 8), fishing: false },
-    { pts: lane(1, -8, 19, 12, 40, 1.8, true), fishing: false },
-    { pts: lane(-2, -26, 12, 9), fishing: false },
-    { pts: lane(0, -38, 42, 13, 48, 1.8, true), fishing: false },
-    { pts: lane(2, -20, 24, 18, 48, 1.8), fishing: false },
-    { pts: lane(-47, -14, 9, 4, 24, 1.2), fishing: false },
-    { pts: lane(60, -30, 10, 7, 28, 1.6, true), fishing: false },
-    { pts: lane(-6, 7, 6, 2.6, 20, 0.8), fishing: true },
-    { pts: lane(14, 7, 5, 2.4, 20, 0.8, true), fishing: true },
-    { pts: lane(-20, -20, 4, 3, 18, 0.8), fishing: true },
-    { pts: lane(36, -16, 4, 3, 18, 0.8, true), fishing: true },
-    { pts: lane(-60, -22, 4, 3, 18, 0.8), fishing: true },
-    { pts: lane(8, -42, 5, 3, 18, 0.8, true), fishing: true },
-  ];
+  // everything a hull must not touch on the water
+  const waterObs: Circle[] = [...hutObs];
+  for (const [px, pz, a, len] of pierList) {
+    for (let t = 0; t <= len; t += 0.8) waterObs.push([px + Math.sin(a) * t, pz + Math.cos(a) * t, 1.0]);
+    waterObs.push([px + Math.sin(a) * (len + 0.6), pz + Math.cos(a) * (len + 0.6), 2.1]); // T head
+  }
+  for (const [mx, mz] of moored) waterObs.push([mx, mz, 1.6]);
+  for (const rd of ROADS) if (rd.bridge) for (const [bx, bz] of sampleRoad(rd.pts, 0.8)) waterObs.push([bx, bz, 1.3]);
+  const L = (cx: number, cz: number, rx: number, rz: number, n = 36, depth = 1.6, rev = false, fishing = false): LaneSpec => ({ cx, cz, rx, rz, n, depth, rev, fishing });
+  // big junk lanes first (they need the most room), then fishing boats
+  const lanes = planLanes(
+    [
+      // junks: each lane has its own stretch of water (the bay, the strait between the two
+      // northern islands, the open sea to the north, east and west)
+      L(11, -3, 13, 5.5, 40),
+      L(0, -31, 5, 9, 28, 1.8, true),
+      L(-20, -60, 24, 4, 40, 1.8),
+      L(36, -61, 15, 3.5, 32, 1.8, true),
+      L(54, -44, 8, 3, 24, 1.6, true),
+      L(-58, -44, 10, 3, 24, 1.6),
+      // fishing boats close to the shores
+      L(-6, 7, 6, 2.6, 20, 0.8, false, true),
+      L(-20, -20, 4, 3, 18, 0.8, false, true),
+      L(30, -16, 4, 2.5, 18, 0.8, true, true),
+      L(-60, -22, 4, 3, 18, 0.8, false, true),
+      L(8, -44, 4, 2.4, 18, 0.8, true, true),
+    ],
+    waterObs,
+  );
 
   return {
     group,
