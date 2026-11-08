@@ -69,7 +69,7 @@ export function WorkWatcher() {
       if (!onPage && !hidden) say.current(`${title}: ${body}`);
       if (notifyPermission() !== 'granted' || (onPage && !hidden) || !claim(key)) return;
       try {
-        const n = new Notification(title, { body, tag: key, icon: '/logo.svg' });
+        const n = new Notification(title, { body, tag: key, icon: '/logo.png' });
         n.onclick = () => {
           try {
             window.focus();

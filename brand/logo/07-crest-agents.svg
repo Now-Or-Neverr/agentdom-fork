@@ -1,0 +1,3 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512"><rect width="512" height="512" fill="#6b4226"/><g fill="#e0a93e" color="#e0a93e" transform="translate(51.2 51.2) scale(.8)"><path fill-rule="evenodd" d="M256 60 L420 112 V244 Q420 384 256 456 Q92 384 92 244 V112 Z
+          M186 186 a30 30 0 1 0 0.01 0 Z M256 150 a34 34 0 1 0 0.01 0 Z M326 186 a30 30 0 1 0 0.01 0 Z
+          M156 340 V290 Q156 258 186 258 Q216 258 216 290 V340 Z M222 340 V258 Q222 224 256 224 Q290 224 290 258 V340 Z M296 340 V290 Q296 258 326 258 Q356 258 356 290 V340 Z"/></g></svg>

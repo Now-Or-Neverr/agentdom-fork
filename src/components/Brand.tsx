@@ -1,8 +1,8 @@
 import { BRAND } from '../config';
 
-// Espresso squircle with a gold crown, used as the logo mark.
+// The Agentdom mark (Agent Wall): gold castle wall whose battlements are three agents, on brand brown.
 export function SealMark({ size = 30 }: { size?: number }) {
-  return <img src="/logo.svg?v=mocha" width={size} height={size} alt="" style={{ flexShrink: 0 }} />;
+  return <img src="/logo.svg?v=wall" width={size} height={size} alt="" style={{ flexShrink: 0, borderRadius: size * 0.28 }} />;
 }
 
 // tone="light" = for dark backgrounds, tone="dark" = for light backgrounds
