@@ -41,3 +41,4 @@ export { makeSlideshow, type SlideshowInput, type Slideshow } from './video';
 export * from "./pro-data";
 // Media & action clients (images, audio, video sources, publishing, notifications):
 export * from "./pro-media";
+export { designImage, orImageToday, orImageTotal, OR_ASPECTS, OR_IMAGE_MODEL, OR_IMAGE_PROMPT_MAX, type OrAspect, type DesignedImage } from "./orimage";

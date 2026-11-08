@@ -27,6 +27,7 @@ export interface AdminBuilder {
   dailyUsd: number;
   model: string;
   inflight: number;
+  images: { today: { images: number; cost: number; cap: number }; total: { images: number; cost: number } };
   credits: { total: number; used: number; left: number } | null;
   recent: { id: string; slug: string; title: string; filename: string; status: string; reports: number; views: number; created_at: string }[];
 }

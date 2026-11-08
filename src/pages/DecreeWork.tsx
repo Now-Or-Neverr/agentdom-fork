@@ -24,6 +24,7 @@ const TOOL_LABEL: Record<string, string> = {
   define_word: 'Dictionary',
   related_words: 'Related words',
   current_weather: 'Weather',
+  design_image: 'Designed image',
   generate_image: 'Image generation',
   make_video: 'Video render',
   publish_web_page: 'Web page',

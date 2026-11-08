@@ -3,6 +3,7 @@
 // numbers OpenRouter returns, and limits switch on by date (free-for-all during launch days).
 import { db, now, uid } from './db';
 import { HttpError } from './core';
+import { orImageToday, orImageTotal } from './integrations/orimage';
 
 export const BUILDER_MODEL = process.env.BUILDER_MODEL || 'anthropic/claude-sonnet-5.5';
 const MAX_TOKENS = Number(process.env.BUILDER_MAX_TOKENS) || 20000;
@@ -466,6 +467,7 @@ export function adminStats() {
     dailyUsd: DAILY_USD,
     model: BUILDER_MODEL,
     inflight: inflight.size,
+    images: { today: orImageToday(), total: orImageTotal() },
     recent: (db.prepare("SELECT id, slug, title, filename, status, reports, views, created_at FROM builds ORDER BY created_at DESC LIMIT 40").all() as any[]),
   };
 }

@@ -98,6 +98,9 @@ export default function BuilderAdmin() {
                 </div>
               </div>
 
+              <p className="bd-limit" style={{ marginTop: 14, padding: 0 }}>
+                Designed images (agents): today {d.images.today.images}/{d.images.today.cap} · {usd(d.images.today.cost)} · all time {d.images.total.images} · {usd(d.images.total.cost)}. Builder figures below exclude images.
+              </p>
               <section className="bd-mine">
                 <div className="bd-mine-head">
                   <h2>By day</h2>

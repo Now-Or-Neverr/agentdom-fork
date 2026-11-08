@@ -40,6 +40,7 @@ export interface ToolUsage {
   files: number;
   drafts: number;
   translations: number;
+  designs: number;
   jobs: number;
   transcripts: number;
   ocr: number;
@@ -71,6 +72,7 @@ export const newUsage = (): ToolUsage => ({
   files: 0,
   drafts: 0,
   translations: 0,
+  designs: 0,
   jobs: 0,
   transcripts: 0,
   ocr: 0,
@@ -625,6 +627,46 @@ const TOOLS: ToolDef[] = [
         summary: `Painted “${title}” (${img.width}×${img.height}, ${img.provider === 'Pollinations' ? 'Pollinations' : 'Cloudflare FLUX'})`,
         sourceName: img.provider === 'Pollinations' ? 'Pollinations' : 'Cloudflare Workers AI',
         sourceUrl: img.sourceUrl,
+        produced: 'image',
+      };
+    },
+  },
+  {
+    name: 'design_image',
+    label: 'Designed image',
+    description:
+      'Make ONE finished, polished graphic with a premium image model (Google Gemini image via OpenRouter): ads, posters, social posts, thumbnails, covers, menus or flyers, WITH clear, correctly spelled text inside the picture. Put the exact words to show in "text" (short: a headline and maybe a tagline). Costs real credit, so at most 2 per decree and only when the decree needs a finished graphic; for plain illustrations or mood images without text use generate_image. Aspect: 1:1, 4:5 (Instagram feed), 9:16 (Stories/Reels), 16:9 (YouTube/banner) or 3:2.',
+    schema: obj(
+      {
+        prompt: { type: 'string', description: 'The visual: subject, layout, style, palette, mood, where the text sits. English, max 1500 characters.' },
+        text: { type: 'string', description: 'Exact text to render in the image (max 200 characters). Omit for no text.' },
+        title: { type: 'string', description: 'Short caption for the gallery.' },
+        aspect: { type: 'string', enum: [...I.OR_ASPECTS], description: 'Default 1:1.' },
+      },
+      ['prompt', 'title'],
+    ),
+    doing: () => 'Designing a graphic',
+    run: async (i, c) => {
+      const prompt = str(i, 'prompt', I.OR_IMAGE_PROMPT_MAX);
+      const title = str(i, 'title', 100);
+      const text = str(i, 'text', 200, false) || undefined;
+      const aspect = oneOf(i, 'aspect', I.OR_ASPECTS, '1:1');
+      if (c.usage.designs >= 2) throw new ToolInputError('Designed image limit reached (2 per decree). Work with the ones you have.');
+      c.usage.designs++;
+      const r = await I.designImage(prompt, ctxOf(c), { aspect, text });
+      const alt = await altText(r.url, c);
+      const n = imageCount(c.decreeId) + 1;
+      addArtifact(c.decreeId, c.revision, {
+        kind: 'image',
+        url: r.url,
+        title,
+        meta: { prompt, text: text ?? null, aspect: r.aspect, bytes: r.bytes, provider: 'Google Gemini image (OpenRouter)', model: r.model, alt },
+      });
+      return {
+        data: { image_number: n, url: r.url, aspect: r.aspect, model: r.model, alt, note: 'Saved. The requester sees it in the Artifacts gallery; refer to it as “Image ' + n + '”. Check the alt text: if the text in the image is misspelled, say so.' },
+        summary: `Designed “${title}” (${r.aspect})`,
+        sourceName: 'OpenRouter · Google Gemini image',
+        sourceUrl: 'https://openrouter.ai/' + r.model,
         produced: 'image',
       };
     },
@@ -1741,10 +1783,10 @@ const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   throne: ['current_weather', 'web_search'],
   forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file', 'scan_url'],
   scriptorium: ['check_grammar', 'define_word', 'related_words', 'translate', 'job_search'],
-  atelier: ['generate_image', 'stock_photos', 'use_stock_photo', 'remove_background', 'brand_lookup'],
-  theatre: ['stock_videos', 'find_music', 'make_film', 'generate_image', 'make_video', 'transcribe_audio', 'record_voiceover'],
+  atelier: ['design_image', 'generate_image', 'stock_photos', 'use_stock_photo', 'remove_background', 'brand_lookup'],
+  theatre: ['design_image', 'stock_videos', 'find_music', 'make_film', 'generate_image', 'make_video', 'transcribe_audio', 'record_voiceover'],
   archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram', 'nutrition_lookup', 'read_image_text'],
-  heralds: ['news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'generate_image', 'draft_bluesky_post'],
+  heralds: ['news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'design_image', 'generate_image', 'draft_bluesky_post'],
   bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup'],
   treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'read_image_text', 'uk_company_search', 'uk_company_profile'],
   court: ['case_law', 'federal_register', 'web_search', 'read_url', 'read_image_text', 'scan_url'],
