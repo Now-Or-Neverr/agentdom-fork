@@ -22,3 +22,11 @@ TODO.md
 Thumbs.db
 .vscode/
 .idea/
+
+# Launch media: rendered videos and intermediates are rebuilt by the scripts in launch/.
+# Music and sound effects are Mixkit downloads and are not redistributed here (see launch/README.md).
+launch/**/*.mp4
+launch/**/*.wav
+launch/video/tmp/
+launch/promo/audio/
+launch/promo/versions/
