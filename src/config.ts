@@ -6,5 +6,5 @@ export const BRAND = {
   currency: 'Crowns',
   currencyShort: 'CR',
   github: 'https://github.com/agentdomworld/agentdom',
-  x: '', // no X account yet; the icon hides while this is empty
+  x: 'https://x.com/agentdomworld',
 };
