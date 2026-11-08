@@ -8,7 +8,11 @@ import { HttpError } from './core';
 import { OR_ASPECTS, designImage, orImageToday, orImageTotal, type OrAspect } from './integrations/orimage';
 
 export const BUILDER_MODEL = process.env.BUILDER_MODEL || 'anthropic/claude-sonnet-5.5';
-const MAX_TOKENS = Number(process.env.BUILDER_MAX_TOKENS) || 20000;
+// Output budget per generation. Reasoning tokens count against it too, so leave room: a rich
+// single-page app is ~12-16k tokens of code plus a few thousand of reasoning.
+const MAX_TOKENS = Number(process.env.BUILDER_MAX_TOKENS) || 32000;
+// Reasoning cannot be switched off for this model on OpenRouter; 'low' keeps it short and fast.
+const REASONING_EFFORT = process.env.BUILDER_REASONING_EFFORT || 'low';
 const MAX_FILE = 300_000; // characters
 const TIMEOUT_MS = 6 * 60_000;
 
@@ -86,6 +90,8 @@ CREATE INDEX IF NOT EXISTS build_aliases_b ON build_aliases(build_id);
 // A restart kills in-flight generations: mark them failed so nobody waits forever.
 db.prepare("UPDATE builds SET status = 'failed', error = 'The server restarted while building. Please try again.' WHERE status = 'building' AND version = 0").run();
 db.prepare("UPDATE builds SET status = 'live' WHERE status = 'building' AND version > 0").run();
+// Older failed builds kept the placeholder title; name them after their request.
+db.prepare("UPDATE builds SET title = substr(trim(prompt), 1, 60) WHERE status = 'failed' AND title = 'Building…'").run();
 
 export type BuildFormat = 'auto' | 'web' | 'md' | 'txt' | 'csv' | 'json' | 'svg';
 export const FORMATS: BuildFormat[] = ['auto', 'web', 'md', 'txt', 'csv', 'json', 'svg'];
@@ -199,6 +205,8 @@ interface GenResult {
   tokensIn: number;
   tokensOut: number;
   cost: number;
+  /** why the model stopped: 'stop' when finished, 'length' when it ran out of output budget */
+  finish: string;
 }
 
 async function generate(messages: { role: string; content: string }[], onChars: (n: number) => void): Promise<GenResult> {
@@ -214,7 +222,7 @@ async function generate(messages: { role: string; content: string }[], onChars: 
         'HTTP-Referer': 'https://agentdom.world',
         'X-Title': 'Agentdom App Builder',
       },
-      body: JSON.stringify({ model: BUILDER_MODEL, messages, max_tokens: MAX_TOKENS, stream: true, usage: { include: true } }),
+      body: JSON.stringify({ model: BUILDER_MODEL, messages, max_tokens: MAX_TOKENS, reasoning: { effort: REASONING_EFFORT }, stream: true, usage: { include: true } }),
     });
     if (!res.ok || !res.body) {
       const body = await res.text().catch(() => '');
@@ -226,6 +234,7 @@ async function generate(messages: { role: string; content: string }[], onChars: 
     let buf = '';
     let text = '';
     let usage: any = null;
+    let finish = '';
     let lastTick = 0;
     for (;;) {
       const { value, done } = await reader.read();
@@ -243,6 +252,8 @@ async function generate(messages: { role: string; content: string }[], onChars: 
           if (j.error) throw new Error(j.error.message || 'The model stopped with an error.');
           const d = j.choices?.[0]?.delta?.content;
           if (typeof d === 'string') text += d;
+          const fr = j.choices?.[0]?.finish_reason;
+          if (fr) finish = String(fr);
           if (j.usage) usage = j.usage;
         } catch (e) {
           if (e instanceof SyntaxError) continue;
@@ -255,7 +266,13 @@ async function generate(messages: { role: string; content: string }[], onChars: 
       }
     }
     onChars(text.length);
-    return { text, tokensIn: Number(usage?.prompt_tokens) || 0, tokensOut: Number(usage?.completion_tokens) || 0, cost: Number(usage?.cost) || 0 };
+    const out: GenResult = { text, tokensIn: Number(usage?.prompt_tokens) || 0, tokensOut: Number(usage?.completion_tokens) || 0, cost: Number(usage?.cost) || 0, finish };
+    if (finish === 'length' && !text.includes('</file>')) {
+      console.warn(`[builder] ran out of output budget: ${text.length} chars, ${out.tokensOut} tokens (max ${MAX_TOKENS})`);
+      throw Object.assign(new Error('The page was too big to finish in one go. Try a simpler request, or ask for fewer sections.'), { gen: out });
+    }
+    if (!finish) console.warn(`[builder] stream ended without a finish reason after ${text.length} chars`);
+    return out;
   } catch (e) {
     if ((e as Error).name === 'AbortError') throw new Error('The build took too long and was stopped. Try a smaller request.');
     throw e;
@@ -554,7 +571,10 @@ export function startBuild(userId: string, ip: string, prompt: string, format: B
       record(id, userId, ip, 'new', r, true, null, img);
     } catch (e) {
       const msg = (e as Error).message || 'The build failed.';
-      db.prepare("UPDATE builds SET status = 'failed', error = ?, updated_at = ? WHERE id = ?").run(msg.slice(0, 300), now(), id);
+      r = r ?? ((e as { gen?: GenResult }).gen ?? null);
+      // a failed build keeps a readable name in "Your builds" instead of "Building…"
+      const name = prompt.replace(/s+/g, ' ').trim().slice(0, 60) || 'Untitled build';
+      db.prepare("UPDATE builds SET status = 'failed', error = ?, title = CASE WHEN title = 'Building…' THEN ? ELSE title END, updated_at = ? WHERE id = ?").run(msg.slice(0, 300), name, now(), id);
       record(id, userId, ip, 'new', r ?? {}, false, msg.slice(0, 300), img);
       console.error('[builder]', msg);
     } finally {
@@ -598,6 +618,7 @@ export function startRevision(userId: string, ip: string, buildId: string, promp
       record(buildId, userId, ip, 'revise', r, true, null, img);
     } catch (e) {
       const msg = (e as Error).message || 'The change failed.';
+      r = r ?? ((e as { gen?: GenResult }).gen ?? null);
       // the previous version stays live; the error is shown once
       db.prepare("UPDATE builds SET status = 'live', error = ?, updated_at = ? WHERE id = ?").run(msg.slice(0, 300), now(), buildId);
       record(buildId, userId, ip, 'revise', r ?? {}, false, msg.slice(0, 300), img);
