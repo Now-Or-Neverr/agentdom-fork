@@ -1,0 +1,10 @@
+# Railway upload: same as .gitignore plus local launch media (videos, banners), not needed by the app
+node_modules/
+dist/
+.env
+.env.*
+data/
+.claude/
+preview/
+*.log
+launch/
