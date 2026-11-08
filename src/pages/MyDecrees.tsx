@@ -23,7 +23,7 @@ export default function MyDecrees() {
   const [list, setList] = useState<Decree[] | null>(null);
   const [f, setF] = useState<F>('all');
   const [standing, setStanding] = useState<Decree | null>(null);
-  const { toast } = useApp();
+  const { toast, crowns } = useApp();
 
   useEffect(() => {
     let t = 0;
@@ -100,9 +100,13 @@ export default function MyDecrees() {
                     <span className="md-meta">
                       <span className="md-guild">{PROVINCE[d.province].name}</span>
                       <span>{d.agent?.name}</span>
-                      <span className="num">
-                        {fmt(d.price)} {BRAND.currencyShort}
-                      </span>
+                      {crowns && d.price > 0 ? (
+                        <span className="num">
+                          {fmt(d.price)} {BRAND.currencyShort}
+                        </span>
+                      ) : (
+                        <span>Free</span>
+                      )}
                       <span>{ago(d.createdAt)}</span>
                     </span>
                   </span>

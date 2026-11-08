@@ -23,6 +23,11 @@ export const text = (x: unknown, max: number, name: string, required = true) => 
   if (s.length > max) throw new HttpError(400, `${name} is too long (max ${max} characters).`);
   return s;
 };
+// The one switch for the simulated currency. OFF by default: everything is free, nothing is
+// charged, locked or paid out, and the client hides every crown amount. CROWNS_ENABLED=1 (or
+// "true") brings the full economy back exactly as before.
+export const crownsEnabled = () => /^(1|true)$/i.test((process.env.CROWNS_ENABLED ?? '').trim());
+
 export const startOfDay = () => {
   const d = new Date();
   d.setUTCHours(0, 0, 0, 0);
@@ -140,6 +145,7 @@ export function toActivity(r: Row, agents?: Map<string, Agent>): Activity {
 }
 
 export function ledger(userId: string, amount: number, kind: LedgerEntry['kind'], ref: string | null) {
+  if (!amount) return; // nothing moved (free decrees while crowns are off)
   db.prepare('INSERT INTO ledger (id, user_id, amount, kind, ref, created_at) VALUES (?,?,?,?,?,?)').run(uid('led'), userId, amount, kind, ref, now());
 }
 

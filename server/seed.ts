@@ -130,10 +130,11 @@ const AGENTS: SeedAgent[] = [
     title: 'Brand palette & guidelines',
     bio: 'Builds palettes, type pairings and the rules for using them.',
     instructions:
-      'You design brand systems. Give a palette (hex, role, contrast notes), free Google Fonts pairings, and usage rules. When helpful include simple SVG samples in ```svg blocks without scripts.',
+      'You design brand systems. Give a palette (hex, role, contrast notes), free Google Fonts pairings, and usage rules. When helpful include simple SVG samples in ```svg blocks without scripts. For a brand teardown of an existing company, call brand_lookup on its domain and work only from the real logos, hex colours and fonts it returns (link the logo files); if Brandfetch has no data, say so instead of guessing.',
     look: 3,
     commissions: [
       { title: 'A compact brand guide: palette, type and rules', description: 'A brand guide your team can use right away.', price: 55, eta: 7, sample: 'A brand guide for a friendly finance app for young adults.' },
+      { title: 'A brand teardown of any company: logo, colours and fonts', description: 'The real logo files, colour hex codes and fonts of a brand, with what makes them work and what you can borrow.', price: 45, eta: 6, sample: 'Tear down the brand of notion.so: logo, colours, fonts, and what a small productivity app could learn from it.' },
     ],
   },
   {
@@ -179,10 +180,13 @@ const AGENTS: SeedAgent[] = [
     province: 'theatre',
     title: 'Podcast & voice-over writer',
     bio: 'Writes podcast and voice-over scripts that are easy to say out loud.',
-    instructions: 'You write for audio. Make it natural to read aloud, mark pauses and emphasis, and estimate duration.',
+    instructions:
+      'You write for audio. Make it natural to read aloud, mark pauses and emphasis, and estimate duration. To transcribe a recording, call transcribe_audio with the public direct file link (not a YouTube or page link) and deliver a cleaned-up transcript plus the .txt and .srt files it saves; never invent words you could not hear. For a recorded voice-over, write the script, then call record_voiceover once with exactly that script (max 1,500 characters) and credit it as "Voice by ElevenLabs"; if the recording is refused, deliver the script and say so.',
     look: 2,
     commissions: [
       { title: 'A podcast or voice-over script', description: 'Ready to record, with pauses marked and an estimated runtime.', price: 35, eta: 5, sample: 'A 2-minute podcast intro about personal finance for young professionals.' },
+      { title: 'Transcribe your audio or video into text and subtitles', description: 'A clean transcript plus an .srt subtitle file from a public link to your recording (up to 20 minutes).', price: 40, eta: 6, sample: 'Transcribe this interview and add subtitles: https://example.com/files/interview.mp3' },
+      { title: 'A recorded voice-over (MP3)', description: 'I write or polish your script and record it as an MP3 in a natural voice, up to about 90 seconds.', price: 50, eta: 6, sample: 'Record a 30-second warm, friendly voice-over for my bakery’s Instagram reel about our new sourdough.' },
     ],
   },
   // GRAND ARCHIVE — Data & Research
@@ -192,10 +196,12 @@ const AGENTS: SeedAgent[] = [
     province: 'archive',
     title: 'Data analyst',
     bio: 'Reads the data you send and summarises what matters most.',
-    instructions: 'You are a data analyst. Analyse only the data provided; show calculations, summary tables and findings. Never invent numbers. If data is missing, say what is needed.',
+    instructions:
+      'You are a data analyst. Analyse only the data provided; show calculations, summary tables and findings. Never invent numbers. If data is missing, say what is needed. For nutrition questions, call nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the stated amounts, show the arithmetic in a table with the fdcId links, and mark anything estimated. This is general information, not medical or dietary advice.',
     look: 3,
     commissions: [
       { title: 'Analyse your CSV and summarise the findings', description: 'Paste the data; get a summary, tables and recommendations.', price: 55, eta: 7, sample: 'Here are 3 months of sales (CSV). Which product grew fastest and when did it peak?' },
+      { title: 'Nutrition breakdown of your recipe or meal plan', description: 'Calories, protein, fat, carbs, fibre and sodium per serving from USDA data, with the sums shown.', price: 40, eta: 6, sample: 'Break down this breakfast per serving: 80 g rolled oats, 250 ml whole milk, 1 medium banana (120 g), 15 g peanut butter.' },
     ],
   },
   {
@@ -353,7 +359,8 @@ const AGENTS: SeedAgent[] = [
     province: 'court',
     title: 'Contract reviewer',
     bio: 'Reads contracts and flags the clauses that deserve attention.',
-    instructions: 'You review contracts. Flag risky clauses, explain them in plain language and suggest fixes. Always say this is not legal advice.',
+    instructions:
+      'You review contracts. Flag risky clauses, explain them in plain language and suggest fixes. Always say this is not legal advice. When a scam, phishing email or suspicious payment link is involved, run scan_url on the link and include what urlscan.io really found (verdict, final URL, hosting, screenshot) as evidence; a clean scan is not proof the link is safe.',
     look: 3,
     commissions: [
       { title: 'Review a contract and flag risky clauses', description: 'Key clauses and suggested fixes.', price: 55, eta: 7, sample: 'Please review this freelance design contract: ...' },
@@ -380,9 +387,10 @@ const AGENTS: SeedAgent[] = [
     title: 'Code reviewer & site auditor',
     bio: 'Reads public GitHub repos and runs Lighthouse on live sites, then tells you exactly what to fix first.',
     instructions:
-      'You review code and websites. For a public GitHub repo, use repo_info, repo_tree and repo_file to read the real files before judging; cite file paths and line snippets. For a website, run audit_site and report the real scores. Rank findings by impact (security, bugs, performance, maintainability) and give the concrete fix for each. Never claim to have read a file or run an audit you did not.',
+      'You review code and websites. For a public GitHub repo, use repo_info, repo_tree and repo_file to read the real files before judging; cite file paths and line snippets. For a website, run audit_site and report the real scores. Rank findings by impact (security, bugs, performance, maintainability) and give the concrete fix for each. Never claim to have read a file or run an audit you did not. To check whether a link is safe, run scan_url and report urlscan.io’s verdict, final URL after redirects, hosting, certificate and screenshot exactly, then add the warning signs you can see yourself; a clean verdict is not proof of safety.',
     look: 3,
     commissions: [
+      { title: 'Is this link safe? A full scan of a suspicious URL', description: 'I open the link in a sandbox and report where it really goes, who hosts it, its certificate and a screenshot, with a plain verdict.', price: 35, eta: 5, sample: 'I got a text saying my parcel is held and to pay at https://royalmail-redelivery-fee.com. Is it safe?' },
       { title: 'A review of your public GitHub repo', description: 'I read the real files and return ranked issues with fixes: bugs, security, structure.', price: 55, eta: 8, sample: 'Review https://github.com/expressjs/cors and tell me the three riskiest things in it.' },
       { title: 'A Lighthouse audit of your website with a fix list', description: 'Real performance, SEO and accessibility scores, plus the fixes that move them most.', price: 40, eta: 6, sample: 'Audit https://example.com on mobile and tell me what slows it down.' },
     ],
@@ -394,9 +402,10 @@ const AGENTS: SeedAgent[] = [
     title: 'Résumé & cover letter writer',
     bio: 'Rewrites résumés and cover letters so the right experience reaches the top of the page.',
     instructions:
-      'You write résumés and cover letters. Use only the experience the requester gives; never invent jobs, dates, degrees or numbers, and mark gaps they should fill in. Tailor to the target role, lead bullets with strong verbs and results, keep it ATS-friendly (plain headings, no tables). Run check_grammar on the final text.',
+      'You write résumés and cover letters. Use only the experience the requester gives; never invent jobs, dates, degrees or numbers, and mark gaps they should fill in. Tailor to the target role, lead bullets with strong verbs and results, keep it ATS-friendly (plain headings, no tables). Run check_grammar on the final text. To find openings, call job_search (live Adzuna ads) with the role and place, list only real ads it returned (title, company, location, salary as given, link) and say for each why the résumé fits and what to stress; ads can close at any time.',
     look: 0,
     commissions: [
+      { title: 'Real job openings that match your résumé', description: 'Live job ads that fit your experience, with why each fits and what to highlight when you apply.', price: 40, eta: 6, sample: 'Find junior data analyst openings in Manchester for my résumé: 1 year Excel reporting at a retailer, SQL course, Python basics.' },
       { title: 'A tailored résumé rewrite', description: 'Your résumé rewritten for one target role, ATS-friendly, with a short change log.', price: 45, eta: 7, sample: 'Rewrite my résumé for a junior data analyst role. Here is my current one: ...' },
       { title: 'A cover letter for a specific job', description: 'One page, written to the job post you paste, in your own voice.', price: 30, eta: 5, sample: 'A cover letter for this barista-to-UX-designer career switch. Job post: ...' },
     ],
@@ -464,9 +473,10 @@ const AGENTS: SeedAgent[] = [
     title: 'Lead finder & market mapper',
     bio: 'Finds real local businesses and look-alike companies to sell to, with a reason for each.',
     instructions:
-      'You find leads. Use local_businesses for real places in a city and find_similar_companies or web_search for companies like a given one. Return a table (name, type, location or site, why they fit, suggested opening line). Only list businesses a tool returned; never invent names, emails or phone numbers.',
+      'You find leads. Use local_businesses for real places in a city and find_similar_companies or web_search for companies like a given one. Return a table (name, type, location or site, why they fit, suggested opening line). Only list businesses a tool returned; never invent names, emails or phone numbers. To check a UK company before a deal, use uk_company_search and uk_company_profile (official Companies House register) and report its status, age, officers, overdue accounts or confirmation statements, charges or insolvency history, with the register link and a plain go / caution verdict.',
     look: 3,
     commissions: [
+      { title: 'Check a UK company before you deal with it', description: 'Status, age, directors and filing record from the official Companies House register, with the red flags spelled out.', price: 35, eta: 5, sample: 'A supplier called Brightline Packaging Ltd wants a 50% deposit. Check them on Companies House before I pay.' },
       { title: 'Twenty local prospects in your city', description: 'A table of real businesses that fit your offer, with an opening line for each.', price: 45, eta: 7, sample: 'Find cafés in Lisbon that might buy locally roasted coffee beans.' },
       { title: 'A map of companies like your best customer', description: 'Look-alike companies with why each fits and how to approach them.', price: 50, eta: 7, sample: 'Find companies similar to notion.so that could need a docs translation service.' },
     ],
@@ -478,9 +488,10 @@ const AGENTS: SeedAgent[] = [
     title: 'Pricing & market analyst',
     bio: 'Sets prices from your costs and reads live market data on public companies.',
     instructions:
-      "You are a pricing and market analyst. Build pricing from the requester's costs and goals (cost-plus, value-based and competitor anchors), with tables and margins; mark every assumption. For public companies use stock_quote, company_profile and company_news, and fx tools for currency. Quote only numbers a tool returned or the requester gave. This is not investment advice.",
+      "You are a pricing and market analyst. Build pricing from the requester's costs and goals (cost-plus, value-based and competitor anchors), with tables and margins; mark every assumption. For public companies use stock_quote, company_profile and company_news, and fx tools for currency. Quote only numbers a tool returned or the requester gave. This is not investment advice. To turn a receipt or invoice into a table, call read_image_text with the public image link and table=true, rebuild the lines (item, quantity, unit price, total, tax) as a clean table, check that the sums add up and flag any digit the OCR may have misread.",
     look: 3,
     commissions: [
+      { title: 'Turn a receipt or invoice photo into a clean table', description: 'Every line read from your photo into a tidy table with totals checked. Needs a public image link (JPG/PNG/PDF up to 1 MB).', price: 30, eta: 4, sample: 'Turn this supplier invoice into a table I can paste into a spreadsheet: https://example.com/invoice-1042.jpg' },
       { title: 'A pricing plan for your product or service', description: 'Price tiers, margins and the reasoning, built from your numbers.', price: 50, eta: 7, sample: 'Price my handmade candles: materials $3.20 each, 2 hours per batch of 12, I sell online in the US.' },
       { title: 'A company snapshot from live market data', description: 'Live quote, profile and recent news for a public company, summarised.', price: 35, eta: 5, sample: 'Give me a snapshot of Shopify (SHOP): price, profile and this week’s news.' },
     ],
@@ -505,17 +516,36 @@ const SIDES = ['North side', 'East side', 'South side', 'West side'];
 
 export function seed(model: string) {
   // Add any crown agent missing from the database (so new agents also reach an existing realm).
-  // Agents already present are left alone.
+  // Crown agents already present (owned by the realm, owner_id IS NULL) get their title, bio and
+  // instructions synced from this list, and any seed commission whose title they do not have yet
+  // is added. Existing commissions are never deleted or changed.
   const insA = db.prepare(
     'INSERT INTO agents (id, slug, name, province, title, bio, instructions, model, role, look, color, owner_id, active, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,1,?)',
   );
   const insC = db.prepare(
     'INSERT INTO commissions (id, agent_id, province, title, description, price, eta_minutes, sample_brief, created_at) VALUES (?,?,?,?,?,?,?,?,?)',
   );
-  const bySlug = db.prepare('SELECT id FROM agents WHERE slug = ?');
+  const bySlug = db.prepare('SELECT id, owner_id, title, bio, instructions FROM agents WHERE slug = ?');
+  const syncA = db.prepare('UPDATE agents SET title = ?, bio = ?, instructions = ? WHERE id = ? AND owner_id IS NULL');
+  const hasC = db.prepare('SELECT 1 FROM commissions WHERE agent_id = ? AND title = ?');
   let added = 0;
+  let synced = 0;
+  let newJobs = 0;
   for (const a of AGENTS) {
-    if (bySlug.get(a.slug)) continue;
+    const cur = bySlug.get(a.slug) as { id: string; owner_id: string | null; title: string; bio: string; instructions: string } | undefined;
+    if (cur) {
+      if (cur.owner_id != null) continue; // not a crown agent: never touch
+      if (cur.title !== a.title || cur.bio !== a.bio || cur.instructions !== a.instructions) {
+        syncA.run(a.title, a.bio, a.instructions, cur.id);
+        synced++;
+      }
+      for (const c of a.commissions) {
+        if (hasC.get(cur.id, c.title)) continue;
+        insC.run(uid('com'), cur.id, a.province, c.title, c.description, c.price, c.eta, c.sample, now());
+        newJobs++;
+      }
+      continue;
+    }
     const id = uid('agt');
     const p = PROVINCE[a.province];
     insA.run(id, a.slug, a.name, a.province, a.title, a.bio, a.instructions, model, p.role, a.look, p.color, now());
@@ -523,6 +553,8 @@ export function seed(model: string) {
     added++;
   }
   if (added) console.log(`[seed] added ${added} crown agent(s)`);
+  if (synced) console.log(`[seed] synced ${synced} crown agent profile(s)`);
+  if (newJobs) console.log(`[seed] added ${newJobs} new crown commission(s)`);
   const hasB = db.prepare('SELECT COUNT(*) AS n FROM banners').get() as { n: number };
   if (hasB.n === 0) {
     const insB = db.prepare('INSERT INTO banners (id, no, province, side, kind, size, price_per_day) VALUES (?,?,?,?,?,?,?)');

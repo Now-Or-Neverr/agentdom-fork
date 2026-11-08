@@ -8,7 +8,7 @@ import { AppShell } from '../app/AppShell';
 import { AgentPortrait, StatusSeal } from '../app/parts';
 import { ago, fmt } from '../lib/api';
 import { schedulesApi } from '../lib/courtApi2';
-import { useApp } from '../lib/store';
+import { useApp, useCrowns } from '../lib/store';
 import { BRAND } from '../config';
 import '../app/app.css';
 import './schedules.css';
@@ -57,6 +57,7 @@ export function CadencePicker({ value, onChange }: { value: CadenceValue; onChan
 }
 
 export function StandingDialog({ decree, onClose, onDone }: { decree: Decree; onClose: () => void; onDone: (s: Schedule) => void }) {
+  const on = useCrowns();
   const [v, setV] = useState<CadenceValue>(defaultCadence);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -86,8 +87,17 @@ export function StandingDialog({ decree, onClose, onDone }: { decree: Decree; on
           </button>
         </div>
         <p className="sd-intro">
-          The same brief goes to {decree.agent?.name ?? 'the same agent'} on every run, with {fmt(decree.price)} {BRAND.currencyShort} locked from your balance each time. A
-          run is skipped (and recorded) if you lack crowns or hit the daily decree limit; after {SCHEDULE_PAUSE_AFTER} misses in a row it pauses itself.
+          {on ? (
+            <>
+              The same brief goes to {decree.agent?.name ?? 'the same agent'} on every run, with {fmt(decree.price)} {BRAND.currencyShort} locked from your balance each time. A
+              run is skipped (and recorded) if you lack crowns or hit the daily decree limit; after {SCHEDULE_PAUSE_AFTER} misses in a row it pauses itself.
+            </>
+          ) : (
+            <>
+              The same brief goes to {decree.agent?.name ?? 'the same agent'} on every run, free during launch. A run is skipped (and recorded) if you hit the daily decree
+              limit; after {SCHEDULE_PAUSE_AFTER} misses in a row it pauses itself.
+            </>
+          )}
         </p>
         <CadencePicker value={v} onChange={setV} />
         {err && <div className="sd-err">{err}</div>}
@@ -100,7 +110,7 @@ export function StandingDialog({ decree, onClose, onDone }: { decree: Decree; on
 }
 
 export default function Schedules() {
-  const { toast } = useApp();
+  const { toast, crowns: on } = useApp();
   const [list, setList] = useState<Schedule[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -143,8 +153,8 @@ export default function Schedules() {
             Orders that <em>repeat</em>
           </h1>
           <p className="lede" style={{ maxWidth: 640 }}>
-            A standing decree sends the same brief to the same agent every day or every week. Each run is a real decree: its reward is locked in the Royal Vault and you
-            review it like any other.
+            A standing decree sends the same brief to the same agent every day or every week. Each run is a real decree:{' '}
+            {on ? 'its reward is locked in the Royal Vault and you review it like any other.' : 'you review it like any other. Runs are free during launch.'}
           </p>
         </div>
       </section>
@@ -182,7 +192,7 @@ export default function Schedules() {
                     {s.agent && <div className="sd-guild">{PROVINCE[s.agent.province].name}</div>}
                     <div className="sd-title">{s.title}</div>
                     <div className="sd-sub">
-                      {s.agent?.name ?? 'Agent'} · <span className="num">{fmt(s.price)} {BRAND.currencyShort}</span> per run
+                      {s.agent?.name ?? 'Agent'} · {on ? <span className="num">{fmt(s.price)} {BRAND.currencyShort}</span> : 'Free'} per run
                     </div>
                   </div>
                   <span className={'sd-pill ' + (s.active ? 'on' : 'off')}>

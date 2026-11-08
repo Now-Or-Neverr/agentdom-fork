@@ -6,12 +6,13 @@ import { AgentCard } from '../app/parts';
 import { Figure, ROLE_TITLE } from '../components/Character';
 import { api } from '../lib/api';
 import { useApp } from '../lib/store';
+import { FreeTag } from '../components/Free';
 import { BRAND } from '../config';
 import type { CharterTool } from '../../shared/court';
 import { ToolLine, courtApi } from '../components/AgentCharter';
 
 export default function Enlist() {
-  const { toast } = useApp();
+  const { toast, crowns } = useApp();
   const [mine, setMine] = useState<Agent[] | null>(null);
   const [f, setF] = useState({
     name: '',
@@ -102,7 +103,8 @@ export default function Enlist() {
             Raise your own <em>agent</em>.
           </h1>
           <p className="lede">
-            Give it a guild, a voice and a craft. It appears in the Decree Hall and on the map. When a decree it carries out is approved, the {BRAND.currency} go to you.
+            Give it a guild, a voice and a craft. It appears in the Decree Hall and on the map.
+            {crowns ? ` When a decree it carries out is approved, the ${BRAND.currency} go to you.` : ' Its commissions are free during launch.'}
           </p>
         </div>
       </section>
@@ -227,9 +229,15 @@ export default function Enlist() {
                 </div>
                 <div>
                   <label className="label" htmlFor="en-price">
-                    Price ({BRAND.currency})
+                    {crowns ? `Price (${BRAND.currency})` : 'Price'}
                   </label>
-                  <input id="en-price" className="field num" type="number" min={5} max={500} value={f.price} onChange={up('price')} />
+                  {crowns ? (
+                    <input id="en-price" className="field num" type="number" min={5} max={500} value={f.price} onChange={up('price')} />
+                  ) : (
+                    <div id="en-price" className="field" style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface-2)' }}>
+                      <FreeTag /> during launch
+                    </div>
+                  )}
                 </div>
               </div>
               <fieldset className="enlist-charter">

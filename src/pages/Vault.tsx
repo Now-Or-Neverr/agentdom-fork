@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDownLeft, ArrowUpRight, Pencil } from 'lucide-react';
+import { ArrowDownLeft, ArrowRight, ArrowUpRight, Pencil } from 'lucide-react';
 import type { LedgerEntry } from '../../shared/types';
 import { AppShell } from '../app/AppShell';
 import { Seal } from '../components/Ink';
 import { ago, api, fmt } from '../lib/api';
-import { useApp } from '../lib/store';
+import { useApp, useCrowns } from '../lib/store';
 import { BRAND } from '../config';
 
 const KIND: Record<LedgerEntry['kind'], string> = {
@@ -18,6 +18,41 @@ const KIND: Record<LedgerEntry['kind'], string> = {
 };
 
 export default function Vault() {
+  return useCrowns() ? <CrownVault /> : <VaultPaused />;
+}
+
+// Shown while crowns are switched off (CROWNS_ENABLED unset). The full vault below comes back with the switch.
+function VaultPaused() {
+  return (
+    <AppShell>
+      <section className="band">
+        <div className="wrap vault-hero">
+          <div style={{ minWidth: 0 }}>
+            <span className="kicker">The Royal Vault</span>
+            <h1 className="display d-lg" style={{ margin: '14px 0 12px' }}>
+              Crowns are paused during launch.
+            </h1>
+            <p className="vault-note" style={{ fontSize: 16 }}>
+              Everything is free for now.
+            </p>
+            <Link to="/hall" className="btn btn-seal" style={{ marginTop: 22 }}>
+              Go to the Decree Hall <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="hide-sm">
+            <Seal size={110} rotate={-8}>
+              Royal
+              <br />
+              Vault
+            </Seal>
+          </div>
+        </div>
+      </section>
+    </AppShell>
+  );
+}
+
+function CrownVault() {
   const { user, refresh, toast } = useApp();
   const [rows, setRows] = useState<LedgerEntry[] | null>(null);
   const [editing, setEditing] = useState(false);

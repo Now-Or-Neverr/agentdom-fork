@@ -4,7 +4,7 @@
 // and the next step is queued with the previous step's full result in its brief.
 import { db, now, tx, uid, type Row } from './db';
 import { bus, decreeChanged, logActivity } from './events';
-import { HttpError, agentById, allAgents, count, ledger, lite } from './core';
+import { HttpError, agentById, allAgents, count, crownsEnabled, ledger, lite } from './core';
 import { PROVINCE } from '../shared/realm';
 import type { GuildId, Quest, QuestStep, QuestStepStatus, QuestTemplate } from '../shared/quests';
 
@@ -296,11 +296,18 @@ export function createQuestRows(
   steps: { province: GuildId; title: string; instruction: string; share: number }[],
 ) {
   const id = uid('qst');
+  if (!crownsEnabled()) {
+    // Crowns are off: the quest and every step decree are free.
+    reward = 0;
+    steps = steps.map((s) => ({ ...s, share: 0 }));
+  }
   const first = tx(() => {
-    const u = db.prepare('SELECT crowns FROM users WHERE id = ?').get(user.id) as Row;
-    if (u.crowns < reward) throw new HttpError(400, `Not enough crowns. You have ${u.crowns}, this quest needs ${reward}.`);
-    db.prepare('UPDATE users SET crowns = crowns - ? WHERE id = ?').run(reward, user.id);
-    ledger(user.id, -reward, 'vault_lock', id);
+    if (reward > 0) {
+      const u = db.prepare('SELECT crowns FROM users WHERE id = ?').get(user.id) as Row;
+      if (u.crowns < reward) throw new HttpError(400, `Not enough crowns. You have ${u.crowns}, this quest needs ${reward}.`);
+      db.prepare('UPDATE users SET crowns = crowns - ? WHERE id = ?').run(reward, user.id);
+      ledger(user.id, -reward, 'vault_lock', id);
+    }
     db.prepare("INSERT INTO quests (id, user_id, template_id, title, subject, reward, status, ip, created_at) VALUES (?,?,?,?,?,?, 'active', ?, ?)").run(
       id,
       user.id,
@@ -339,7 +346,7 @@ export function advance(questId: string) {
       if (d.status === 'delivered') {
         // Auto-approve: the reward leaves the vault for this agent (user-owned agents pay their owner).
         const r = db.prepare("UPDATE decrees SET status = 'approved', finished_at = ? WHERE id = ? AND status = 'delivered'").run(now(), d.id);
-        if (Number(r.changes) === 1 && a.owner_id) {
+        if (Number(r.changes) === 1 && a.owner_id && d.price > 0) {
           db.prepare('UPDATE users SET crowns = crowns + ? WHERE id = ?').run(d.price, a.owner_id);
           ledger(a.owner_id, d.price, 'agent_earning', d.id);
         }

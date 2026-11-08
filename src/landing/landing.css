@@ -2111,3 +2111,168 @@ a.ld-pin:hover .ld-pin-label {
 .ld-guilds.is-desktop .ld-guild-info p {
   margin: 4px 0;
 }
+
+/* ---- how it works: three paths, decree steps, FAQ ---- */
+.ld-how .ld-head .lede {
+  margin-top: 4px;
+}
+.ld-paths {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: clamp(56px, 7vw, 96px);
+}
+.ld-path {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px 24px;
+  border-radius: 26px;
+  background: var(--surface);
+  border: 1px solid var(--line-c);
+  box-shadow: var(--shadow-1);
+}
+.ld-path-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ld-path-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+.ld-path-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line-c);
+  color: var(--ink-3);
+}
+.ld-path h3 {
+  margin: 20px 0 6px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(32px, 3vw, 40px);
+  line-height: 1;
+  letter-spacing: -0.015em;
+}
+.ld-path-line {
+  margin: 0 0 18px;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.ld-path-steps {
+  list-style: none;
+  counter-reset: st;
+  margin: 0 0 22px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+.ld-path-steps li {
+  counter-increment: st;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-top: 1px solid var(--line-c);
+  font-size: 14.5px;
+  color: var(--ink);
+}
+.ld-path-steps li::before {
+  content: counter(st, decimal-leading-zero);
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--gold-deep);
+}
+.ld-path .btn {
+  align-self: flex-start;
+}
+.ld-path.is-feature {
+  background: var(--night);
+  border-color: var(--night);
+  color: #fffaf2;
+  box-shadow: var(--shadow-2);
+}
+.ld-path.is-feature .ld-path-icon {
+  background: rgba(243, 211, 142, 0.14);
+  color: var(--gold-2);
+}
+.ld-path.is-feature .ld-path-tag {
+  border-color: rgba(243, 211, 142, 0.4);
+  color: var(--gold-2);
+}
+.ld-path.is-feature .ld-path-line {
+  color: rgba(255, 245, 230, 0.72);
+}
+.ld-path.is-feature .ld-path-steps li {
+  color: #fffaf2;
+  border-top-color: rgba(255, 240, 220, 0.12);
+}
+.ld-path.is-feature .ld-path-steps li::before {
+  color: var(--gold-2);
+}
+.ld-head-sub {
+  margin-bottom: clamp(24px, 3vw, 40px);
+}
+.ld-faq {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 12px;
+  margin-top: clamp(40px, 5vw, 64px);
+  margin-bottom: clamp(56px, 7vw, 96px);
+}
+.ld-faq-item {
+  padding: 18px 22px;
+  border-radius: 20px;
+  background: rgba(255, 251, 245, 0.7);
+  border: 1px solid var(--line-c);
+}
+.ld-faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-display);
+  font-size: 23px;
+  line-height: 1.15;
+}
+.ld-faq-item summary::-webkit-details-marker {
+  display: none;
+}
+.ld-faq-item summary::after {
+  content: '+';
+  font-family: var(--font-mono);
+  font-size: 18px;
+  color: var(--purple-3);
+  transition: transform 0.25s var(--ease);
+}
+.ld-faq-item[open] summary::after {
+  transform: rotate(45deg);
+}
+.ld-faq-item p {
+  margin: 10px 0 2px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+@media (max-width: 959px) {
+  .ld-paths {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ld-faq {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

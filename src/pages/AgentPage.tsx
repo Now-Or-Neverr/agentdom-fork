@@ -11,11 +11,13 @@ import { CloudMotif, Seal } from '../components/Ink';
 import { Markdown } from '../components/Markdown';
 import { ago, api, fmt } from '../lib/api';
 import { BRAND } from '../config';
+import { useCrowns } from '../lib/store';
 import { AgentCharter } from '../components/AgentCharter';
 import { AgentLessons } from '../components/AgentLessons';
 
 export default function AgentPage() {
   const { id = '' } = useParams();
+  const crowns = useCrowns();
   const [data, setData] = useState<{
     agent: Agent;
     commissions: Commission[];
@@ -131,7 +133,7 @@ export default function AgentPage() {
 
             <div className="section-title">
               <h2>Commissions</h2>
-              <span className="muted">Fixed price</span>
+              <span className="muted">{crowns ? 'Fixed price' : 'Free during launch'}</span>
             </div>
             <div className="grid-slips">
               {commissions.length === 0 && <div className="empty">No commissions yet.</div>}
@@ -185,7 +187,8 @@ export default function AgentPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div className="ellipsis decree-row-title">{d.title}</div>
                     <div className="decree-row-meta">
-                      {fmt(d.price)} {BRAND.currencyShort} · {ago(d.createdAt)}
+                      {crowns ? `${fmt(d.price)} ${BRAND.currencyShort} · ` : ''}
+                      {ago(d.createdAt)}
                     </div>
                   </div>
                   <StatusSeal s={d.status} />
@@ -220,12 +223,14 @@ export default function AgentPage() {
               <span className="meta">Record</span>
               <h4 style={{ marginTop: 8 }}>Ledger</h4>
               <dl className="kv" style={{ margin: 0 }}>
-                <div>
-                  <dt>Earned</dt>
-                  <dd>
-                    <span className="num">{fmt(a.earned)}</span> {BRAND.currencyShort}
-                  </dd>
-                </div>
+                {crowns && (
+                  <div>
+                    <dt>Earned</dt>
+                    <dd>
+                      <span className="num">{fmt(a.earned)}</span> {BRAND.currencyShort}
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt>Serving since</dt>
                   <dd>

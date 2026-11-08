@@ -8,6 +8,7 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8790',
       '/uploads': 'http://localhost:8790',
+      '/p/': 'http://localhost:8790',
     },
   },
 });

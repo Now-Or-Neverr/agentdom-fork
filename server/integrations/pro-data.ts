@@ -35,3 +35,15 @@ export { fredSearch, fredSeries, isSeriesId, FRED_POPULAR, type FredSearch, type
 export { askWolfram, wolframPage, WOLFRAM_MAX_INPUT, type WolframAnswer } from './wolfram';
 // High Court
 export { caseLawSearch, type CaseSearch, type CaseHit } from './courtlistener';
+// Scriptorium (jobs)
+export { jobSearch, ADZUNA_COUNTRIES, type AdzunaCountry, type JobListing, type JobSearch } from './adzuna';
+// Treasury / Archive (OCR)
+export { ocrRead, OCR_MAX_BYTES, type OcrText } from './ocrspace';
+// Forge / Court (link scans)
+export { scanUrl, urlscanScreenshot, type UrlScan } from './urlscan';
+// Bazaar / Treasury (UK company register)
+export { ukCompanySearch, ukCompanyProfile, isCompanyNumber, type UkCompanySearch, type UkCompanyHit, type UkCompanyProfile } from './companieshouse';
+// Archive (nutrition)
+export { nutritionLookup, type FoodSearch, type FoodHit, type FoodNutrient } from './usda';
+// Atelier / Bazaar (brand assets, permanent cache)
+export { brandLookup, normalizeDomain, brandCallsUsed, brandMaxCalls, type Brand, type BrandLogo } from './brandfetch';

@@ -216,7 +216,7 @@ async function request<T>(url: string, kind: Kind, o: RequestOpts): Promise<Fetc
         status = res.status;
         const accepted = res.ok || (o.okStatuses ?? []).includes(res.status);
         let data: unknown;
-        if (kind === 'buffer') data = { buf: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') ?? '' };
+        if (kind === 'buffer') data = { buf: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') ?? '', headers: Object.fromEntries(res.headers.entries()) };
         else {
           const txt = await res.text();
           if (kind === 'json' && accepted) {
@@ -271,7 +271,7 @@ export const fetchJson = <T = unknown>(url: string, o: RequestOpts) => request<T
 /** GET/POST and return the body as text (e.g. Atom XML). */
 export const fetchText = (url: string, o: RequestOpts) => request<string>(url, 'text', o);
 /** GET raw bytes (e.g. an image). Not cached unless ttlMs is given. */
-export const fetchBuffer = (url: string, o: RequestOpts) => request<{ buf: Buffer; contentType: string }>(url, 'buffer', { ttlMs: 0, ...o });
+export const fetchBuffer = (url: string, o: RequestOpts) => request<{ buf: Buffer; contentType: string; headers?: Record<string, string> }>(url, 'buffer', { ttlMs: 0, ...o });
 
 /** Build a query string from an object (skips undefined/empty). */
 export function qs(o: Record<string, string | number | boolean | undefined | null>): string {

@@ -2,7 +2,7 @@
 // guild rivalry and the festival bonus. Mounted under /api by server/index.ts.
 import { Router, type Request } from 'express';
 import { db, now, tx, type Row } from '../db';
-import { HttpError, currentUser, h, ledger } from '../core';
+import { HttpError, crownsEnabled, currentUser, h, ledger } from '../core';
 import { runningDecrees } from '../worker';
 import { logActivity } from '../events';
 import { dutyInProgress, recentDutyByAgent, toDuty } from '../duties';
@@ -189,6 +189,7 @@ router.post(
   '/festival/claim',
   h(async (req, res) => {
     const user = currentUser(req);
+    if (!crownsEnabled()) throw new HttpError(403, 'Festival bonuses return when crowns open.');
     const country = countryParam(req);
     const f = await festivalFor(country);
     const fest = f.today;

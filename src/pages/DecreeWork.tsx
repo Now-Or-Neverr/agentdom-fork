@@ -2,7 +2,7 @@
 // Agent-made HTML only ever runs inside <iframe sandbox="allow-scripts" srcdoc> (no allow-same-origin),
 // so it gets an opaque origin and cannot touch this site's storage, cookies or DOM.
 import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Check, Clapperboard, Code2, Download, ExternalLink, Gauge, Globe, Hourglass, Image as ImageIcon, Loader2, Maximize2, Megaphone, Rocket, X } from 'lucide-react';
+import { AlertTriangle, AudioLines, Check, Clapperboard, Code2, Download, ExternalLink, FileText, Gauge, Globe, Hourglass, Image as ImageIcon, Loader2, Maximize2, Megaphone, Rocket, X } from 'lucide-react';
 import type { Decree, DecreeArtifact, DecreeStep } from '../../shared/types';
 import './decree.css';
 
@@ -56,13 +56,22 @@ const TOOL_LABEL: Record<string, string> = {
   repo_info: 'Repository info',
   repo_tree: 'Repository tree',
   repo_file: 'Repository file',
+  job_search: 'Job search',
+  transcribe_audio: 'Transcription',
+  read_image_text: 'Text from image (OCR)',
+  scan_url: 'Link scan',
+  uk_company_search: 'UK company search',
+  uk_company_profile: 'UK company profile',
+  nutrition_lookup: 'Nutrition lookup',
+  record_voiceover: 'Voice-over recording',
+  brand_lookup: 'Brand lookup',
 };
 
 /** The most telling input of a step, e.g. the search query. */
 function inputLine(s: DecreeStep): string {
   const i = s.input;
   const repo = i.repo ? String(i.repo) + (i.path ? ' · ' + String(i.path) : '') : null;
-  const pick = i.query ?? repo ?? i.url ?? i.slug ?? i.series ?? i.symbol ?? i.input ?? (i.place && i.category ? `${i.category} · ${i.place}` : null) ?? i.title ?? i.word ?? i.place ?? i.prompt ?? (i.from && i.to ? `${i.amount ?? ''} ${i.from} → ${i.to}` : null) ?? (i.country ? `${i.country}${i.indicator ? ' · ' + i.indicator : ''}` : null) ?? i.base ?? i.kind ?? null;
+  const pick = i.query ?? i.food ?? i.domain ?? i.company_number ?? repo ?? i.url ?? i.slug ?? i.series ?? i.symbol ?? i.input ?? (i.place && i.category ? `${i.category} · ${i.place}` : null) ?? i.title ?? i.word ?? i.place ?? i.prompt ?? (i.from && i.to ? `${i.amount ?? ''} ${i.from} → ${i.to}` : null) ?? (i.country ? `${i.country}${i.indicator ? ' · ' + i.indicator : ''}` : null) ?? i.base ?? i.kind ?? null;
   return pick == null ? '' : String(pick).slice(0, 140);
 }
 
@@ -186,6 +195,11 @@ function PagePreview({ a }: { a: DecreeArtifact }) {
       </div>
       {frame('art-frame')}
       <figcaption className="art-actions">
+        {typeof a.meta.liveUrl === 'string' && (
+          <a className="btn btn-sm btn-primary" href={a.meta.liveUrl} target="_blank" rel="noopener noreferrer">
+            <Globe size={14} /> Open live link
+          </a>
+        )}
         <button type="button" className="btn btn-sm" onClick={() => setFull(true)}>
           <Maximize2 size={14} /> Open full screen
         </button>
@@ -357,6 +371,8 @@ export function Artifacts({ d }: { d: Decree }) {
   const arts = d.artifacts ?? [];
   const images = useMemo(() => arts.filter((a) => a.kind === 'image'), [arts]);
   const videos = arts.filter((a) => a.kind === 'video');
+  const audios = arts.filter((a) => a.kind === 'audio');
+  const files = arts.filter((a) => a.kind === 'file');
   const pages = arts.filter((a) => a.kind === 'html').reverse(); // newest version first
   const records = arts.filter((a) => a.kind === 'site' || a.kind === 'draft' || a.kind === 'audit');
   const multi = new Set(arts.map((a) => a.revision)).size > 1;
@@ -428,6 +444,61 @@ export function Artifacts({ d }: { d: Decree }) {
           </figure>
         </div>
       ))}
+
+      {audios.map((a) => (
+        <div key={a.id} className="art-block">
+          <div className="art-kicker">
+            <AudioLines size={13} /> Voice-over{multi && ` · revision ${a.revision}`}
+          </div>
+          <div className="art-card art-audio">
+            <div className="art-card-row">
+              <b>{a.title}</b>
+              <span className="tag">
+                {[a.meta.voice ? `${String(a.meta.voice)} voice` : null, typeof a.meta.durationSec === 'number' ? `${Math.round(a.meta.durationSec)} s` : null, 'MP3'].filter(Boolean).join(' · ')}
+              </span>
+            </div>
+            <audio controls preload="metadata" src={a.url ?? undefined} />
+            {typeof a.meta.text === 'string' && a.meta.text && (
+              <details>
+                <summary>Script</summary>
+                <p className="art-card-text">{a.meta.text}</p>
+              </details>
+            )}
+            <span className="art-img-meta">
+              <span className="muted">{String(a.meta.attribution ?? 'Voice by ElevenLabs')}</span>
+              <a href={a.url ?? '#'} download className="wl-src">
+                Download .mp3 <Download size={11} />
+              </a>
+            </span>
+          </div>
+        </div>
+      ))}
+
+      {files.length > 0 && (
+        <div className="art-block">
+          <div className="art-kicker">
+            <FileText size={13} /> Files
+          </div>
+          {files.map((a) => (
+            <div key={a.id} className="art-card art-file">
+              <div className="art-card-row">
+                <b>{a.title}</b>
+                <span className="tag">.{String(a.meta.format ?? 'txt')}</span>
+                {multi && <span className="wl-rev">rev {a.revision}</span>}
+              </div>
+              {typeof a.meta.preview === 'string' && a.meta.preview && <p className="muted art-card-text">{a.meta.preview.length >= 600 ? a.meta.preview + '…' : a.meta.preview}</p>}
+              <span className="art-img-meta">
+                <span className="muted">
+                  {[a.meta.provider ? String(a.meta.provider) : null, typeof a.meta.durationSec === 'number' ? `${Math.round(a.meta.durationSec)} s of audio` : null, a.meta.truncated ? 'first part only' : null].filter(Boolean).join(' · ')}
+                </span>
+                <a href={a.url ?? '#'} download className="wl-src">
+                  Download <Download size={11} />
+                </a>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {images.length > 0 && (
         <div className="art-block">

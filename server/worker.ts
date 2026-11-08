@@ -75,6 +75,8 @@ function artifactContext(decreeId: string): string {
     if (x.kind === 'site') return `- Site “${x.meta.slug}”: status ${x.meta.status}${x.url ? ` at ${x.url}` : ' (no public url yet)'}`;
     if (x.kind === 'draft') return `- Bluesky draft (${x.meta.status ?? 'pending'} approval, not posted): “${String(x.meta.text ?? '').slice(0, 200)}”`;
     if (x.kind === 'audit') return `- Lighthouse audit of ${x.meta.url}: ${JSON.stringify(x.meta.scores ?? {})}`;
+    if (x.kind === 'audio') return `- Voice-over “${x.title}” url ${x.url} (${x.meta.voice ?? '?'} voice, ${x.meta.durationSec ?? '?'} s): “${String(x.meta.text ?? '').slice(0, 300)}”`;
+    if (x.kind === 'file') return `- File “${x.title}” url ${x.url} (.${x.meta.format ?? 'txt'})${x.meta.preview ? `: “${String(x.meta.preview).slice(0, 300)}”` : ''}`;
     return `- Web page: “${x.title}” (${x.meta.bytes ?? '?'} bytes)`;
   });
   const page = [...arts].reverse().find((x) => x.kind === 'html');
@@ -290,8 +292,11 @@ function fail(d: Row, reason: string) {
   db.exec('BEGIN');
   try {
     db.prepare("UPDATE decrees SET status = 'failed', error = ?, finished_at = ?, now_doing = NULL WHERE id = ?").run(reason, now(), d.id);
-    db.prepare('UPDATE users SET crowns = crowns + ? WHERE id = ?').run(d.price, d.user_id);
-    db.prepare("INSERT INTO ledger (id, user_id, amount, kind, ref, created_at) VALUES (?,?,?,'refund',?,?)").run(uid('led'), d.user_id, d.price, d.id, now());
+    if (d.price > 0) {
+      // free decrees (crowns off) have nothing to refund
+      db.prepare('UPDATE users SET crowns = crowns + ? WHERE id = ?').run(d.price, d.user_id);
+      db.prepare("INSERT INTO ledger (id, user_id, amount, kind, ref, created_at) VALUES (?,?,?,'refund',?,?)").run(uid('led'), d.user_id, d.price, d.id, now());
+    }
     db.exec('COMMIT');
   } catch (e) {
     db.exec('ROLLBACK');

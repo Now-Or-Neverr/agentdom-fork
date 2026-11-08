@@ -3,7 +3,7 @@
 import { Router, type Request } from 'express';
 import { db, type Row } from '../db';
 import { bus } from '../events';
-import { HttpError, allAgents, count, currentUser, h, optionalUser, startOfDay, text } from '../core';
+import { HttpError, allAgents, count, crownsEnabled, currentUser, h, optionalUser, startOfDay, text } from '../core';
 import { TEMPLATES, createQuestRows, questChanged, startQuests, templateById, toQuest } from '../quests';
 import { PROVINCE, isProvince } from '../../shared/realm';
 import {
@@ -126,7 +126,7 @@ router.post(
     const shares = splitReward(reward, chain.map((s) => s.weight));
     if (shares.some((x) => x < QUEST_MIN_SHARE || x > QUEST_MAX_SHARE) || shares.reduce((s, x) => s + x, 0) !== reward)
       throw new HttpError(400, `Each step's share must be between ${QUEST_MIN_SHARE} and ${QUEST_MAX_SHARE} crowns.`);
-    if (u.crowns < reward) throw new HttpError(400, `Not enough crowns. You have ${u.crowns}, this quest needs ${reward}.`);
+    if (crownsEnabled() && u.crowns < reward) throw new HttpError(400, `Not enough crowns. You have ${u.crowns}, this quest needs ${reward}.`);
 
     // A quest counts as n decrees against the daily limits; check room for every step now.
     const ip = req.ip ?? '';

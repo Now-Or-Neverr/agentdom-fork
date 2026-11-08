@@ -3,10 +3,15 @@
 // or renders a real file locally, and returns a compact JSON result for Claude.
 // Inputs are validated by hand before anything runs (eager input streaming is on, so the
 // API does not validate them for us). Failures become is_error tool results, never crashes.
+import fs from 'node:fs';
+import path from 'node:path';
 import type Anthropic from '@anthropic-ai/sdk';
 import * as I from './integrations';
+import { publicUrl } from './integrations/keys';
+import { UPLOAD_DIR, uid } from './db';
 import { addArtifact, listArtifacts } from './artifacts';
 import { queueHeraldDraft } from './herald';
+import { hostPage } from './builder';
 import type { ProvinceId } from '../shared/realm';
 import type { DecreeArtifact } from '../shared/types';
 
@@ -35,6 +40,15 @@ export interface ToolUsage {
   files: number;
   drafts: number;
   translations: number;
+  jobs: number;
+  transcripts: number;
+  ocr: number;
+  scans: number;
+  ukSearches: number;
+  ukProfiles: number;
+  nutrition: number;
+  voiceovers: number;
+  brands: number;
 }
 export const newUsage = (): ToolUsage => ({
   images: 0,
@@ -57,6 +71,15 @@ export const newUsage = (): ToolUsage => ({
   files: 0,
   drafts: 0,
   translations: 0,
+  jobs: 0,
+  transcripts: 0,
+  ocr: 0,
+  scans: 0,
+  ukSearches: 0,
+  ukProfiles: 0,
+  nutrition: 0,
+  voiceovers: 0,
+  brands: 0,
 });
 
 export interface ToolCtx {
@@ -194,6 +217,29 @@ const safeHttp = (s: string, k = 'url') => {
   if (!/^https?:\/\/[^\s]+$/i.test(s)) throw new ToolInputError(`"${k}" must be a full http(s) URL.`);
   return s;
 };
+
+/** A file artifact of this decree (of the given kinds) by its /uploads url, or a ToolInputError. */
+function myMedia(c: ToolCtx, url: string, kinds: DecreeArtifact['kind'][]): DecreeArtifact {
+  const a = listArtifacts(c.decreeId).find((x) => kinds.includes(x.kind) && x.url === url.split('?')[0]);
+  if (!a) throw new ToolInputError(`${url.slice(0, 80)} is not a ${kinds.join('/')} file made for this decree. Use a public link or a url a tool returned in this decree.`);
+  return a;
+}
+/** A public link a server may fetch, or a ToolInputError. */
+const publicLink = (s: string) => {
+  try {
+    return publicUrl(s);
+  } catch (e) {
+    throw new ToolInputError((e as Error).message);
+  }
+};
+/** Save a UTF-8 text file (transcript, subtitles) under data/uploads. */
+function saveText(prefix: string, ext: 'txt' | 'srt', text: string): { url: string; bytes: number } {
+  const name = `${prefix}-${uid(prefix).slice(prefix.length + 1)}.${ext}`;
+  const buf = Buffer.from(text, 'utf8');
+  fs.writeFileSync(path.join(UPLOAD_DIR, name), buf);
+  return { url: `/uploads/${name}`, bytes: buf.length };
+}
+const pngSize = (b: Buffer) => (b.length > 24 && b.subarray(12, 16).toString('latin1') === 'IHDR' ? { w: b.readUInt32BE(16), h: b.readUInt32BE(20) } : null);
 
 // ---------------- limits ----------------
 const IMAGE_LIMIT: Partial<Record<ProvinceId, number>> = { atelier: 3, theatre: 4, heralds: 2 };
@@ -629,7 +675,7 @@ const TOOLS: ToolDef[] = [
     name: 'publish_web_page',
     label: 'Web page',
     description:
-      'Publish a complete single-file web page (HTML with inline <style> and <script>) as a live artifact. The requester sees it running in a sandboxed preview and can download it. Use it whenever the decree asks for a page, landing page, widget, demo, prototype or anything that runs in a browser. Rules: one self-contained file starting with <!doctype html> and ending with </html>; no external requests except optional Google Fonts or a CDN script from cdnjs.cloudflare.com / cdn.jsdelivr.net; no localStorage/cookies requirement (the sandbox blocks them; wrap in try/catch); keep it under 60 KB; responsive and accessible. To change a page, call it again with the full new file.',
+      'Publish a complete single-file web page (HTML with inline <style> and <script>) as a live artifact. The requester sees it running in a sandboxed preview and can download it. Use it whenever the decree asks for a page, landing page, widget, demo, prototype or anything that runs in a browser. Rules: one self-contained file starting with <!doctype html> and ending with </html>; no external requests except optional Google Fonts or a CDN script from cdnjs.cloudflare.com / cdn.jsdelivr.net; no localStorage/cookies requirement (the sandbox blocks them; wrap in try/catch); keep it under 60 KB; responsive and accessible. The page goes live at its own public link (liveUrl in the result), so give that link to the requester. To change a page, call it again with the full new file.',
     schema: obj(
       { title: { type: 'string', description: 'Page title shown on the artifact card.' }, html: { type: 'string', description: 'The full HTML file.' } },
       ['title', 'html'],
@@ -642,12 +688,13 @@ const TOOLS: ToolDef[] = [
       if (html.length < 200 || !/<html[\s>]/i.test(html)) throw new ToolInputError('"html" must be a complete HTML document (with <html> … </html>).');
       if (!/<\/html>\s*$/i.test(html)) throw new ToolInputError('The HTML looks cut off (it does not end with </html>). Send the complete file, shorter if needed.');
       c.usage.pages++;
-      addArtifact(c.decreeId, c.revision, { kind: 'html', content: html, title, meta: { bytes: Buffer.byteLength(html, 'utf8') } });
+      const hosted = hostPage(c.userId || null, title, html, c.decreeId);
+      addArtifact(c.decreeId, c.revision, { kind: 'html', content: html, title, meta: { bytes: Buffer.byteLength(html, 'utf8'), liveUrl: hosted.url, slug: hosted.slug } });
       return {
-        data: { published: true, bytes: Buffer.byteLength(html, 'utf8'), note: 'Live preview is shown to the requester in a sandbox (scripts allowed, no same-origin access).' },
+        data: { published: true, liveUrl: hosted.url, bytes: Buffer.byteLength(html, 'utf8'), note: 'The page is live at liveUrl (anyone with the link can open it; it runs in a sandbox). Give the requester this link.' },
         summary: `Published “${title}” (${(Buffer.byteLength(html, 'utf8') / 1024).toFixed(1)} KB)`,
         sourceName: 'Agentdom artifact',
-        sourceUrl: null,
+        sourceUrl: hosted.url,
         produced: 'html',
       };
     },
@@ -1406,6 +1453,285 @@ const TOOLS: ToolDef[] = [
       };
     },
   },
+
+  // ---------------- jobs, transcripts, OCR, link scans, UK companies, nutrition, voice, brands ----------------
+  {
+    name: 'job_search',
+    label: 'Job search',
+    description:
+      'Live job ads from Adzuna (19 countries: ' +
+      I.ADZUNA_COUNTRIES.join(', ') +
+      '). Returns up to 10 real ads with title, company, location, contract, salary range (marked when Adzuna estimated it), posting date, a snippet and the ad link. Use it to find real openings that fit a résumé; list only ads it returned, with their links. At most 3 searches per decree.',
+    schema: obj(
+      {
+        query: { type: 'string', description: 'Job title or keywords, e.g. "junior data analyst".' },
+        country: { type: 'string', enum: [...I.ADZUNA_COUNTRIES], description: 'Country code, default gb.' },
+        where: { type: 'string', description: 'Optional city or region, e.g. "Manchester".' },
+        salary_min: { type: 'number', description: 'Optional minimum yearly salary in local currency.' },
+        full_time: { type: 'boolean', description: 'Optional: only full-time ads.' },
+      },
+      ['query'],
+    ),
+    doing: (i) => `Searching job ads for ${q(String(i.query))}`,
+    run: async (i, c) => {
+      const query = str(i, 'query', 120);
+      const country = oneOf(i, 'country', I.ADZUNA_COUNTRIES, 'gb');
+      const where = str(i, 'where', 80, false) || undefined;
+      const salaryMin = i.salary_min === undefined || i.salary_min === null ? undefined : num(i, 'salary_min', 0, 10_000_000);
+      if (i.full_time !== undefined && typeof i.full_time !== 'boolean') throw new ToolInputError('"full_time" must be true or false.');
+      if (c.usage.jobs >= 3) throw new ToolInputError('Job-search limit reached (3 per decree). Work with the ads you have.');
+      c.usage.jobs++;
+      const r = await I.jobSearch(query, ctxOf(c), { country, where, max: 10, salaryMin, fullTime: i.full_time === true });
+      return {
+        data: { total: r.total, country: r.country, where: r.where, jobs: r.jobs, fetchedAt: r.fetchedAt, note: r.jobs.length ? 'Live ads; they can close at any time.' : 'No ads matched. Try broader keywords or another place.' },
+        summary: `${r.jobs.length} job ads for ${q(query)}${r.where ? ` in ${r.where}` : ''} (${r.total.toLocaleString('en')} total)`,
+        sourceName: name('adzuna'),
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
+  {
+    name: 'transcribe_audio',
+    label: 'Transcription',
+    description:
+      `Transcribe speech into text and subtitles with Whisper large-v3 turbo (Groq). Input: a public direct link to an audio or video file (mp3, wav, ogg, flac, m4a, mp4, webm; up to 80 MB download, audio is compressed to fit Groq's 25 MB limit) or an /uploads/ audio/video made in this decree. Only the first ${I.GROQ_MAX_SEC / 60} minutes are transcribed. Page links (YouTube, Drive previews, podcast pages) do not work; ask for the direct file link. Saves a .txt transcript and an .srt subtitle file as artifacts. One per decree. Machine transcripts contain errors on names and jargon: say so.`,
+    schema: obj(
+      {
+        url: { type: 'string', description: 'Public direct link to the audio/video file, or an /uploads/… url made in this decree.' },
+        title: { type: 'string', description: 'Short name for the transcript, e.g. "Episode 12 interview".' },
+        language: { type: 'string', description: 'Optional 2-letter language code (e.g. "en", "id") to skip detection.' },
+      },
+      ['url', 'title'],
+    ),
+    doing: () => 'Transcribing the recording',
+    run: async (i, c) => {
+      const url = str(i, 'url', 1000);
+      const title = str(i, 'title', 100);
+      const language = str(i, 'language', 2, false).toLowerCase() || undefined;
+      if (language && !/^[a-z]{2}$/.test(language)) throw new ToolInputError('"language" must be a 2-letter code.');
+      if (c.usage.transcripts >= 1) throw new ToolInputError('Only one transcription per decree.');
+      const src = url.startsWith('/uploads/') ? { upload: myMedia(c, url, ['audio', 'video']).url! } : { url: publicLink(url) };
+      c.usage.transcripts++;
+      const r = await I.groqTranscribe(src, ctxOf(c), { language });
+      if (!r.text) throw new ToolInputError('No speech was found in that recording.');
+      const txt = saveText('transcript', 'txt', r.text + '\n');
+      const srt = r.srt ? saveText('subtitles', 'srt', r.srt) : null;
+      const meta = { provider: `Groq (${r.model})`, language: r.language, durationSec: r.durationSec, truncated: r.truncated, source: url.startsWith('/uploads/') ? url : r.source, sourceUrl: r.sourceUrl };
+      addArtifact(c.decreeId, c.revision, { kind: 'file', url: txt.url, title: `${title} (transcript)`, meta: { ...meta, format: 'txt', bytes: txt.bytes, preview: r.text.slice(0, 600) } });
+      if (srt) addArtifact(c.decreeId, c.revision, { kind: 'file', url: srt.url, title: `${title} (subtitles)`, meta: { ...meta, format: 'srt', bytes: srt.bytes, cues: r.segments.length } });
+      return {
+        data: {
+          language: r.language,
+          durationSec: r.durationSec,
+          truncated: r.truncated,
+          text: clip(r.text, 9000),
+          segments: r.segments.slice(0, 40).map((s) => ({ start: Math.round(s.start * 10) / 10, end: Math.round(s.end * 10) / 10, text: s.text })),
+          files: { transcript: txt.url, subtitles: srt?.url ?? null },
+          note: 'The .txt and .srt files are saved and shown to the requester. Quote the transcript faithfully; flag words that look misheard.',
+        },
+        summary: `Transcribed “${title}” · ${Math.round(r.durationSec)} s · ${r.language ?? 'language unknown'}`,
+        sourceName: name('groq'),
+        sourceUrl: r.sourceUrl,
+        produced: 'file',
+        activity: `transcribed ${Math.round(r.durationSec)} seconds of audio`,
+      };
+    },
+  },
+  {
+    name: 'read_image_text',
+    label: 'Text from image (OCR)',
+    description:
+      'Read the text in a photo, screenshot, receipt, invoice or PDF with OCR.space (engine 2, auto language). Input: a public direct link to a JPG/PNG/GIF/PDF, or an /uploads/ image made in this decree. Free-plan limits: files up to 1 MB and PDFs up to 3 pages. Set table=true for receipts, invoices and tables (keeps line order). Returns the raw text; OCR can misread digits, so mark any value you are unsure of. At most 3 per decree.',
+    schema: obj(
+      {
+        url: { type: 'string', description: 'Public direct link to the image/PDF, or an /uploads/… image url made in this decree.' },
+        table: { type: 'boolean', description: 'true for receipts, invoices and tables.' },
+      },
+      ['url'],
+    ),
+    doing: () => 'Reading the text in the image',
+    run: async (i, c) => {
+      const url = str(i, 'url', 1000);
+      if (i.table !== undefined && typeof i.table !== 'boolean') throw new ToolInputError('"table" must be true or false.');
+      if (c.usage.ocr >= 3) throw new ToolInputError('OCR limit reached (3 per decree).');
+      const src = url.startsWith('/uploads/') ? { upload: myMedia(c, url, ['image']).url! } : { url: publicLink(url) };
+      c.usage.ocr++;
+      const r = await I.ocrRead(src, ctxOf(c), { table: i.table === true });
+      return {
+        data: { text: r.text, pages: r.pages, truncated: r.truncated, empty: !r.text.trim() },
+        summary: r.text.trim() ? `Read ${r.text.length.toLocaleString('en')} characters from ${r.pages} page${r.pages === 1 ? '' : 's'}` : 'No text found in the image',
+        sourceName: name('ocrspace'),
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
+  {
+    name: 'scan_url',
+    label: 'Link scan',
+    description:
+      'Open a suspicious link in urlscan.io’s sandboxed browser (scan is unlisted, not public) and report what it really loads: urlscan’s verdict (malicious flag, score, categories, impersonated brands), the final URL after redirects, page domain, IP, hosting network, server, TLS certificate issuer and dates, and a screenshot saved as an image artifact. Takes up to about a minute. A clean verdict is not proof a link is safe (new phishing pages are often not flagged yet): say so. At most 2 per decree.',
+    schema: obj({ url: { type: 'string', description: 'The link to scan, e.g. "https://paypa1-secure-login.com/verify".' } }, ['url']),
+    doing: (i) => `Scanning ${q(String(i.url ?? '').replace(/^https?:\/\//, ''), 40)} in a sandbox`,
+    run: async (i, c) => {
+      const url = publicLink(str(i, 'url', 1000));
+      if (c.usage.scans >= 2) throw new ToolInputError('Link-scan limit reached (2 per decree).');
+      c.usage.scans++;
+      const r = await I.scanUrl(url, ctxOf(c));
+      let shot: string | null = null;
+      const png = await I.urlscanScreenshot(r, ctxOf(c));
+      if (png) {
+        try {
+          const saved = I.saveUpload(png, 'scan', ['png', 'jpg'], 'screenshot');
+          const size = pngSize(png);
+          addArtifact(c.decreeId, c.revision, {
+            kind: 'image',
+            url: saved.url,
+            title: `Screenshot of ${(r.page.domain ?? url).slice(0, 80)} (urlscan.io sandbox)`,
+            meta: { provider: 'urlscan.io', width: size?.w ?? 1280, height: size?.h ?? 1024, bytes: saved.bytes, sourceUrl: r.reportUrl, alt: `Sandbox screenshot of ${r.finalUrl ?? url}` },
+          });
+          shot = saved.url;
+        } catch {
+          shot = null;
+        }
+      }
+      const { uuid: _u, sourceUrl: _s, screenshotUrl: _x, ...rest } = r;
+      return {
+        data: { ...rest, screenshot: shot, note: 'Report the verdict exactly. "malicious: false" only means urlscan.io did not flag it.' },
+        summary: `Scanned ${r.page.domain ?? url}: ${r.verdict.malicious ? 'flagged malicious' : 'not flagged'}${r.verdict.score != null ? ` (score ${r.verdict.score})` : ''}`,
+        sourceName: name('urlscan'),
+        sourceUrl: r.reportUrl,
+        produced: shot ? 'image' : undefined,
+        activity: `scanned a suspicious link in the sandbox`,
+      };
+    },
+  },
+  {
+    name: 'uk_company_search',
+    label: 'UK company search',
+    description: 'Search the official UK Companies House register by company name. Returns up to 8 companies with company number, status (active, dissolved, liquidation…), type, incorporation date, registered address and register link. Then call uk_company_profile with the right number. At most 3 per decree.',
+    schema: obj({ query: { type: 'string', description: 'Company name, e.g. "Monzo Bank".' } }, ['query']),
+    doing: (i) => `Searching Companies House for ${q(String(i.query))}`,
+    run: async (i, c) => {
+      const query = str(i, 'query', 160);
+      if (c.usage.ukSearches >= 3) throw new ToolInputError('Companies House search limit reached (3 per decree).');
+      c.usage.ukSearches++;
+      const r = await I.ukCompanySearch(query, ctxOf(c), 8);
+      return { data: { total: r.total, results: r.results }, summary: `${r.results.length} UK companies for ${q(query)}`, sourceName: name('companieshouse'), sourceUrl: r.sourceUrl };
+    },
+  },
+  {
+    name: 'uk_company_profile',
+    label: 'UK company profile',
+    description:
+      'Full Companies House record for one UK company number: status, type, incorporation/dissolution dates, registered office, SIC codes, whether accounts or the confirmation statement are overdue, charges and insolvency flags, current officers (directors, secretaries, with appointment dates) and the 10 latest filings. Use it to check a company before dealing with it; report red flags (overdue filings, recent officer churn, insolvency history) and link the register page. At most 3 per decree.',
+    schema: obj({ company_number: { type: 'string', description: '8-character company number, e.g. "00445790" or "SC123456".' } }, ['company_number']),
+    doing: (i) => `Reading the Companies House record ${String(i.company_number ?? '')}`,
+    run: async (i, c) => {
+      const n = str(i, 'company_number', 12).toUpperCase();
+      if (!I.isCompanyNumber(n)) throw new ToolInputError('"company_number" must be the 8-character Companies House number (pad with leading zeros, e.g. 00445790).');
+      if (c.usage.ukProfiles >= 3) throw new ToolInputError('Companies House profile limit reached (3 per decree).');
+      c.usage.ukProfiles++;
+      const r = await I.ukCompanyProfile(n, ctxOf(c));
+      return { data: r, summary: `${r.name} (${r.number}) · ${r.status ?? 'status unknown'}`, sourceName: name('companieshouse'), sourceUrl: r.url };
+    },
+  },
+  {
+    name: 'nutrition_lookup',
+    label: 'Nutrition lookup',
+    description:
+      'Look up one food or ingredient in USDA FoodData Central (Foundation and SR Legacy foods first, survey foods as fallback). Returns up to 5 matches with fdcId, description, data type, link and key nutrients per 100 g (energy kcal, protein, fat, saturated fat, carbohydrate, fibre, sugars, sodium, potassium, calcium, iron, vitamin C, cholesterol). Pick the match that fits (raw vs cooked matters), scale by the real gram amounts and show your arithmetic. At most 4 lookups per decree, so search the main ingredients.',
+    schema: obj({ food: { type: 'string', description: 'One food in English, e.g. "banana raw", "chicken breast roasted", "rolled oats".' } }, ['food']),
+    doing: (i) => `Looking up nutrition for ${q(String(i.food))}`,
+    run: async (i, c) => {
+      const food = str(i, 'food', 120);
+      if (c.usage.nutrition >= 4) throw new ToolInputError('Nutrition lookup limit reached (4 per decree). Estimate the rest from similar foods and say so.');
+      c.usage.nutrition++;
+      const r = await I.nutritionLookup(food, ctxOf(c), 5);
+      return {
+        data: { total: r.total, results: r.results, note: r.results.length ? 'Values are per 100 g of the food as described.' : 'No match. Try a simpler or more generic name.' },
+        summary: `${r.results.length} USDA foods for ${q(food)}`,
+        sourceName: name('usda'),
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
+  {
+    name: 'record_voiceover',
+    label: 'Voice-over recording',
+    description:
+      `Record a real MP3 voice-over with ElevenLabs (model ${I.ELEVEN_MODEL}, many languages; the text language is detected). Voices: ` +
+      I.ELEVEN_VOICE_LIST.map((v) => `${v.name} (${v.description})`).join('; ') +
+      `. Max ${I.VOICE_MAX_CHARS} characters per call; write it to be read aloud (plain punctuation, no stage directions or markup, numbers as words where it matters). The realm has a small monthly voice allowance, so the tool may refuse when it is used up: then deliver the script only and say so. One per decree. The file is shown to the requester with the credit "Voice by ElevenLabs".`,
+    schema: obj(
+      {
+        text: { type: 'string', description: `The exact words to speak, max ${I.VOICE_MAX_CHARS} characters.` },
+        voice: { type: 'string', enum: [...I.ELEVEN_VOICES], description: `Voice name, default ${I.ELEVEN_VOICES[0]}.` },
+        title: { type: 'string', description: 'Short title, e.g. "Podcast intro, take 1".' },
+      },
+      ['text', 'title'],
+    ),
+    doing: () => 'Recording the voice-over',
+    run: async (i, c) => {
+      const text = str(i, 'text', I.VOICE_MAX_CHARS);
+      const title = str(i, 'title', 100);
+      const voice = oneOf(i, 'voice', I.ELEVEN_VOICES, I.ELEVEN_VOICES[0]);
+      if (c.usage.voiceovers >= 1) throw new ToolInputError('Only one voice-over recording per decree.');
+      c.usage.voiceovers++;
+      let r: Awaited<ReturnType<typeof I.elevenSpeak>>;
+      try {
+        r = await I.elevenSpeak(text, ctxOf(c), { voice });
+      } catch (e) {
+        if (e instanceof I.QuotaError) throw new ToolInputError(e.message + ' Deliver the script without a recording and say so.');
+        throw e;
+      }
+      addArtifact(c.decreeId, c.revision, {
+        kind: 'audio',
+        url: r.url,
+        title,
+        meta: { provider: 'ElevenLabs', model: r.model, voice: r.voice, durationSec: r.durationSec, bytes: r.bytes, chars: r.chars, format: 'mp3', text, attribution: r.attribution, sourceUrl: r.sourceUrl },
+      });
+      return {
+        data: { url: r.url, voice: r.voice, durationSec: r.durationSec, chars: r.chars, note: 'Saved as an MP3 the requester can play and download. Credit it as "Voice by ElevenLabs".' },
+        summary: `Recorded “${title}” · ${r.voice} · ${r.durationSec != null ? `${Math.round(r.durationSec)} s` : `${r.chars} chars`}`,
+        sourceName: name('elevenlabs'),
+        sourceUrl: r.sourceUrl,
+        produced: 'audio',
+        activity: `recorded a voice-over`,
+      };
+    },
+  },
+  {
+    name: 'brand_lookup',
+    label: 'Brand lookup',
+    description:
+      'Brand assets of a company from Brandfetch by its website domain: name, short description, logo files (svg/png links, light/dark, icon vs full logo), brand colours (hex with role: accent, dark, light, brand) and fonts (name, title/body, Google or custom). Each domain is looked up once and kept, and the realm has a small one-time lookup allowance, so look up only the brands the decree is about (max 2 new domains per decree). Report only what it returns; if a field is empty, say Brandfetch had no data.',
+    schema: obj({ domain: { type: 'string', description: 'Company domain, e.g. "stripe.com".' } }, ['domain']),
+    doing: (i) => `Looking up the brand of ${String(i.domain ?? '').slice(0, 60)}`,
+    run: async (i, c) => {
+      let domain: string;
+      try {
+        domain = I.normalizeDomain(str(i, 'domain', 200));
+      } catch (e) {
+        throw new ToolInputError((e as Error).message);
+      }
+      if (c.usage.brands >= 2) throw new ToolInputError('Brand lookup limit reached (2 per decree).');
+      c.usage.brands++;
+      let r: Awaited<ReturnType<typeof I.brandLookup>>;
+      try {
+        r = await I.brandLookup(domain, ctxOf(c));
+      } catch (e) {
+        if (e instanceof I.QuotaError) throw new ToolInputError(e.message);
+        throw e;
+      }
+      const { callsLeft: _l, ...data } = r;
+      return {
+        data: r.found ? data : { domain: r.domain, found: false, note: 'Brandfetch has no brand for this domain. Work from the company website instead.' },
+        summary: r.found ? `Brand of ${r.name ?? domain}: ${r.logos.length} logos, ${r.colors.length} colours, ${r.fonts.length} fonts` : `No Brandfetch brand for ${domain}`,
+        sourceName: name('brandfetch'),
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
 ];
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
@@ -1413,15 +1739,15 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 const COMMON = ['wiki_search', 'wiki_summary'];
 const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   throne: ['current_weather', 'web_search'],
-  forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file'],
-  scriptorium: ['check_grammar', 'define_word', 'related_words', 'translate'],
-  atelier: ['generate_image', 'stock_photos', 'use_stock_photo', 'remove_background'],
-  theatre: ['stock_videos', 'find_music', 'make_film', 'generate_image', 'make_video'],
-  archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram'],
+  forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file', 'scan_url'],
+  scriptorium: ['check_grammar', 'define_word', 'related_words', 'translate', 'job_search'],
+  atelier: ['generate_image', 'stock_photos', 'use_stock_photo', 'remove_background', 'brand_lookup'],
+  theatre: ['stock_videos', 'find_music', 'make_film', 'generate_image', 'make_video', 'transcribe_audio', 'record_voiceover'],
+  archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram', 'nutrition_lookup', 'read_image_text'],
   heralds: ['news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'generate_image', 'draft_bluesky_post'],
-  bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays'],
-  treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays'],
-  court: ['case_law', 'federal_register', 'web_search'],
+  bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup'],
+  treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'read_image_text', 'uk_company_search', 'uk_company_profile'],
+  court: ['case_law', 'federal_register', 'web_search', 'scan_url'],
 };
 
 export const toolNamesFor = (p: ProvinceId) => [...(GUILD_TOOLS[p] ?? []), ...COMMON];
@@ -1446,12 +1772,15 @@ export function toolGuidance(p: ProvinceId): string {
         `- You can paint real images with generate_image (Cloudflare FLUX, 1 to ${lim} per decree) or use real Pixabay photos (stock_photos, then use_stock_photo) when real photography fits better. Every image gets alt text automatically; include it in your notes.`,
         '- remove_background makes one transparent cutout per decree (tiny free quota): only when the decree needs it.',
         '- Credit every Pixabay photo (photographer + link) in your result.',
+        '- For a brand teardown or a "make it look like X" brief, brand_lookup the company domain first and use its real logos, hex colours and fonts; say when Brandfetch had no data.',
       ].join('\n');
     case 'theatre':
       return [
         '- For a film: find 2-4 real clips with stock_videos and a music bed with find_music, write a short narration (about 15-40 seconds of speech), then call make_film ONCE with clip_ids, captions, narration and music_id. You may add images from generate_image as extra scenes.',
         '- If footage is unsuitable or make_film fails, fall back to 3-4 generate_image frames and make_video (silent slideshow), and say so.',
         '- End the result with a "Credits" section listing every clip author and the music (title, author, license) with the links make_film returned. Only state that the film has a voice or music if make_film reported it.',
+        '- transcribe_audio turns a public direct audio/video link into a transcript (.txt) and subtitles (.srt). If the requester gave a page link (YouTube, Drive preview), ask for the direct file instead of guessing the content.',
+        '- record_voiceover records one MP3 voice-over (max 1,500 characters). Write the script first, then record exactly that script. Credit it as "Voice by ElevenLabs". If the voice allowance is used up, deliver the script and say so.',
       ].join('\n');
     case 'heralds':
       return [
@@ -1464,23 +1793,26 @@ export function toolGuidance(p: ProvinceId): string {
         '- If the requester wants it online, call publish_site after publish_web_page and report its exact status: "prepared for publishing, not live yet" (dry run), "building" or "live". Give a site url only when the status is live. audit_site runs Lighthouse on a live url.',
         '- For a redesign brief, scrape_site the current site first (1-3 pages). For a speed/SEO review, audit_site the url.',
         '- Royal Inspection of a GitHub repository: repo_info → repo_tree → repo_file on the few files that matter (use the ref from repo_info). Link every finding to its line as [path#L12](https://github.com/owner/repo/blob/<ref>/<path>#L12). State plainly in the report that the code was read, not executed, built or tested.',
+        '- For "is this link safe?", run scan_url and report urlscan.io’s verdict, final URL, hosting and certificate exactly. A clean verdict is not proof of safety; list the warning signs you can see yourself (look-alike domain, very new certificate, login form on an unrelated domain).',
       ].join('\n');
     case 'scriptorium':
       return [
         '- Before you deliver a text of more than a few sentences, run check_grammar on your draft and fix the real issues (ignore false alarms on names and stylistic choices).',
         '- For translations, use translate (machine translation) as a first pass, then polish it yourself and say that you did.',
+        '- For job hunting, use job_search (live Adzuna ads) and list only real ads it returned, with title, company, location, salary as given and the link. Say that ads can close at any time.',
       ].join('\n');
     case 'archive':
-      return '- For research, look up real sources (web_search + read_url for the current web, exa_search for companies/papers/projects, search_openalex, search_arxiv, search_openlibrary, world_bank_indicator, fred_series, ask_wolfram for calculations, Wikipedia) and cite them with the urls the tools return.';
+      return '- For research, look up real sources (web_search + read_url for the current web, exa_search for companies/papers/projects, search_openalex, search_arxiv, search_openlibrary, world_bank_indicator, fred_series, ask_wolfram for calculations, Wikipedia) and cite them with the urls the tools return.\n- For nutrition, use nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the real amounts and show the arithmetic; mark anything estimated. read_image_text reads text from a public image or PDF link.';
     case 'bazaar':
       return [
         '- For local markets, use local_businesses (real OpenStreetMap businesses worldwide) and list the actual names and addresses it returns; note that coverage varies. Use find_similar_companies to map competitors from a company url, web_search / read_url for current details.',
         '- Use fx_convert / fx_rates / fx_history for exchange rates, world_bank_indicator for macro figures and public_holidays for calendars. Never guess these numbers.',
+        '- To check a UK company, use uk_company_search then uk_company_profile (official Companies House register) and report status, age, officers, overdue filings and other red flags with the register link. brand_lookup gives a company’s real logos, colours and fonts.',
       ].join('\n');
     case 'treasury':
-      return '- Use stock_quote / company_profile / company_news (Finnhub) for listed companies, fred_series for official US rates and series, ask_wolfram for calculations, fx tools for exchange rates and world_bank_indicator for macro figures. Never guess these numbers, and note that this is not financial advice.';
+      return '- Use stock_quote / company_profile / company_news (Finnhub) for listed companies, fred_series for official US rates and series, ask_wolfram for calculations, fx tools for exchange rates and world_bank_indicator for macro figures. Never guess these numbers, and note that this is not financial advice.\n- read_image_text reads a receipt, invoice or statement from a public image/PDF link (use table=true); rebuild it as a clean table and flag any digit the OCR may have misread. uk_company_search / uk_company_profile check UK companies on the official register.';
     case 'court':
-      return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.';
+      return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.\n- When a scam or phishing link is part of the facts, scan_url records what it really loads (unlisted urlscan.io scan with screenshot) as evidence; report the verdict exactly.';
     case 'throne':
       return '- Use current_weather when the decree depends on the weather somewhere right now, and web_search for current facts.';
   }

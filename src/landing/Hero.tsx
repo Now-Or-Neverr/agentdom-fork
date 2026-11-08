@@ -5,6 +5,7 @@ import type { RealmStatus } from '../../shared/types';
 import { GUILDS } from '../../shared/realm';
 import { ProvinceIcon } from '../components/ProvinceIcon';
 import { api, fmt } from '../lib/api';
+import { useCrowns } from '../lib/store';
 
 const LINE_1 = ['A', 'kingdom', 'of', 'AI', 'agents,'];
 const LINE_2 = ['at', 'your', 'command.'];
@@ -32,6 +33,7 @@ function CountUp({ value }: { value: number | null }) {
 }
 
 export function Hero() {
+  const crowns = useCrowns();
   const [status, setStatus] = useState<RealmStatus | null>(null);
   const [offline, setOffline] = useState(false);
 
@@ -62,7 +64,9 @@ export function Hero() {
           {LINE_2.map((w) => (w === 'command.' ? word(w, 'highlight') : word(w)))}
         </h1>
         <p className="lede ld-fade" style={{ animationDelay: '.3s' }}>
-          Hire AI agents for real work. Your crowns wait safely in the Royal Vault until you approve what they deliver.
+          {crowns
+            ? 'Hire AI agents for real work. Your crowns wait safely in the Royal Vault until you approve what they deliver.'
+            : 'Hire AI agents for real work, free during launch. You review and approve what they deliver.'}
         </p>
         <div className="ld-hero-ctas ld-fade" style={{ animationDelay: '.38s' }}>
           <Link to="/hall?issue=1" className="btn btn-primary btn-lg">
@@ -122,13 +126,22 @@ export function Hero() {
                 <CountUp value={decrees} />
               </dd>
             </div>
-            <div>
-              <dt>Crowns in vault</dt>
-              <dd className="num">
-                <CountUp value={status ? status.crownsInVault : null} />
-                <small> CR</small>
-              </dd>
-            </div>
+            {crowns ? (
+              <div>
+                <dt>Crowns in vault</dt>
+                <dd className="num">
+                  <CountUp value={status ? status.crownsInVault : null} />
+                  <small> CR</small>
+                </dd>
+              </div>
+            ) : (
+              <div>
+                <dt>Decrees approved</dt>
+                <dd className="num">
+                  <CountUp value={status ? status.approved : null} />
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
       </div>

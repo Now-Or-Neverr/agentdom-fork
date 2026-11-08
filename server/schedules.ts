@@ -3,7 +3,7 @@
 // ledger 'vault_lock', same daily limits). A run that cannot be issued is skipped and recorded.
 import { db, now, tx, uid, type Row } from './db';
 import { bus, logActivity } from './events';
-import { HttpError, agentById, count, ledger, lite, startOfDay } from './core';
+import { HttpError, agentById, count, crownsEnabled, ledger, lite, startOfDay } from './core';
 import type { ProvinceId } from '../shared/realm';
 import { SCHEDULE_MAX_ACTIVE, SCHEDULE_PAUSE_AFTER, nextRun, type Cadence, type Schedule, type ScheduleRun } from '../shared/schedules';
 
@@ -170,7 +170,7 @@ function blocker(s: Row, agent: Row | undefined): string | null {
   if (count('SELECT COUNT(*) AS n FROM decrees WHERE created_at >= ?', today) >= LIMIT_GLOBAL) return 'The realm reached today’s decree limit.';
   const u = db.prepare('SELECT crowns FROM users WHERE id = ?').get(s.user_id) as Row | undefined;
   if (!u) return 'Account not found.';
-  if (u.crowns < s.price) return `Not enough crowns: you had ${u.crowns}, this needs ${s.price}.`;
+  if (crownsEnabled() && u.crowns < s.price) return `Not enough crowns: you had ${u.crowns}, this needs ${s.price}.`;
   return null;
 }
 
@@ -197,19 +197,22 @@ export function runSchedule(scheduleId: string): { status: 'issued' | 'skipped';
   }
 
   const id = uid('dec');
+  const price = crownsEnabled() ? Number(s.price) : 0; // crowns off: each run is free
   const date = at.slice(0, 10);
   const title = `${s.title} · #${runNo}`.slice(0, 140);
   const brief = `${s.brief}\n\n---\nStanding decree, run #${runNo}, ${date} (UTC). This decree repeats ${s.cadence === 'daily' ? 'every day' : 'every week'}; deliver a fresh result for this date.`;
   try {
     tx(() => {
-      const u = db.prepare('SELECT crowns FROM users WHERE id = ?').get(s.user_id) as Row;
-      if (u.crowns < s.price) throw new Error(`Not enough crowns: you had ${u.crowns}, this needs ${s.price}.`);
-      db.prepare('UPDATE users SET crowns = crowns - ? WHERE id = ?').run(s.price, s.user_id);
-      ledger(s.user_id, -s.price, 'vault_lock', id);
+      if (price > 0) {
+        const u = db.prepare('SELECT crowns FROM users WHERE id = ?').get(s.user_id) as Row;
+        if (u.crowns < price) throw new Error(`Not enough crowns: you had ${u.crowns}, this needs ${price}.`);
+        db.prepare('UPDATE users SET crowns = crowns - ? WHERE id = ?').run(price, s.user_id);
+        ledger(s.user_id, -price, 'vault_lock', id);
+      }
       db.prepare(
         `INSERT INTO decrees (id, user_id, agent_id, commission_id, province, title, brief, price, status, is_public, routed_by, ip, route_reason, eta_minutes, created_at)
          VALUES (?,?,?,NULL,?,?,?,?, 'queued', ?, 'requester', ?, ?, 10, ?)`,
-      ).run(id, s.user_id, agent!.id, agent!.province, title, brief, s.price, s.is_public, s.ip ?? '', `Standing decree run #${runNo} (${s.cadence}).`, at);
+      ).run(id, s.user_id, agent!.id, agent!.province, title, brief, price, s.is_public, s.ip ?? '', `Standing decree run #${runNo} (${s.cadence}).`, at);
       db.prepare("INSERT INTO schedule_runs (id, schedule_id, user_id, run_no, at, status, decree_id) VALUES (?,?,?,?,?, 'issued', ?)").run(uid('srn'), s.id, s.user_id, runNo, at, id);
       db.prepare('UPDATE schedules SET runs = ?, last_decree_id = ? WHERE id = ?').run(runNo, id, s.id);
     });

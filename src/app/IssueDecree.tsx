@@ -8,6 +8,7 @@ import { api, fmt } from '../lib/api';
 import { useApp } from '../lib/store';
 import { AgentPortrait } from './parts';
 import { BRAND } from '../config';
+import { FreeTag } from '../components/Free';
 import { media } from '../lib/mediaApi';
 import { schedulesApi } from '../lib/courtApi2';
 import { CadencePicker, defaultCadence, type CadenceValue } from '../pages/Schedules';
@@ -22,7 +23,7 @@ export interface IssuePreset {
 
 export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose: () => void }) {
   const nav = useNavigate();
-  const { user, refresh, toast } = useApp();
+  const { user, crowns, refresh, toast } = useApp();
   const c = preset.commission;
   const agent = preset.agent ?? c?.agent;
   const toVizier = !c && !preset.agent;
@@ -71,7 +72,8 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
         }
       }
       await refresh();
-      if (!standing) toast(`Decree sealed for ${d.agent?.name ?? 'an agent'}. ${fmt(d.price)} ${BRAND.currencyShort} locked in the Royal Vault.`);
+      if (!standing)
+        toast(crowns ? `Decree sealed for ${d.agent?.name ?? 'an agent'}. ${fmt(d.price)} ${BRAND.currencyShort} locked in the Royal Vault.` : `Decree sealed for ${d.agent?.name ?? 'an agent'}. It is free during launch.`);
       nav(`/decrees/${d.id}`);
     } catch (e) {
       setErr((e as Error).message);
@@ -165,9 +167,13 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
           <div className="isd-pair">
             <div>
               <label className="label" htmlFor="dprice">
-                Reward ({BRAND.currency})
+                {crowns ? `Reward (${BRAND.currency})` : 'Price'}
               </label>
-              {c ? (
+              {!crowns ? (
+                <div id="dprice" className="field isd-fixed" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <FreeTag /> during launch
+                </div>
+              ) : c ? (
                 <div className="field num isd-fixed">
                   {fmt(c.price)} · fixed
                 </div>
@@ -191,7 +197,7 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
             <>
               <CadencePicker value={cad} onChange={setCad} />
               <span className="sd-small muted">
-                Each run sends this brief to the same agent and locks {fmt(c?.price ?? price)} {BRAND.currencyShort}. Manage it under Standing decrees.
+                Each run sends this brief to the same agent{crowns ? ` and locks ${fmt(c?.price ?? price)} ${BRAND.currencyShort}` : ''}. Manage it under Standing decrees.
               </span>
             </>
           )}
@@ -200,7 +206,13 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
         <div className="isd-vault">
           <Lock size={14} />
           <span>
-            Your crowns are sealed in the Royal Vault and released only when you approve the work. Balance <b className="num">{user ? fmt(user.crowns) : '—'}</b>
+            {crowns ? (
+              <>
+                Your crowns are sealed in the Royal Vault and released only when you approve the work. Balance <b className="num">{user ? fmt(user.crowns) : '—'}</b>
+              </>
+            ) : (
+              <>Decrees are free during launch. You approve the work once it is delivered.</>
+            )}
             {left != null && <> · {left} of {status!.dailyLimitPerUser} decrees left today</>}
           </span>
         </div>
@@ -219,7 +231,7 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
               'Sealing…'
             )
           ) : (
-            `Seal the decree · ${fmt(c?.price ?? price)} ${BRAND.currencyShort}`
+            crowns ? `Seal the decree · ${fmt(c?.price ?? price)} ${BRAND.currencyShort}` : 'Seal the decree · Free'
           )}
         </button>
       </form>

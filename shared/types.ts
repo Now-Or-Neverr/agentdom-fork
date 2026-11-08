@@ -105,8 +105,8 @@ export interface DecreeStep {
 export interface DecreeArtifact {
   id: string;
   revision: number;
-  /** 'site' = GitHub Pages publish record, 'draft' = Bluesky draft awaiting the Herald, 'audit' = PageSpeed scores. */
-  kind: 'image' | 'video' | 'html' | 'site' | 'draft' | 'audit';
+  /** 'site' = GitHub Pages publish record, 'draft' = Bluesky draft awaiting the Herald, 'audit' = PageSpeed scores, 'audio' = MP3 voice-over, 'file' = downloadable text file (transcript .txt, subtitles .srt). */
+  kind: 'image' | 'video' | 'audio' | 'file' | 'html' | 'site' | 'draft' | 'audit';
   url: string | null; // '/uploads/…' for image and video; the public URL for a 'site' only once it is live
   html: string | null; // full single-file page for kind 'html' (render only in a sandboxed iframe)
   title: string;

@@ -6,7 +6,7 @@ import type { FestivalClaimStatus, GazetteEdition } from '../../shared/gazette';
 import { PROVINCE } from '../../shared/realm';
 import { AppShell } from '../app/AppShell';
 import { gazetteApi } from '../lib/gazetteApi';
-import { useApp } from '../lib/store';
+import { useApp, useCrowns } from '../lib/store';
 import { fmt } from '../lib/api';
 import { BRAND } from '../config';
 import './gazette.css';
@@ -51,7 +51,7 @@ function Item({ d }: { d: Duty }) {
 }
 
 function FestivalBox() {
-  const { user, refresh, toast } = useApp();
+  const { user, crowns: on, refresh, toast } = useApp();
   const [country] = useState(() => 'US');
   const [st, setSt] = useState<FestivalClaimStatus | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -98,9 +98,11 @@ function FestivalBox() {
             {st.today.localName} · public holiday in {st.country} · {src}
           </span>
         </div>
-        <button className="btn btn-gold btn-sm" disabled={busy || st.claimed} onClick={claim}>
-          <Gift size={15} aria-hidden /> {st.claimed ? 'Bonus claimed' : `Claim ${st.bonus} ${BRAND.currencyShort}`}
-        </button>
+        {on && (
+          <button className="btn btn-gold btn-sm" disabled={busy || st.claimed} onClick={claim}>
+            <Gift size={15} aria-hidden /> {st.claimed ? 'Bonus claimed' : `Claim ${st.bonus} ${BRAND.currencyShort}`}
+          </button>
+        )}
       </div>
     );
   return (
@@ -108,7 +110,9 @@ function FestivalBox() {
       <div className="gz-fest-text">
         <strong>No festival in {st.country} today.</strong>
         <span>
-          {st.next ? `Next: ${st.next.name} on ${longDate(st.next.date)}. ` : ''}On a public holiday every citizen may claim {st.bonus} {BRAND.currencyShort} from the Crown · {src}
+          {st.next ? `Next: ${st.next.name} on ${longDate(st.next.date)}. ` : ''}
+          {on ? `On a public holiday every citizen may claim ${st.bonus} ${BRAND.currencyShort} from the Crown · ` : ''}
+          {src}
         </span>
       </div>
     </div>
@@ -116,6 +120,7 @@ function FestivalBox() {
 }
 
 export default function Gazette() {
+  const crowns = useCrowns();
   const [params, setParams] = useSearchParams();
   const date = params.get('date') || undefined;
   const [ed, setEd] = useState<GazetteEdition | null>(null);
@@ -284,7 +289,7 @@ export default function Gazette() {
                           <th>Guild</th>
                           <th>Approved</th>
                           <th className="hide-xs">Rating</th>
-                          <th>{BRAND.currencyShort}</th>
+                          {crowns && <th>{BRAND.currencyShort}</th>}
                           <th className="hide-xs">Reports</th>
                         </tr>
                       </thead>
@@ -297,7 +302,7 @@ export default function Gazette() {
                             </td>
                             <td>{s.approved}</td>
                             <td className="hide-xs">{s.rating?.toFixed(1) ?? '–'}</td>
-                            <td>{fmt(s.crowns)}</td>
+                            {crowns && <td>{fmt(s.crowns)}</td>}
                             <td className="hide-xs">{s.duties ?? 0}</td>
                           </tr>
                         ))}

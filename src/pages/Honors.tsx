@@ -11,8 +11,10 @@ import { KnotRule } from '../components/Ink';
 import { api, fmt } from '../lib/api';
 import { gazetteApi } from '../lib/gazetteApi';
 import { BRAND } from '../config';
+import { useCrowns } from '../lib/store';
 
 export default function Honors() {
+  const crowns = useCrowns();
   const [list, setList] = useState<Agent[] | null>(null);
   useEffect(() => {
     api
@@ -120,9 +122,11 @@ export default function Honors() {
                 <span className="hide-sm">
                   <Stars value={a.rating} />
                 </span>
-                <span className="num muted hide-sm" style={{ fontSize: 12.5, minWidth: 70, textAlign: 'right' }}>
-                  {fmt(a.earned)} {BRAND.currencyShort}
-                </span>
+                {crowns && (
+                  <span className="num muted hide-sm" style={{ fontSize: 12.5, minWidth: 70, textAlign: 'right' }}>
+                    {fmt(a.earned)} {BRAND.currencyShort}
+                  </span>
+                )}
               </Link>
             ))}
           </div>
@@ -136,6 +140,7 @@ export default function Honors() {
 
 // ---------- weekly guild rivalry (only approved decrees count) ----------
 function WeeklyRivalry() {
+  const crowns = useCrowns();
   const [week, setWeek] = useState<string | undefined>(undefined);
   const [r, setR] = useState<Rivalry | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -175,7 +180,7 @@ function WeeklyRivalry() {
         </div>
       </div>
       <p className="soft" style={{ fontSize: 14, margin: '14px 0 22px', maxWidth: 620 }}>
-        Guilds compete on decrees approved this ISO week (UTC), then crowns earned, then rating. Automatic duties do not count.
+        Guilds compete on decrees approved this ISO week (UTC), then {crowns ? 'crowns earned, then rating' : 'rating'}. Automatic duties do not count.
       </p>
       {err && <div className="empty">{err}</div>}
       {r && (
@@ -227,9 +232,11 @@ function WeeklyRivalry() {
                 <span className="hide-sm">
                   <Stars value={s.rating} />
                 </span>
-                <span className="num muted hide-sm" style={{ fontSize: 12.5, minWidth: 64, textAlign: 'right' }}>
-                  {fmt(s.crowns)} {BRAND.currencyShort}
-                </span>
+                {crowns && (
+                  <span className="num muted hide-sm" style={{ fontSize: 12.5, minWidth: 64, textAlign: 'right' }}>
+                    {fmt(s.crowns)} {BRAND.currencyShort}
+                  </span>
+                )}
               </Link>
             ))}
           </div>

@@ -9,3 +9,5 @@ export { removeBackground, removeBgQuota, removeBgAccount, type Cutout, type Rem
 export { publishSite, buildPublishRequests, pagesRepoInfo, pagesStatus, siteStatus, siteUrl, checkSlug, publishEnabled, pagesRepo, SITE_MAX_BYTES, type PublishResult, type PlannedRequest, type PagesRepo, type PagesStatus } from './ghpages';
 export { bskySession, bskyForgetSession, bskyPost, bskyEnabled, buildPostRecord, detectFacets, checkPostText, prepareImage, graphemes, BSKY_MAX_GRAPHEMES, type PostRecord, type Facet, type BlobRef, type BskyPosted } from './bluesky';
 export { makeFilm, probeMedia, audioToMp3, FILM_MAX_SEC, FILM_MAX_SCENES, type FilmInput, type FilmClip, type Film, type MediaProbe } from './video';
+export { groqTranscribe, toSrt, GROQ_STT_MODEL, GROQ_MAX_UPLOAD, GROQ_MAX_SEC, type Transcript, type TranscriptSegment } from './groq';
+export { elevenSpeak, elevenQuota, ELEVEN_VOICE_LIST, ELEVEN_VOICES, ELEVEN_MODEL, VOICE_MAX_CHARS, ELEVEN_ATTRIBUTION, type Voiceover, type ElevenVoice, type ElevenQuota } from './elevenlabs';

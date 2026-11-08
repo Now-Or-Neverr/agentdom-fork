@@ -10,13 +10,15 @@ import { Figure, Portrait } from '../components/Character';
 import { CloudMotif } from '../components/Ink';
 import { provinceIcon } from '../components/ProvinceIcon';
 import { ago, api, fmt, watchActivity } from '../lib/api';
-import { useApp } from '../lib/store';
+import { useApp, useCrowns } from '../lib/store';
 import { BRAND } from '../config';
+import { FreeTag } from '../components/Free';
 
 type Tab = 'commissions' | 'agents' | 'recent';
 const SUGGEST = ['logo', 'api', 'article', 'video script', 'data', 'proposal', 'contract'];
 
 export default function Hall() {
+  const crowns = useCrowns();
   const [sp, setSp] = useSearchParams();
   const tab = (sp.get('tab') as Tab) || 'commissions';
   const province = (sp.get('province') as ProvinceId | null) ?? 'all';
@@ -88,7 +90,7 @@ export default function Hall() {
             Every task, a <em>decree</em>. Every decree, an agent.
           </h1>
           <p className="lede" style={{ marginBottom: 26 }}>
-            Browse fixed-price commissions, summon a specific agent, or let the Grand Vizier route your decree.
+            Browse {crowns ? 'fixed-price' : 'free'} commissions, summon a specific agent, or let the Grand Vizier route your decree.
           </p>
           <div
             style={{
@@ -196,7 +198,7 @@ export default function Hall() {
                   <h2>
                     Open <em>commissions</em>
                   </h2>
-                  <span className="muted">Fixed price · delivered by one agent</span>
+                  <span className="muted">{crowns ? 'Fixed price' : 'Free during launch'} · delivered by one agent</span>
                 </div>
                 {province === 'all' && !q && commissions && commissions.length > 0 ? (
                   // Grouped by guild, one swipeable row each.
@@ -340,7 +342,7 @@ function VizierCard({ onIssue }: { onIssue: () => void }) {
 }
 
 function VaultCard() {
-  const { user } = useApp();
+  const { user, crowns } = useApp();
   const [s, setS] = useState<RealmStatus | null>(null);
   useEffect(() => {
     api
@@ -350,12 +352,19 @@ function VaultCard() {
   }, [user?.crowns]);
   return (
     <div className="aside-card">
-      <span className="meta">Your vault</span>
-      <div className="vault-figure" style={{ marginTop: 14 }}>
-        <span className="crown-coin" style={{ width: 22, height: 22, alignSelf: 'center' }} />
-        <span className="display">{user ? fmt(user.crowns) : '—'}</span>
-        <span className="meta">{BRAND.currencyShort}</span>
-      </div>
+      <span className="meta">{crowns ? 'Your vault' : 'Your decrees'}</span>
+      {crowns ? (
+        <div className="vault-figure" style={{ marginTop: 14 }}>
+          <span className="crown-coin" style={{ width: 22, height: 22, alignSelf: 'center' }} />
+          <span className="display">{user ? fmt(user.crowns) : '—'}</span>
+          <span className="meta">{BRAND.currencyShort}</span>
+        </div>
+      ) : (
+        <div className="vault-figure" style={{ marginTop: 14, alignItems: 'center', gap: 10 }}>
+          <FreeTag />
+          <span className="muted" style={{ fontSize: 13.5 }}>Every decree is free during launch.</span>
+        </div>
+      )}
       {s && (
         <div
           className="stats"
@@ -374,9 +383,15 @@ function VaultCard() {
           </span>
         </div>
       )}
-      <Link to="/vault" className="btn btn-sm" style={{ marginTop: 18 }}>
-        Open vault
-      </Link>
+      {crowns ? (
+        <Link to="/vault" className="btn btn-sm" style={{ marginTop: 18 }}>
+          Open vault
+        </Link>
+      ) : (
+        <Link to="/decrees" className="btn btn-sm" style={{ marginTop: 18 }}>
+          My decrees
+        </Link>
+      )}
     </div>
   );
 }

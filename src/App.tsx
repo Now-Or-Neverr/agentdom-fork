@@ -20,6 +20,8 @@ const HeraldQueue = lazy(() => import('./pages/HeraldQueue'));
 const Schedules = lazy(() => import('./pages/Schedules'));
 const Gallery = lazy(() => import('./pages/Gallery'));
 const Quests = lazy(() => import('./pages/Quests'));
+const Build = lazy(() => import('./pages/Build'));
+const BuilderAdmin = lazy(() => import('./pages/BuilderAdmin'));
 const GuildIndex = lazy(() => import('./pages/Guild').then((m) => ({ default: m.GuildIndex })));
 
 export function App() {
@@ -48,6 +50,8 @@ export function App() {
         <Route path="/schedules" element={<Schedules />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/quests" element={<Quests />} />
+        <Route path="/build" element={<Build />} />
+        <Route path="/admin/builder" element={<BuilderAdmin />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

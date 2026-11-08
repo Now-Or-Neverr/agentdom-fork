@@ -3,7 +3,7 @@
 // real quest through the existing quest engine (server/quests.ts createQuestRows).
 import Anthropic from '@anthropic-ai/sdk';
 import { db, now, uid, type Row } from './db';
-import { HttpError, allAgents, count, startOfDay, text } from './core';
+import { HttpError, allAgents, count, crownsEnabled, startOfDay, text } from './core';
 import { createQuestRows } from './quests';
 import { GUILDS, PROVINCE } from '../shared/realm';
 import { QUEST_MAX_REWARD, QUEST_MAX_SHARE, QUEST_MAX_STEPS, QUEST_MIN_SHARE, QUEST_MIN_STEPS, splitReward, type GuildId } from '../shared/quests';
@@ -179,7 +179,7 @@ export function confirmPlan(user: Row, ip: string, b: Row): string {
     if (!agents.some((a) => a.province === s.province && a.active)) throw new HttpError(400, `The ${PROVINCE[s.province].name} has no active agent right now.`);
   const reward = steps.reduce((t, s) => t + s.share, 0);
   if (reward > QUEST_MAX_REWARD) throw new HttpError(400, `A quest's total reward can be at most ${QUEST_MAX_REWARD} crowns.`);
-  if (user.crowns < reward) throw new HttpError(400, `Not enough crowns. You have ${user.crowns}, this quest needs ${reward}.`);
+  if (crownsEnabled() && user.crowns < reward) throw new HttpError(400, `Not enough crowns. You have ${user.crowns}, this quest needs ${reward}.`);
 
   const today = startOfDay();
   const userUsed = count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', user.id, today) + reserved(' AND q.user_id = ?', user.id);

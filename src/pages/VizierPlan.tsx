@@ -9,10 +9,11 @@ import { fmt } from '../lib/api';
 import { vizierApi } from '../lib/courtApi2';
 import { useApp } from '../lib/store';
 import { BRAND } from '../config';
+import { FreeTag } from '../components/Free';
 import './schedules.css';
 
 export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onCreated: (q: Quest) => void }) {
-  const { user } = useApp();
+  const { user, crowns: on } = useApp();
   const [goal, setGoal] = useState('');
   const [budget, setBudget] = useState(120);
   const [plan, setPlan] = useState<VizierPlan | null>(null);
@@ -84,8 +85,8 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
         {!plan ? (
           <>
             <p className="sd-intro">
-              Describe the whole goal. The Grand Vizier (Claude) splits it into 2–4 steps for different guilds. Planning is free; nothing is charged until you confirm the
-              plan. {left && <b>{left.left} of {left.limit} plans left today.</b>}
+              Describe the whole goal. The Grand Vizier (Claude) splits it into 2–4 steps for different guilds.{' '}
+              {on ? 'Planning is free; nothing is charged until you confirm the plan.' : 'Planning and quests are free during launch.'} {left && <b>{left.left} of {left.limit} plans left today.</b>}
             </p>
             <label className="label" htmlFor="vp-goal">
               Your goal
@@ -98,10 +99,14 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
               maxLength={1500}
               placeholder="e.g. Launch my handmade candle shop on Instagram next month: I need a brand voice, the first posts and a simple price list."
             />
-            <label className="label vp-gap" htmlFor="vp-budget">
-              Total reward ({BRAND.currency})
-            </label>
-            <input id="vp-budget" className="field num" type="number" min={QUEST_MIN_SHARE * QUEST_MIN_STEPS} max={QUEST_MAX_REWARD} value={budget} onChange={(e) => setBudget(Number(e.target.value))} />
+            {on && (
+              <>
+                <label className="label vp-gap" htmlFor="vp-budget">
+                  Total reward ({BRAND.currency})
+                </label>
+                <input id="vp-budget" className="field num" type="number" min={QUEST_MIN_SHARE * QUEST_MIN_STEPS} max={QUEST_MAX_REWARD} value={budget} onChange={(e) => setBudget(Number(e.target.value))} />
+              </>
+            )}
             {err && <div className="sd-err">{err}</div>}
             <button className="btn btn-seal btn-lg btn-block isd-submit" disabled={busy !== null || goal.trim().length < 12 || left?.left === 0} onClick={ask}>
               <Crown size={15} /> {busy === 'plan' ? 'The Vizier is planning…' : 'Ask the Vizier to plan'}
@@ -138,19 +143,27 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
                   <input className="field" aria-label={`Step ${i + 1} title`} value={s.title} maxLength={60} onChange={(e) => edit(i, { title: e.target.value })} />
                   <textarea className="field" aria-label={`Step ${i + 1} instruction`} value={s.instruction} maxLength={1000} rows={3} onChange={(e) => edit(i, { instruction: e.target.value })} />
                   {s.reason && <div className="vp-reason">Vizier: {s.reason}</div>}
-                  <label className="vp-share">
-                    Share
-                    <input className="field num" type="number" min={QUEST_MIN_SHARE} value={s.share} onChange={(e) => edit(i, { share: Math.round(Number(e.target.value)) })} />
-                    {BRAND.currencyShort}
-                  </label>
+                  {on && (
+                    <label className="vp-share">
+                      Share
+                      <input className="field num" type="number" min={QUEST_MIN_SHARE} value={s.share} onChange={(e) => edit(i, { share: Math.round(Number(e.target.value)) })} />
+                      {BRAND.currencyShort}
+                    </label>
+                  )}
                 </div>
               ))}
             </div>
-            <div className="vp-share vp-total">
-              Total reward
-              <input className="field num" type="number" min={QUEST_MIN_SHARE * steps.length} max={QUEST_MAX_REWARD} value={total} onChange={(e) => rescale(Math.round(Number(e.target.value)))} />
-              {BRAND.currencyShort} · balance {user ? fmt(user.crowns) : '—'} · each step counts as one of today’s decrees
-            </div>
+            {on ? (
+              <div className="vp-share vp-total">
+                Total reward
+                <input className="field num" type="number" min={QUEST_MIN_SHARE * steps.length} max={QUEST_MAX_REWARD} value={total} onChange={(e) => rescale(Math.round(Number(e.target.value)))} />
+                {BRAND.currencyShort} · balance {user ? fmt(user.crowns) : '—'} · each step counts as one of today’s decrees
+              </div>
+            ) : (
+              <div className="vp-share vp-total">
+                <FreeTag /> during launch · each step counts as one of today’s decrees
+              </div>
+            )}
             {dupGuild && <div className="sd-err">Each step must be handled by a different guild.</div>}
             {err && <div className="sd-err">{err}</div>}
             <div className="vp-foot">
@@ -162,7 +175,7 @@ export function VizierPlanner({ onClose, onCreated }: { onClose: () => void; onC
                 disabled={busy !== null || dupGuild || !title.trim() || steps.some((s) => !s.instruction.trim() || s.share < QUEST_MIN_SHARE) || total > QUEST_MAX_REWARD}
                 onClick={confirm}
               >
-                {busy === 'confirm' ? 'Starting the quest…' : `Confirm & lock ${fmt(total)} ${BRAND.currencyShort}`}
+                {busy === 'confirm' ? 'Starting the quest…' : on ? `Confirm & lock ${fmt(total)} ${BRAND.currencyShort}` : 'Confirm & start · Free'}
               </button>
             </div>
           </>

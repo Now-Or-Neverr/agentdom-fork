@@ -9,6 +9,7 @@ import './site.css';
 
 const NAV = [
   { to: '/realm', label: 'The Realm' },
+  { to: '/build', label: 'Build' },
   { to: '/hall', label: 'Decree Hall' },
   { to: '/quests', label: 'Quests' },
   { to: '/workshop', label: 'Workshops' },
@@ -19,7 +20,7 @@ const NAV = [
 
 // Full-width cream bar. Gains a hairline and shadow once the page scrolls.
 export function SiteHeader() {
-  const { user } = useApp();
+  const { user, crowns } = useApp();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -55,11 +56,13 @@ export function SiteHeader() {
             ))}
           </nav>
           <div className="sh-right">
-            <Link to="/vault" className="sh-purse" aria-label="Your vault">
-              <span className="sh-coin" />
-              <span className="num">{user ? fmt(user.crowns) : '—'}</span>
-              <span className="sh-cur">{BRAND.currencyShort}</span>
-            </Link>
+            {crowns && (
+              <Link to="/vault" className="sh-purse" aria-label="Your vault">
+                <span className="sh-coin" />
+                <span className="num">{user ? fmt(user.crowns) : '—'}</span>
+                <span className="sh-cur">{BRAND.currencyShort}</span>
+              </Link>
+            )}
             <Link to="/realm" className="btn btn-primary btn-sm sh-enter">
               Enter the Realm
             </Link>
@@ -79,7 +82,7 @@ export function SiteHeader() {
             </button>
           </div>
           <nav>
-            {[...NAV, { to: '/vault', label: 'Vault' }, { to: '/decrees', label: 'My decrees' }].map((n) => (
+            {[...NAV, ...(crowns ? [{ to: '/vault', label: 'Vault' }] : []), { to: '/decrees', label: 'My decrees' }].map((n) => (
               <Link key={n.to} to={n.to} onClick={() => setOpen(false)}>
                 {n.label}
                 <ArrowUpRight size={20} />
@@ -90,7 +93,7 @@ export function SiteHeader() {
             Enter the Realm
           </Link>
           <p className="muted" style={{ fontSize: 12.5, marginTop: 14 }}>
-            {user ? `${user.name} · ${fmt(user.crowns)} ${BRAND.currency}` : ''}
+            {user ? (crowns ? `${user.name} · ${fmt(user.crowns)} ${BRAND.currency}` : user.name) : ''}
           </p>
         </div>
       )}

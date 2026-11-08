@@ -11,6 +11,7 @@ import { ProvinceIcon } from '../components/ProvinceIcon';
 import { ProvinceDiorama } from '../landing/realmBridge';
 import { api, fmt } from '../lib/api';
 import { BRAND } from '../config';
+import { useCrowns } from '../lib/store';
 import './guild.css';
 
 const vars = (p: Province) => ({ ['--g' as string]: p.color }) as CSSProperties;
@@ -70,6 +71,7 @@ export default function Guild() {
 }
 
 function GuildPage({ id }: { id: ProvinceId }) {
+  const crowns = useCrowns();
   const p = PROVINCE[id];
   const idx = PROVINCES.findIndex((x) => x.id === id);
   const prev = PROVINCES[(idx + PROVINCES.length - 1) % PROVINCES.length];
@@ -218,7 +220,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
         </div>
 
         <div className="wrap">
-          <div className="gd-stats">
+          <div className={'gd-stats' + (crowns ? '' : ' gd-stats-4')}>
             <Stat label="Agents" value={stats ? fmt(stats.agents) : null} sub={stats ? `${stats.active} active` : ''} />
             <Stat
               label="On duty"
@@ -233,7 +235,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
               sub={stats ? (stats.reviews ? `${stats.reviews} ${stats.reviews === 1 ? 'review' : 'reviews'}` : 'No reviews yet') : ''}
               star={stats?.rating != null}
             />
-            <Stat label={`${BRAND.currency} earned`} value={stats ? fmt(stats.earned) : null} sub="by its agents" />
+            {crowns && <Stat label={`${BRAND.currency} earned`} value={stats ? fmt(stats.earned) : null} sub="by its agents" />}
           </div>
         </div>
       </section>
@@ -257,7 +259,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
 
             <div className="section-title">
               <h2>Commissions</h2>
-              <span className="muted">Fixed price · one agent</span>
+              <span className="muted">{crowns ? 'Fixed price' : 'Free during launch'} · one agent</span>
             </div>
             <div className="grid-slips">
               {commissions == null && [0, 1, 2].map((i) => <div key={i} className="skeleton" style={{ height: 260 }} />)}
@@ -406,6 +408,7 @@ function Stat({ label, value, sub, live, star }: { label: string; value: string 
 }
 
 function BannerSlot({ b }: { b: Banner }) {
+  const crowns = useCrowns();
   const rented = !!(b.renterId && b.imageUrl && (!b.until || new Date(b.until).getTime() > Date.now()));
   return (
     <div className={'gd-banner' + (rented ? ' on' : '')}>
@@ -426,9 +429,7 @@ function BannerSlot({ b }: { b: Banner }) {
               {b.until && <span className="muted"> · until {new Date(b.until).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
             </>
           ) : (
-            <span className="muted">
-              {fmt(b.pricePerDay)} {BRAND.currencyShort} / day
-            </span>
+            <span className="muted">{crowns ? `${fmt(b.pricePerDay)} ${BRAND.currencyShort} / day` : 'Rental opens soon'}</span>
           )}
         </div>
       </div>

@@ -1401,6 +1401,18 @@ a.wl-src:hover {
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
+.art-audio audio {
+  display: block;
+  width: 100%;
+}
+.art-file + .art-file {
+  margin-top: 12px;
+}
+.art-file .art-card-text {
+  white-space: pre-wrap;
+  max-height: 9.5em;
+  overflow: hidden;
+}
 .site-live {
   border-color: color-mix(in srgb, var(--gold) 60%, var(--line-c));
   background: linear-gradient(180deg, color-mix(in srgb, var(--gold-soft) 50%, var(--surface)), var(--surface) 60%);

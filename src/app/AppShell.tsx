@@ -9,6 +9,7 @@ import './app.css';
 
 const NAV = [
   { to: '/realm', label: 'The Realm' },
+  { to: '/build', label: 'Build' },
   { to: '/hall', label: 'Decree Hall' },
   { to: '/quests', label: 'Quests' },
   { to: '/workshop', label: 'Workshops' },
@@ -20,7 +21,7 @@ const NAV = [
 ];
 
 export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?: () => void }) {
-  const { user } = useApp();
+  const { user, crowns } = useApp();
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   return (
@@ -38,11 +39,13 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
             ))}
           </nav>
           <div className="mast-right">
-            <Link to="/vault" className="purse" aria-label="Your vault">
-              <span className="crown-coin" />
-              {user ? fmt(user.crowns) : '—'}
-              <span className="purse-cur">{BRAND.currencyShort}</span>
-            </Link>
+            {crowns && (
+              <Link to="/vault" className="purse" aria-label="Your vault">
+                <span className="crown-coin" />
+                {user ? fmt(user.crowns) : '—'}
+                <span className="purse-cur">{BRAND.currencyShort}</span>
+              </Link>
+            )}
             {onIssue ? (
               <button className="btn btn-seal btn-sm" onClick={onIssue}>
                 <ScrollText size={15} />
@@ -70,13 +73,13 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
             </button>
           </div>
           <nav aria-label="Menu links">
-            {[{ to: '/', label: 'Home' }, ...NAV, { to: '/vault', label: 'Vault' }].map((n) => (
+            {[{ to: '/', label: 'Home' }, ...NAV, ...(crowns ? [{ to: '/vault', label: 'Vault' }] : [])].map((n) => (
               <Link key={n.to} to={n.to} className={'big' + (pathname === n.to ? ' on' : '')} onClick={() => setOpen(false)}>
                 {n.label} <ArrowUpRight size={20} />
               </Link>
             ))}
           </nav>
-          <p className="drawer-note">{BRAND.currency} are a simulated currency. They are not money or crypto.</p>
+          <p className="drawer-note">{crowns ? `${BRAND.currency} are a simulated currency. They are not money or crypto.` : 'Everything is free during launch.'}</p>
         </div>
       )}
 
@@ -92,7 +95,7 @@ export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?:
         }}
       >
         <span>
-          {BRAND.name} · {BRAND.currency} are simulated and carry no monetary value.
+          {BRAND.name} · {crowns ? `${BRAND.currency} are simulated and carry no monetary value.` : 'Everything is free during launch.'}
         </span>
         <span className="mono" style={{ letterSpacing: '0.12em' }}>
           EDITION MMXXVI

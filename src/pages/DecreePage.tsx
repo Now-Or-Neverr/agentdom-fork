@@ -9,13 +9,14 @@ import { Markdown } from '../components/Markdown';
 import { ago, api, fmt, watchDecree } from '../lib/api';
 import { useApp } from '../lib/store';
 import { BRAND } from '../config';
+import { FreeTag } from '../components/Free';
 import { Artifacts, NowDoing, WorkLog } from './DecreeWork';
 
 const STEPS = [
-  { s: 'queued', label: 'Sealed in the Royal Vault', icon: Lock },
-  { s: 'working', label: 'An agent is crafting it', icon: Feather },
-  { s: 'delivered', label: 'Delivered for your review', icon: PenLine },
-  { s: 'approved', label: 'Approved · crowns released', icon: Check },
+  { s: 'queued', label: 'Sealed in the Royal Vault', free: 'Sealed and queued', icon: Lock },
+  { s: 'working', label: 'An agent is crafting it', free: 'An agent is crafting it', icon: Feather },
+  { s: 'delivered', label: 'Delivered for your review', free: 'Delivered for your review', icon: PenLine },
+  { s: 'approved', label: 'Approved · crowns released', free: 'Approved', icon: Check },
 ] as const;
 
 // Pull ```svg blocks out of the result to preview them as images (rendered via <img>, so scripts never run).
@@ -31,7 +32,7 @@ const words = (s: string) => (s.trim() ? s.trim().split(/\s+/).length : 0);
 
 export default function DecreePage() {
   const { id = '' } = useParams();
-  const { refresh, toast } = useApp();
+  const { crowns, refresh, toast } = useApp();
   const [d, setD] = useState<Decree | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [mode, setMode] = useState<'approve' | 'revise' | null>(null);
@@ -89,6 +90,8 @@ export default function DecreePage() {
 
   const p = PROVINCE[d.province];
   const idx = d.status === 'failed' || d.status === 'cancelled' ? -1 : STEPS.findIndex((x) => x.s === d.status);
+  // A decree only shows crown amounts when crowns are on and it actually cost something.
+  const paid = crowns && d.price > 0;
   const vault = d.status === 'approved' ? 'Released to the agent' : d.status === 'failed' || d.status === 'cancelled' ? 'Returned to your vault' : 'Held in the Royal Vault';
 
   return (
@@ -112,9 +115,13 @@ export default function DecreePage() {
                   Crafted by <b>{d.agent.name}</b>
                 </span>
                 <span className="dp-byline-sep" />
-                <span className="num">
-                  {fmt(d.price)} {BRAND.currencyShort}
-                </span>
+                {paid ? (
+                  <span className="num">
+                    {fmt(d.price)} {BRAND.currencyShort}
+                  </span>
+                ) : (
+                  <FreeTag />
+                )}
               </Link>
             )}
           </header>
@@ -145,11 +152,11 @@ export default function DecreePage() {
                   <span className="dp-label">In the queue</span>
                   <h2 className="display dp-state-title">Waiting in the queue</h2>
                   <p className="dp-state-text">
-                    If the realm’s AI is not connected yet, the decree waits here until it is. You can cancel for a full refund.
+                    If the realm’s AI is not connected yet, the decree waits here until it is. {paid ? 'You can cancel for a full refund.' : 'You can cancel it while it waits.'}
                   </p>
                   {d.revision === 0 && (
-                    <button className="btn btn-sm" disabled={busy} onClick={() => act(() => api.cancel(d.id), 'Decree cancelled. Your crowns are back.')}>
-                      <XCircle size={15} /> Cancel and refund
+                    <button className="btn btn-sm" disabled={busy} onClick={() => act(() => api.cancel(d.id), paid ? 'Decree cancelled. Your crowns are back.' : 'Decree cancelled.')}>
+                      <XCircle size={15} /> {paid ? 'Cancel and refund' : 'Cancel decree'}
                     </button>
                   )}
                 </div>
@@ -160,9 +167,11 @@ export default function DecreePage() {
                   <span className="dp-label">Failed</span>
                   <h2 className="display dp-state-title">The decree could not be carried out.</h2>
                   <p className="dp-state-text">{d.error}</p>
-                  <p className="dp-state-foot">
-                    {fmt(d.price)} {BRAND.currencyShort} have been returned to your vault.
-                  </p>
+                  {paid && (
+                    <p className="dp-state-foot">
+                      {fmt(d.price)} {BRAND.currencyShort} have been returned to your vault.
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -223,10 +232,12 @@ export default function DecreePage() {
                       <h2 className="display dp-h2">
                         Ready for your <em>verdict</em>
                       </h2>
-                      <p className="dp-review-text">Approve to release the reward to {d.agent?.name ?? 'the agent'}, or ask for a revision.</p>
+                      <p className="dp-review-text">
+                        {paid ? `Approve to release the reward to ${d.agent?.name ?? 'the agent'}, or ask for a revision.` : 'Approve the work, or ask for a revision.'}
+                      </p>
                       <div className="dp-review-actions">
                         <button className="btn btn-seal btn-lg" onClick={() => setMode('approve')}>
-                          <Check size={16} /> Approve & release crowns
+                          <Check size={16} /> {paid ? 'Approve & release crowns' : 'Approve the work'}
                         </button>
                         <button className="btn btn-lg" onClick={() => setMode('revise')} disabled={d.revision >= 2}>
                           <RotateCcw size={15} /> Ask for a revision ({2 - d.revision} left)
@@ -248,7 +259,7 @@ export default function DecreePage() {
                       </div>
                       <textarea className="field" style={{ minHeight: 90 }} placeholder="A short review (optional)" value={review} onChange={(e) => setReview(e.target.value)} maxLength={500} />
                       <div className="dp-review-actions">
-                        <button className="btn btn-seal" disabled={busy} onClick={() => act(() => api.approve(d.id, rating, review), 'Approved. The crowns have been released.')}>
+                        <button className="btn btn-seal" disabled={busy} onClick={() => act(() => api.approve(d.id, rating, review), paid ? 'Approved. The crowns have been released.' : 'Approved. Thank you for the review.')}>
                           <Check size={15} /> Approve
                         </button>
                         <button className="btn btn-quiet" onClick={() => setMode(null)}>
@@ -308,14 +319,20 @@ export default function DecreePage() {
                   </Link>
                 )}
                 <div className="dp-reward">
-                  <span className="dp-label">Reward</span>
-                  <span className="dp-reward-num">
-                    <span className="display">{fmt(d.price)}</span> <span className="mono">{BRAND.currencyShort}</span>
-                  </span>
+                  <span className="dp-label">{paid ? 'Reward' : 'Price'}</span>
+                  {paid ? (
+                    <span className="dp-reward-num">
+                      <span className="display">{fmt(d.price)}</span> <span className="mono">{BRAND.currencyShort}</span>
+                    </span>
+                  ) : (
+                    <FreeTag />
+                  )}
                 </div>
-                <div className="dp-vault">
-                  <Lock size={12} /> {vault}
-                </div>
+                {paid && (
+                  <div className="dp-vault">
+                    <Lock size={12} /> {vault}
+                  </div>
+                )}
                 {d.routedBy !== 'requester' && d.routeReason && (
                   <div className="dp-route">
                     <Crown size={15} />
@@ -335,7 +352,7 @@ export default function DecreePage() {
                         <span className="dp-step-dot">
                           <s.icon size={13} />
                         </span>
-                        <span className="dp-step-label">{s.label}</span>
+                        <span className="dp-step-label">{paid ? s.label : s.free}</span>
                       </li>
                     );
                   })}

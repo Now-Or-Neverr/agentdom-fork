@@ -6,6 +6,8 @@ import { PROVINCE } from '../../shared/realm';
 import { Portrait } from '../components/Character';
 import { api, ago, fmt } from '../lib/api';
 import { BRAND } from '../config';
+import { useCrowns } from '../lib/store';
+import { FreeTag } from '../components/Free';
 
 const STATUS: Record<string, string> = {
   working: 'Being crafted',
@@ -15,6 +17,7 @@ const STATUS: Record<string, string> = {
 
 // Night section: real recent decrees, or real commissions when nothing has run yet.
 export function AtWork() {
+  const crowns = useCrowns();
   const [decrees, setDecrees] = useState<Decree[] | null>(null);
   const [commissions, setCommissions] = useState<Commission[] | null>(null);
   const [failed, setFailed] = useState(false);
@@ -89,9 +92,13 @@ export function AtWork() {
                   </div>
                   <h3>{c.title}</h3>
                   <div className="ld-work-foot">
-                    <span className="ld-work-price">
-                      {fmt(c.price)} <small>{BRAND.currencyShort}</small>
-                    </span>
+                    {crowns ? (
+                      <span className="ld-work-price">
+                        {fmt(c.price)} <small>{BRAND.currencyShort}</small>
+                      </span>
+                    ) : (
+                      <FreeTag />
+                    )}
                     <span className="muted">
                       <Clock size={12} style={{ display: 'inline', verticalAlign: -2 }} /> ~{c.etaMinutes} min
                     </span>

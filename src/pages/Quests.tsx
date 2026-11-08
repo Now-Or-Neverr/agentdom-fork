@@ -21,8 +21,9 @@ import { Markdown } from '../components/Markdown';
 import { AgentPortrait } from '../app/parts';
 import { api, ago, fmt } from '../lib/api';
 import { questsApi, watchQuest } from '../lib/questsApi';
-import { useApp } from '../lib/store';
+import { useApp, useCrowns } from '../lib/store';
 import { BRAND } from '../config';
+import { FreeTag } from '../components/Free';
 import '../app/app.css';
 import './quests.css';
 import { VizierPlanner } from './VizierPlan';
@@ -37,13 +38,15 @@ const STEP: Record<QuestStepStatus, { label: string; cls: string }> = {
   cancelled: { label: 'Cancelled · refunded', cls: 'bad' },
   refunded: { label: 'Not started · refunded', cls: 'off' },
 };
+// Labels without crown talk, used while crowns are switched off.
+const FREE_LABEL: Partial<Record<QuestStepStatus, string>> = { approved: 'Done', failed: 'Failed', cancelled: 'Cancelled', refunded: 'Not started' };
 const QUEST_LABEL = { active: 'In progress', complete: 'Complete', failed: 'Stopped' } as const;
 
 type Draft = { province: GuildId; title: string; instruction: string };
 type Preset = { template: QuestTemplate } | { custom: true };
 
 export default function Quests() {
-  const { user, refresh, toast } = useApp();
+  const { user, crowns: on, refresh, toast } = useApp();
   const [templates, setTemplates] = useState<QuestTemplate[] | null>(null);
   const [mine, setMine] = useState<Quest[] | null>(null);
   const [status, setStatus] = useState<RealmStatus | null>(null);
@@ -97,10 +100,10 @@ export default function Quests() {
               <b>1</b> Pick a chain and describe your subject.
             </li>
             <li>
-              <b>2</b> The reward is locked in the Royal Vault and split across the steps.
+              <b>2</b> {on ? 'The reward is locked in the Royal Vault and split across the steps.' : 'Each guild takes one step, in order. Quests are free during launch.'}
             </li>
             <li>
-              <b>3</b> Each step's agent gets paid when it delivers. If a step fails, unused shares come back to you.
+              <b>3</b> {on ? "Each step's agent gets paid when it delivers. If a step fails, unused shares come back to you." : 'Each step builds on the one before. If a step fails, the quest stops there.'}
             </li>
           </ol>
         </div>
@@ -143,9 +146,13 @@ export default function Quests() {
                 ))}
               </ol>
               <div className="qb-card-foot">
-                <span className="muted">
-                  from <b className="qb-cr">{fmt(t.suggestedReward)}</b> {BRAND.currencyShort}
-                </span>
+                {on ? (
+                  <span className="muted">
+                    from <b className="qb-cr">{fmt(t.suggestedReward)}</b> {BRAND.currencyShort}
+                  </span>
+                ) : (
+                  <FreeTag />
+                )}
                 <button className="btn btn-seal btn-sm" onClick={() => setPreset({ template: t })}>
                   Start quest <ArrowRight size={15} />
                 </button>
@@ -211,7 +218,7 @@ function Chain({ provinces, size = 34 }: { provinces: GuildId[]; size?: number }
 
 // ---------- one quest with its live chain ----------
 function QuestCard({ q: initial, open, onToggle, onUpdate }: { q: Quest; open: boolean; onToggle: () => void; onUpdate: (q: Quest) => void }) {
-  const { refresh } = useApp();
+  const { refresh, crowns: on } = useApp();
   const [q, setQ] = useState(initial);
   const [sel, setSel] = useState<number | null>(null);
   useEffect(() => setQ(initial), [initial]);
@@ -242,7 +249,8 @@ function QuestCard({ q: initial, open, onToggle, onUpdate }: { q: Quest; open: b
         <div className="qb-quest-title">
           <b className="ellipsis">{q.title}</b>
           <span className="muted">
-            {fmt(q.reward)} {BRAND.currencyShort} · {n} steps · {ago(q.createdAt)}
+            {on && q.reward > 0 ? `${fmt(q.reward)} ${BRAND.currencyShort} · ` : ''}
+            {n} steps · {ago(q.createdAt)}
           </span>
         </div>
         <span className={'qb-badge qb-badge-' + q.status}>
@@ -278,7 +286,7 @@ function QuestCard({ q: initial, open, onToggle, onUpdate }: { q: Quest; open: b
                     <b className="ellipsis">{s.title}</b>
                     <span className="qb-node-status">
                       {s.status === 'working' && <span className="dot live" />}
-                      {STEP[s.status].label}
+                      {(!on && FREE_LABEL[s.status]) || STEP[s.status].label}
                     </span>
                   </span>
                 </button>
@@ -290,8 +298,14 @@ function QuestCard({ q: initial, open, onToggle, onUpdate }: { q: Quest; open: b
 
           {q.status === 'failed' && (
             <div className="qb-note bad">
-              This quest stopped at a failed or cancelled step. That step's share was refunded by the vault, and the shares of the steps that never
-              started were refunded too. Check <Link to="/vault">your vault</Link> for the entries.
+              {on ? (
+                <>
+                  This quest stopped at a failed or cancelled step. That step's share was refunded by the vault, and the shares of the steps that never
+                  started were refunded too. Check <Link to="/vault">your vault</Link> for the entries.
+                </>
+              ) : (
+                'This quest stopped at a failed or cancelled step. The steps after it never started.'
+              )}
             </div>
           )}
           {q.status === 'complete' && <RateQuest q={q} onRated={(x) => (setQ(x), onUpdate(x))} />}
@@ -302,6 +316,7 @@ function QuestCard({ q: initial, open, onToggle, onUpdate }: { q: Quest; open: b
 }
 
 function StepDetail({ s, n }: { s: QuestStep; n: number }) {
+  const on = useCrowns();
   const p = PROVINCE[s.province];
   return (
     <section className="qb-step" style={{ ['--g' as string]: p.color } as CSSProperties}>
@@ -312,7 +327,8 @@ function StepDetail({ s, n }: { s: QuestStep; n: number }) {
             {s.agent ? `${s.agent.name} · ${s.agent.title}` : `An agent of the ${p.name}`}
           </b>
           <span className="muted" style={{ fontSize: 12.5 }}>
-            Step {s.index + 1} of {n} · share {fmt(s.share)} {BRAND.currencyShort}
+            Step {s.index + 1} of {n}
+            {on && s.share > 0 ? ` · share ${fmt(s.share)} ${BRAND.currencyShort}` : ''}
             {s.finishedAt ? ` · delivered ${ago(s.finishedAt)}` : s.startedAt ? ` · started ${ago(s.startedAt)}` : ''}
           </span>
         </div>
@@ -327,7 +343,7 @@ function StepDetail({ s, n }: { s: QuestStep; n: number }) {
         {s.instruction}
       </p>
       {s.status === 'waiting' && <div className="qb-note">This step starts automatically once the previous step is delivered. Its agent is chosen then.</div>}
-      {s.status === 'refunded' && <div className="qb-note">This step never started. Its share went back to your purse.</div>}
+      {s.status === 'refunded' && <div className="qb-note">{on ? 'This step never started. Its share went back to your purse.' : 'This step never started.'}</div>}
       {s.status === 'queued' && <div className="qb-note">Queued for {s.agent?.name ?? 'the agent'}. Work begins when a worker slot is free.</div>}
       {(s.status === 'failed' || s.status === 'cancelled') && <div className="qb-note bad">{s.error || 'This step was cancelled before work began.'}</div>}
       {s.result && (
@@ -393,6 +409,7 @@ function CreateQuest({
   onClose: () => void;
   onCreated: (q: Quest) => void;
 }) {
+  const on = useCrowns();
   const tpl = 'template' in preset ? preset.template : null;
   const [title, setTitle] = useState(tpl?.title ?? '');
   const [subject, setSubject] = useState('');
@@ -436,7 +453,8 @@ function CreateQuest({
       const q = await questsApi.create({
         title,
         subject,
-        reward: Math.round(reward),
+        // crowns off: the server makes the quest free; send a valid placeholder reward
+        reward: on ? Math.round(reward) : (tpl?.suggestedReward ?? min),
         ...(tpl ? { templateId: tpl.id } : { steps: drafts.map((d) => ({ province: d.province, title: d.title, instruction: d.instruction })) }),
       });
       onCreated(q);
@@ -522,51 +540,61 @@ function CreateQuest({
           </div>
         )}
 
-        <label className="label qb-gap" htmlFor="qb-reward">
-          Total reward ({BRAND.currency})
-        </label>
-        <input
-          id="qb-reward"
-          className="field"
-          type="number"
-          min={min}
-          max={QUEST_MAX_REWARD}
-          step={1}
-          value={reward}
-          onChange={(e) => setReward(Number(e.target.value))}
-        />
-        <div className="qb-split">
-          <span className="label">How the reward is split</span>
-          <ol>
-            {steps.map((s, i) => (
-              <li key={i} style={{ ['--g' as string]: PROVINCE[s.province].color } as CSSProperties}>
-                <ProvinceIcon id={s.province} size={24} />
-                <span className="qb-split-name">
-                  <b className="ellipsis">{s.title || PROVINCE[s.province].craft}</b>
-                  <small className="muted">{PROVINCE[s.province].name}</small>
-                </span>
-                <span className="num">
-                  {fmt(shares[i] ?? 0)} {BRAND.currencyShort}
-                </span>
-              </li>
-            ))}
-          </ol>
-          <p className="muted qb-small">
-            The whole reward is locked in the Royal Vault now. Each agent is paid when its step is delivered. If a step fails, its share and every unstarted share come back to you.
-          </p>
-        </div>
+        {on && (
+          <>
+            <label className="label qb-gap" htmlFor="qb-reward">
+              Total reward ({BRAND.currency})
+            </label>
+            <input
+              id="qb-reward"
+              className="field"
+              type="number"
+              min={min}
+              max={QUEST_MAX_REWARD}
+              step={1}
+              value={reward}
+              onChange={(e) => setReward(Number(e.target.value))}
+            />
+            <div className="qb-split">
+              <span className="label">How the reward is split</span>
+              <ol>
+                {steps.map((s, i) => (
+                  <li key={i} style={{ ['--g' as string]: PROVINCE[s.province].color } as CSSProperties}>
+                    <ProvinceIcon id={s.province} size={24} />
+                    <span className="qb-split-name">
+                      <b className="ellipsis">{s.title || PROVINCE[s.province].craft}</b>
+                      <small className="muted">{PROVINCE[s.province].name}</small>
+                    </span>
+                    <span className="num">
+                      {fmt(shares[i] ?? 0)} {BRAND.currencyShort}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <p className="muted qb-small">
+                The whole reward is locked in the Royal Vault now. Each agent is paid when its step is delivered. If a step fails, its share and every unstarted share come back to you.
+              </p>
+            </div>
+          </>
+        )}
 
         <div className="qb-facts">
-          <span>
-            You have <b>{fmt(crowns)}</b> {BRAND.currencyShort}
-          </span>
+          {on ? (
+            <span>
+              You have <b>{fmt(crowns)}</b> {BRAND.currencyShort}
+            </span>
+          ) : (
+            <span>
+              <FreeTag /> during launch
+            </span>
+          )}
           <span>
             Uses <b>{n}</b> of your daily decrees{left != null ? ` · ${Math.max(0, left)} left today` : ''}
           </span>
         </div>
         {err && <div className="qb-note bad">{err}</div>}
-        <button className="btn btn-seal btn-block" disabled={busy || dupes || (left != null && left < n) || reward < min || reward > QUEST_MAX_REWARD || reward > crowns} type="submit">
-          <Sparkles size={16} /> {busy ? 'Starting…' : `Start quest · ${fmt(Math.round(reward) || 0)} ${BRAND.currencyShort}`}
+        <button className="btn btn-seal btn-block" disabled={busy || dupes || (left != null && left < n) || (on && (reward < min || reward > QUEST_MAX_REWARD || reward > crowns))} type="submit">
+          <Sparkles size={16} /> {busy ? 'Starting…' : on ? `Start quest · ${fmt(Math.round(reward) || 0)} ${BRAND.currencyShort}` : 'Start quest · Free'}
         </button>
       </form>
     </div>

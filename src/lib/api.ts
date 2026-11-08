@@ -45,6 +45,7 @@ export const api = {
     setUid(u.id);
     return u;
   },
+  config: () => req<{ crowns: boolean }>('/config'),
   rename: (name: string) => req<User>('/me/name', { method: 'POST', body: JSON.stringify({ name }) }),
   ledger: () => req<LedgerEntry[]>('/me/ledger'),
   status: () => req<RealmStatus>('/status'),

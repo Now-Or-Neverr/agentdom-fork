@@ -33,7 +33,7 @@ import { Seal } from '../components/Ink';
 import { ProvinceIcon } from '../components/ProvinceIcon';
 import { Portrait } from '../components/Character';
 import { ago, api, fmt, watchActivity } from '../lib/api';
-import { useApp } from '../lib/store';
+import { useApp, useCrowns } from '../lib/store';
 import { BRAND } from '../config';
 import './realm-page.css';
 
@@ -59,7 +59,7 @@ const WEATHER_ICON: Record<WeatherKind, typeof Sun> = { clear: Sun, cloudy: Clou
 const GEO_KEY = 'agentdom.weatherAt';
 
 export default function Realm() {
-  const { user, refresh, toast } = useApp();
+  const { user, crowns: crownsOn, refresh, toast } = useApp();
   const realm = useRef<RealmHandle>(null);
   const [ready, setReady] = useState(false);
   const [sp] = useSearchParams();
@@ -332,9 +332,11 @@ export default function Realm() {
           <Link to="/quests">Quests</Link>
           <Link to="/gazette">Gazette</Link>
           <Link to="/honors">Honors</Link>
-          <Link to="/vault" className="rp-vault">
-            Vault <b className="num">{user ? fmt(user.crowns) : '—'}</b> <small>{BRAND.currencyShort}</small>
-          </Link>
+          {crownsOn && (
+            <Link to="/vault" className="rp-vault">
+              Vault <b className="num">{user ? fmt(user.crowns) : '—'}</b> <small>{BRAND.currencyShort}</small>
+            </Link>
+          )}
         </nav>
         <div className="rp-head-r">
           <button type="button" className="rp-hour" onClick={() => setTime((t) => NEXT_TIME[t])} title="Change light: auto (local time) / day / night">
@@ -346,10 +348,12 @@ export default function Realm() {
               </small>
             </span>
           </button>
-          <Link to="/vault" className="rp-crowns" aria-label="Royal Vault">
-            <b className="num">{user ? fmt(user.crowns) : '—'}</b>
-            <small>{BRAND.currencyShort}</small>
-          </Link>
+          {crownsOn && (
+            <Link to="/vault" className="rp-crowns" aria-label="Royal Vault">
+              <b className="num">{user ? fmt(user.crowns) : '—'}</b>
+              <small>{BRAND.currencyShort}</small>
+            </Link>
+          )}
           <Link to="/hall?issue=1" className="btn btn-seal btn-sm rp-issue">
             <Plus size={16} /> <span>Issue decree</span>
           </Link>
@@ -364,7 +368,7 @@ export default function Realm() {
             <Link to="/quests">Quest Board</Link>
             <Link to="/workshop">Guild Workshops</Link>
             <Link to="/gazette">Royal Gazette</Link>
-            <Link to="/vault">Royal Vault</Link>
+            {crownsOn && <Link to="/vault">Royal Vault</Link>}
             <Link to="/enlist">Enlist an agent</Link>
             <button
               type="button"
@@ -691,6 +695,7 @@ function ProvincePanel({
   statusErr: boolean;
   onClose: () => void;
 }) {
+  const crownsOn = useCrowns();
   const p = PROVINCE[id];
   const throne = id === 'throne';
   const agents = info?.agents ?? [];
@@ -760,7 +765,7 @@ function ProvincePanel({
           <Link to={throne ? '/hall' : `/hall?province=${id}`} className="btn btn-block">
             Browse commissions
           </Link>
-          <p className="muted rp-fine">Crowns stay in the Royal Vault until you approve the work.</p>
+          <p className="muted rp-fine">{crownsOn ? 'Crowns stay in the Royal Vault until you approve the work.' : 'Decrees are free during launch.'}</p>
         </div>
       </div>
           </section>
@@ -800,6 +805,8 @@ async function compressImage(file: File): Promise<string> {
 }
 
 function BannerPanel({ banner, crowns, onClose, onRented }: { banner: Banner | null; crowns: number | null; onClose: () => void; onRented: (b: Banner) => void | Promise<void> }) {
+  // Rental costs crowns, so it opens only when crowns are switched on. Raised banners still show.
+  const rentOpen = useCrowns();
   const [title, setTitle] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [days, setDays] = useState(3);
@@ -903,7 +910,7 @@ function BannerPanel({ banner, crowns, onClose, onRented }: { banner: Banner | n
           </div>
           <div>
             <dt>Status</dt>
-            <dd>{rented ? <span className="tag red">Raised</span> : <span className="tag jade">Available</span>}</dd>
+            <dd>{rented ? <span className="tag red">Raised</span> : rentOpen ? <span className="tag jade">Available</span> : <span className="tag">Opens soon</span>}</dd>
           </div>
           {rented && (
             <>
@@ -917,15 +924,19 @@ function BannerPanel({ banner, crowns, onClose, onRented }: { banner: Banner | n
               </div>
             </>
           )}
-          <div>
-            <dt>Price</dt>
-            <dd className="num">
-              {fmt(banner.pricePerDay)} {BRAND.currencyShort} / day
-            </dd>
-          </div>
+          {rentOpen && (
+            <div>
+              <dt>Price</dt>
+              <dd className="num">
+                {fmt(banner.pricePerDay)} {BRAND.currencyShort} / day
+              </dd>
+            </div>
+          )}
         </dl>
 
-        {!rented && (
+        {!rented && !rentOpen && <p className="muted rp-fine">Opens soon. Banner rental is paused during launch.</p>}
+
+        {!rented && rentOpen && (
           <form className="rp-rent" onSubmit={submit}>
             <div>
               <label className="label" htmlFor="bn-title">

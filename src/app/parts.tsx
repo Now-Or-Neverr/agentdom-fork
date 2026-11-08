@@ -6,6 +6,8 @@ import { Figure, Portrait } from '../components/Character';
 import { ProvinceIcon } from '../components/ProvinceIcon';
 import { ago, fmt } from '../lib/api';
 import { BRAND } from '../config';
+import { useCrowns } from '../lib/store';
+import { FreeTag } from '../components/Free';
 
 export function Stars({ value, size = 13, count }: { value: number | null; size?: number; count?: number }) {
   if (value == null) return <span className="tag">New</span>;
@@ -35,6 +37,7 @@ export function AgentPortrait({ a, size = 48 }: { a: Pick<AgentLite, 'role' | 'l
 }
 
 export function CommissionSlip({ c, onOrder }: { c: Commission; onOrder?: (c: Commission) => void }) {
+  const crowns = useCrowns();
   const p = PROVINCE[c.province];
   return (
     <article className="slip" style={{ ['--accent' as string]: p.color }}>
@@ -74,9 +77,13 @@ export function CommissionSlip({ c, onOrder }: { c: Commission; onOrder?: (c: Co
             </Link>
           )}
           <span className="price-seal">
-            <b>
-              {fmt(c.price)} <span>{BRAND.currencyShort}</span>
-            </b>
+            {crowns ? (
+              <b>
+                {fmt(c.price)} <span>{BRAND.currencyShort}</span>
+              </b>
+            ) : (
+              <FreeTag />
+            )}
             <small>
               <Clock size={10} style={{ display: 'inline', verticalAlign: -1 }} /> ~{c.etaMinutes} min
             </small>
@@ -144,16 +151,18 @@ const STATUS: Record<DecreeStatus, { label: string; bg: string; fg: string }> = 
 };
 
 export function StatusSeal({ s }: { s: DecreeStatus }) {
+  const crowns = useCrowns();
   const x = STATUS[s];
   return (
     <span className="status" style={{ background: x.bg, color: x.fg }}>
       {s === 'working' ? <span className="dot live" /> : <span className="dot" />}
-      {x.label}
+      {!crowns && s === 'failed' ? 'Failed' : x.label}
     </span>
   );
 }
 
 export function DecreeRow({ d, to }: { d: Decree; to?: string }) {
+  const crowns = useCrowns();
   const p = PROVINCE[d.province];
   const body = (
     <>
@@ -161,7 +170,7 @@ export function DecreeRow({ d, to }: { d: Decree; to?: string }) {
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="ellipsis decree-row-title">{d.title}</div>
         <div className="ellipsis decree-row-meta">
-          {d.agent?.name} · {p.name} · {fmt(d.price)} {BRAND.currencyShort} · {ago(d.createdAt)}
+          {d.agent?.name} · {p.name} · {crowns ? `${fmt(d.price)} ${BRAND.currencyShort}` : 'Free'} · {ago(d.createdAt)}
         </div>
       </div>
       <StatusSeal s={d.status} />

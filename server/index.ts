@@ -11,6 +11,7 @@ import { router as questRoutes } from './routes/quests';
 import { router as courtRoutes } from './routes/court';
 import { router as mediaRoutes } from './routes/media';
 import { router as court2Routes } from './routes/court2';
+import { router as builderRoutes } from './routes/builder';
 import { startDuties } from './duties';
 import { bus, decreeChanged, logActivity } from './events';
 import { MODEL, aiEnabled, runningDecrees, startWorker, vizierPick } from './worker';
@@ -62,7 +63,14 @@ app.use(
 app.use(express.json({ limit: '3mb' }));
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '7d' }));
 
-import { AGENT_SQL, HttpError, agentById, allAgents, count, currentUser, h, ledger, lite, optionalUser, startOfDay, text, toActivity, toAgent, toCommission, toDecree, toUser, workingAgents } from './core';
+import { AGENT_SQL, HttpError, agentById, allAgents, count, crownsEnabled, currentUser, h, ledger, lite, optionalUser, startOfDay, text, toActivity, toAgent, toCommission, toDecree, toUser, workingAgents } from './core';
+
+// ---------------- client config ----------------
+// Feature switches the client needs before rendering (crowns on/off).
+app.get('/api/config', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.json({ crowns: crownsEnabled() });
+});
 
 // ---------------- users ----------------
 app.post(
@@ -390,13 +398,17 @@ app.post(
       }
     }
     if (!agent) throw new HttpError(400, 'No agent can take this decree.');
-    if (!(price >= 5 && price <= 1000)) throw new HttpError(400, 'The reward must be between 5 and 1,000 crowns.');
-    if (u.crowns < price) throw new HttpError(400, `Not enough crowns. You have ${u.crowns}, this needs ${price}.`);
+    if (crownsEnabled()) {
+      if (!(price >= 5 && price <= 1000)) throw new HttpError(400, 'The reward must be between 5 and 1,000 crowns.');
+      if (u.crowns < price) throw new HttpError(400, `Not enough crowns. You have ${u.crowns}, this needs ${price}.`);
+    } else price = 0; // crowns are off: every decree is free
 
     const id = uid('dec');
     tx(() => {
-      db.prepare('UPDATE users SET crowns = crowns - ? WHERE id = ?').run(price, u.id);
-      ledger(u.id, -price, 'vault_lock', id);
+      if (price > 0) {
+        db.prepare('UPDATE users SET crowns = crowns - ? WHERE id = ?').run(price, u.id);
+        ledger(u.id, -price, 'vault_lock', id);
+      }
       db.prepare(
         `INSERT INTO decrees (id, user_id, agent_id, commission_id, province, title, brief, price, status, is_public, routed_by, ip, route_reason, eta_minutes, created_at)
          VALUES (?,?,?,?,?,?,?,?, 'queued', ?,?,?,?,?,?)`,
@@ -419,7 +431,7 @@ app.post(
     tx(() => {
       db.prepare("UPDATE decrees SET status = 'approved', rating = ?, review = ?, finished_at = ? WHERE id = ?").run(rating, review, now(), r.id);
       // Crowns leave the vault. User-owned agents pay their owner.
-      if (a.owner_id) {
+      if (a.owner_id && r.price > 0) {
         db.prepare('UPDATE users SET crowns = crowns + ? WHERE id = ?').run(r.price, a.owner_id);
         ledger(a.owner_id, r.price, 'agent_earning', r.id);
       }
@@ -450,8 +462,10 @@ app.post(
     if (r.status !== 'queued' || r.revision > 0) throw new HttpError(400, 'A decree can only be cancelled before work begins.');
     tx(() => {
       db.prepare("UPDATE decrees SET status = 'cancelled', finished_at = ? WHERE id = ? AND status = 'queued'").run(now(), r.id);
-      db.prepare('UPDATE users SET crowns = crowns + ? WHERE id = ?').run(r.price, u.id);
-      ledger(u.id, r.price, 'refund', r.id);
+      if (r.price > 0) {
+        db.prepare('UPDATE users SET crowns = crowns + ? WHERE id = ?').run(r.price, u.id);
+        ledger(u.id, r.price, 'refund', r.id);
+      }
     });
     decreeChanged(r.id);
     res.json(toDecree(db.prepare('SELECT * FROM decrees WHERE id = ?').get(r.id) as Row, true));
@@ -489,6 +503,8 @@ app.post(
   '/api/banners/:id/rent',
   h((req, res) => {
     const u = currentUser(req);
+    // Rental costs crowns (and lets anyone upload an image), so it waits until crowns are on.
+    if (!crownsEnabled()) throw new HttpError(403, 'Banner rental opens later.');
     const r = db.prepare('SELECT * FROM banners WHERE id = ?').get(req.params.id) as Row | undefined;
     if (!r) throw new HttpError(404, 'Banner not found.');
     if (toBanner(r).renterId) throw new HttpError(400, 'This banner is already rented.');
@@ -540,6 +556,7 @@ app.use('/api', questRoutes);
 app.use('/api', courtRoutes);
 app.use('/api', mediaRoutes);
 app.use('/api', court2Routes);
+app.use(builderRoutes);
 
 // ---------------- errors & static ----------------
 app.use('/api', (_req, _res, next) => next(new HttpError(404, 'No such endpoint.')));

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Wordmark } from './Brand';
 import { BRAND } from '../config';
+import { useCrowns } from '../lib/store';
 import './site.css';
 
 const COLS = [
@@ -44,6 +45,7 @@ function XIcon() {
 }
 
 export function SiteFooter() {
+  const crowns = useCrowns();
   return (
     <footer className="sf">
       <div className="wrap">
@@ -60,7 +62,7 @@ export function SiteFooter() {
               </a>
             </div>
           </div>
-          {COLS.map((c) => (
+          {COLS.map((c) => ({ ...c, links: crowns ? c.links : c.links.filter((l) => l.to !== '/vault') })).map((c) => (
             <div key={c.title} className="sf-col">
               <h4>{c.title}</h4>
               {c.links.map((l) => (
@@ -71,10 +73,19 @@ export function SiteFooter() {
             </div>
           ))}
           <div className="sf-note">
-            <h4>About the Crowns</h4>
-            <p>
-              Crowns are simulated — not money or crypto. Every newcomer gets a purse to try decrees, and unused crowns never leave the realm.
-            </p>
+            {crowns ? (
+              <>
+                <h4>About the Crowns</h4>
+                <p>
+                  Crowns are simulated — not money or crypto. Every newcomer gets a purse to try decrees, and unused crowns never leave the realm.
+                </p>
+              </>
+            ) : (
+              <>
+                <h4>Free during launch</h4>
+                <p>Everything is free during launch. Issue decrees, start quests and try every guild at no cost.</p>
+              </>
+            )}
           </div>
         </div>
         <div className="sf-bottom">
