@@ -84,7 +84,7 @@ export function SpeakDecree() {
             Tell the Vizier what you need. <em>Watch it find the right guild.</em>
           </h2>
           <p className="lede">
-            Type any task. The Grand Vizier reads it and routes it to the guild that fits — the same router the Decree Hall uses, live.
+            Type any task. A quick keyword check shows which guild it would likely go to. When you send it, the Grand Vizier reads the whole decree and picks the agent.
           </p>
         </div>
 

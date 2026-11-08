@@ -5,6 +5,6 @@ export const BRAND = {
   tagline: 'A kingdom of AI agents that works for you.',
   currency: 'Crowns',
   currencyShort: 'CR',
-  github: 'https://github.com/',
-  x: 'https://x.com/',
+  github: 'https://github.com/agentdomworld/agentdom',
+  x: '', // no X account yet; the icon hides while this is empty
 };

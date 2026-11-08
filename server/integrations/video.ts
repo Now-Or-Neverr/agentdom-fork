@@ -1,5 +1,5 @@
 // Real .mp4 slideshows built locally with ffmpeg-static (no external API, not logged as a call).
-// 3-6 images, gentle zoom/pan per slide, H.264 yuv420p + faststart, soft subtitles (mov_text).
+// 3-6 images, gentle zoom/pan per slide, H.264 yuv420p + faststart, captions burned into the picture.
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -39,6 +39,11 @@ function resolveImage(src: string): string {
   return file;
 }
 
+// Captions are burned into the picture (libass) so they show everywhere: browsers, phones, Reels.
+// The .srt sits in UPLOAD_DIR and ffmpeg runs there, so the filter needs no drive-letter escaping.
+const burn = (srtName: string, h: number) =>
+  `subtitles=filename=${srtName}:force_style='FontName=DejaVu Sans,Fontsize=${h > 1000 ? 15 : 18},PrimaryColour=&H00FFFFFF,OutlineColour=&H90000000,BorderStyle=1,Outline=1.6,Shadow=0,Bold=1,MarginV=20,Alignment=2'`;
+
 const srtTime = (s: number) => {
   const ms = Math.round(s * 1000);
   const p = (n: number, w = 2) => String(n).padStart(w, '0');
@@ -62,10 +67,10 @@ function motion(i: number, frames: number): string {
   }
 }
 
-function run(args: string[], timeoutMs: number): Promise<void> {
+function run(args: string[], timeoutMs: number, cwd?: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (!ffmpegPath) return reject(new Error('ffmpeg binary is not available on this platform.'));
-    const p = spawn(ffmpegPath as unknown as string, args, { windowsHide: true });
+    const p = spawn(ffmpegPath as unknown as string, args, { windowsHide: true, cwd });
     let err = '';
     p.stderr.on('data', (d) => (err = (err + d.toString()).slice(-3000)));
     const t = setTimeout(() => p.kill('SIGKILL'), timeoutMs);
@@ -113,7 +118,6 @@ async function build(input: SlideshowInput): Promise<Slideshow> {
       .filter(Boolean)
       .join('\n');
     fs.writeFileSync(srt, body, 'utf8');
-    args.push('-i', srt);
   }
   const chains = files.map(
     (_, i) =>
@@ -121,13 +125,12 @@ async function build(input: SlideshowInput): Promise<Slideshow> {
       `zoompan=${motion(i, frames)}:d=${frames}:s=${W}x${H}:fps=${FPS},` +
       `fade=t=in:st=0:d=${fade},fade=t=out:st=${(D - Number(fade)).toFixed(2)}:d=${fade},format=yuv420p[v${i}]`,
   );
-  const filter = chains.join(';') + ';' + files.map((_, i) => `[v${i}]`).join('') + `concat=n=${files.length}:v=1:a=0[out]`;
+  const filter = chains.join(';') + ';' + files.map((_, i) => `[v${i}]`).join('') + `concat=n=${files.length}:v=1:a=0` + (hasSubs ? `[cat];[cat]${burn(path.basename(srt), H)}[out]` : '[out]');
   args.push('-filter_complex', filter, '-map', '[out]');
-  if (hasSubs) args.push('-map', `${files.length}:s`, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-r', String(FPS), '-movflags', '+faststart', out);
 
   try {
-    await run(args, 180_000);
+    await run(args, 180_000, UPLOAD_DIR);
   } finally {
     if (hasSubs) fs.rmSync(srt, { force: true });
   }
@@ -295,7 +298,6 @@ async function buildFilm(input: FilmInput): Promise<Film> {
   if (musFile) args.push('-stream_loop', '-1', '-i', musFile);
   const silentIdx = !narFile && !musFile ? idx++ : -1;
   if (silentIdx >= 0) args.push('-f', 'lavfi', '-t', D.toFixed(2), '-i', 'anullsrc=channel_layout=stereo:sample_rate=44100');
-  const subIdx = hasSubs ? idx++ : -1;
   if (hasSubs) {
     let t = 0;
     const lines: string[] = [];
@@ -304,7 +306,6 @@ async function buildFilm(input: FilmInput): Promise<Film> {
       t += s.dur;
     });
     fs.writeFileSync(srt, lines.join('\n'), 'utf8');
-    args.push('-i', srt);
   }
 
   const f: string[] = [];
@@ -325,7 +326,8 @@ async function buildFilm(input: FilmInput): Promise<Film> {
     }
   });
   f.push(scenes.map((_, i) => `[v${i}]`).join('') + `concat=n=${scenes.length}:v=1:a=0[cat]`);
-  f.push(pad > 0.04 ? `[cat]tpad=stop_mode=clone:stop_duration=${pad.toFixed(2)}[vout]` : `[cat]null[vout]`);
+  const subs = hasSubs ? `,${burn(path.basename(srt), H)}` : '';
+  f.push(pad > 0.04 ? `[cat]tpad=stop_mode=clone:stop_duration=${pad.toFixed(2)}${subs}[vout]` : `[cat]null${subs}[vout]`);
 
   const AF = 'aresample=44100,aformat=sample_fmts=fltp:channel_layouts=stereo';
   const NARR_NORM = 'loudnorm=I=-16:TP=-1.5:LRA=11'; // narration at speech loudness, bed ~10 LU under it
@@ -349,12 +351,11 @@ async function buildFilm(input: FilmInput): Promise<Film> {
   }
 
   args.push('-filter_complex', f.join(';'), '-map', '[vout]', '-map', '[aout]');
-  if (hasSubs) args.push('-map', `${subIdx}:s`, '-c:s', 'mov_text', '-metadata:s:s:0', 'language=eng');
   args.push('-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p', '-r', String(FPS));
   args.push('-c:a', 'aac', '-b:a', '160k', '-ar', '44100', '-t', D.toFixed(2), '-movflags', '+faststart', out);
 
   try {
-    await run(args, 300_000);
+    await run(args, 300_000, UPLOAD_DIR);
   } finally {
     if (hasSubs) fs.rmSync(srt, { force: true });
   }

@@ -25,6 +25,8 @@ export interface RealmProps {
   mode: 'hero' | 'full';
   paused?: boolean;
   banners?: Banner[];
+  /** Banner rental is open (crowns on). Off: vacant banners read "Vacant" instead of "Rent this banner". */
+  rentOpen?: boolean;
   online?: Partial<Record<ProvinceId, number>>;
   time?: 'auto' | 'day' | 'night';
   // live realm (full mode): real agents, real weather, today's real holiday
@@ -80,7 +82,7 @@ function Backdrop() {
 }
 
 export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCanvas(props, ref) {
-  const { mode, paused, banners, online, time, live: liveData, weather, festival, className, style } = props;
+  const { mode, paused, banners, rentOpen = false, online, time, live: liveData, weather, festival, className, style } = props;
   const wrap = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const eng = useRef<RealmEngine | null>(null);
@@ -88,8 +90,8 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
   const agentLayer = useRef<HTMLDivElement>(null);
   const cbs = useRef(props);
   cbs.current = props;
-  const live = useRef({ paused, banners, online, time, liveData, weather, festival });
-  live.current = { paused, banners, online, time, liveData, weather, festival };
+  const live = useRef({ paused, banners, rentOpen, online, time, liveData, weather, festival });
+  live.current = { paused, banners, rentOpen, online, time, liveData, weather, festival };
 
   useEffect(() => {
     const el = stage.current;
@@ -116,7 +118,7 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
       const l = live.current;
       e.setTime(l.time ?? (mode === 'hero' ? 'day' : 'auto'));
       e.setPaused(!!l.paused);
-      if (l.banners) e.setBanners(l.banners);
+      if (l.banners) e.setBanners(l.banners, l.rentOpen);
       if (l.online) e.setOnline(l.online);
       if (mode === 'full') {
         e.setLabels(labelEls.current);
@@ -151,8 +153,8 @@ export const RealmCanvas = forwardRef<RealmHandle, RealmProps>(function RealmCan
     eng.current?.setPaused(!!paused);
   }, [paused]);
   useEffect(() => {
-    eng.current?.setBanners(banners);
-  }, [banners]);
+    eng.current?.setBanners(banners, rentOpen);
+  }, [banners, rentOpen]);
   useEffect(() => {
     eng.current?.setOnline(online);
   }, [online]);

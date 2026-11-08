@@ -59,7 +59,7 @@ export const PROVINCES: Province[] = [
     name: 'The Forge',
     craft: 'Engineering & Code',
     hall: 'Codeforge',
-    hallLine: 'Where APIs, scripts and apps are hammered into shape',
+    hallLine: 'Where APIs, scripts and web pages are hammered into shape',
     tagline: 'Software, forged and tempered.',
     color: '#3FA58C',
     icon: 'Hammer',
@@ -72,7 +72,7 @@ export const PROVINCES: Province[] = [
     name: 'Scriptorium',
     craft: 'Writing & Language',
     hall: 'Hall of Quills',
-    hallLine: 'Articles, scripts and translations, written by hand',
+    hallLine: 'Articles, scripts and translations, edited by hand',
     tagline: 'Words that carry weight.',
     color: '#D9A441',
     icon: 'Feather',
@@ -205,15 +205,15 @@ export function nextRank(approved: number) {
 // Keyword router used when the Grand Vizier (AI) is offline, and for the live
 // routing demo on the landing page.
 export const ROUTE_KEYWORDS: Record<Exclude<ProvinceId, 'throne'>, string[]> = {
-  forge: ['code', 'api', 'bug', 'website', 'app', 'sql', 'regex', 'python', 'script', 'react', 'database', 'formula', 'excel', 'spreadsheet', 'endpoint', 'function', 'deploy'],
-  scriptorium: ['article', 'write', 'blog', 'translate', 'essay', 'copy', 'caption', 'edit', 'proofread', 'text', 'story', 'newsletter'],
-  atelier: ['logo', 'design', 'color', 'palette', 'brand', 'ui', 'wireframe', 'icon', 'svg', 'layout', 'font'],
-  theatre: ['video', 'reel', 'tiktok', 'shorts', 'storyboard', 'animation', 'podcast', 'voice', 'youtube', 'script for'],
-  archive: ['data', 'analy', 'csv', 'summar', 'research', 'survey', 'report', 'insight', 'chart'],
-  heralds: ['marketing', 'instagram', 'content', 'campaign', 'email', 'ads', 'social', 'launch', 'seo', 'growth'],
-  bazaar: ['sell', 'sales', 'offer', 'proposal', 'prospect', 'client', 'pitch', 'outreach', 'lead', 'cold'],
-  treasury: ['business', 'sop', 'operation', 'automat', 'forecast', 'budget', 'plan', 'workflow', 'pricing', 'process'],
-  court: ['contract', 'policy', 'privacy', 'terms', 'legal', 'law', 'compliance', 'agreement', 'nda'],
+  forge: ['code', 'api', 'bug', 'website', 'app', 'sql', 'regex', 'python', 'script', 'react', 'database', 'formula', 'excel', 'spreadsheet', 'endpoint', 'function', 'deploy', 'phishing', 'scam link', 'suspicious link', 'repo', 'github', 'lighthouse'],
+  scriptorium: ['article', 'write', 'blog', 'translate', 'essay', 'copy', 'caption', 'edit', 'proofread', 'text', 'story', 'newsletter', 'resume', 'résumé', ' cv', 'cover letter', 'job opening', 'job search', 'job ad'],
+  atelier: ['logo', 'design', 'color', 'palette', 'brand', 'ui', 'wireframe', 'icon', 'svg', 'layout', 'font', 'brand teardown', 'product shot'],
+  theatre: ['video', 'reel', 'tiktok', 'shorts', 'storyboard', 'animation', 'podcast', 'voice', 'script for', 'transcrib', 'subtitle', 'voice-over', 'voiceover', 'film', 'promo'],
+  archive: ['data', 'analy', 'csv', 'summar', 'research', 'survey', 'report', 'insight', 'nutrition', 'calorie', 'research paper', 'papers on', 'citation', 'fact-check', 'fact check'],
+  heralds: ['marketing', 'instagram', 'content', 'campaign', 'email', 'ads', 'social', 'launch', 'seo', 'growth', 'youtube', 'trend', 'trending'],
+  bazaar: ['sell', 'sales', 'offer', 'proposal', 'prospect', 'client', 'pitch', 'outreach', 'lead', 'cold', 'companies house', 'uk company', 'leads'],
+  treasury: ['business', 'sop', 'operation', 'automat', 'forecast', 'budget', 'plan', 'workflow', 'pricing', 'process', 'invoice', 'receipt', 'stock price', 'share price', 'ticker', 'price'],
+  court: ['contract', 'policy', 'privacy', 'terms', 'legal', 'law', 'compliance', 'agreement', 'nda', 'case law', 'regulation'],
 };
 
 export function routeByKeywords(text: string): { province: Exclude<ProvinceId, 'throne'>; hits: string[] } {

@@ -433,7 +433,7 @@ export function Artifacts({ d }: { d: Decree }) {
               <span className="art-cap-meta">
                 {String(a.meta.durationSec ?? '?')} s · {a.meta.film ? `${String(a.meta.scenes ?? '?')} scenes` : `${String(a.meta.slides ?? '?')} slides`} · {String(a.meta.width)}×{String(a.meta.height)} · H.264 MP4
                 {a.meta.film ? (a.meta.narration ? ' · narration' : '') + (a.meta.music ? ' · music' : '') + (!a.meta.narration && !a.meta.music ? ' · no sound' : '') : ''}
-                {a.meta.subtitles ? ' · captions (CC)' : ''}
+                {a.meta.subtitles ? ' · captions on screen' : ''}
               </span>
               </span>
               <a className="btn btn-sm" href={a.url ?? '#'} download>

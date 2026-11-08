@@ -289,7 +289,7 @@ export default function Hall() {
                   <h2>
                     Recent <em>decrees</em>
                   </h2>
-                  <span className="muted">Titles only — details stay private</span>
+                  <span className="muted">Titles are public; briefs and results stay private</span>
                 </div>
                 <div style={{ display: 'grid', gap: 10 }}>
                   {recent == null && [0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 74 }} />)}

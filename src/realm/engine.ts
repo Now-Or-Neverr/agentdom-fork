@@ -284,8 +284,8 @@ export class RealmEngine {
   setOnline(o: Partial<Record<ProvinceId, number>> | undefined) {
     this.walkers.setOnline(o);
   }
-  setBanners(list: Banner[] | undefined) {
-    this.banners.set(list);
+  setBanners(list: Banner[] | undefined, rentOpen = false) {
+    this.banners.set(list, rentOpen);
     this.renderer.shadowMap.needsUpdate = true;
   }
   setLabels(map: Map<ProvinceId, HTMLElement>) {

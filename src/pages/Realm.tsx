@@ -309,6 +309,7 @@ export default function Realm() {
         time={time}
         online={online}
         banners={banners}
+        rentOpen={crownsOn}
         live={live}
         weather={weather}
         festival={today}
@@ -910,7 +911,7 @@ function BannerPanel({ banner, crowns, onClose, onRented }: { banner: Banner | n
           </div>
           <div>
             <dt>Status</dt>
-            <dd>{rented ? <span className="tag red">Raised</span> : rentOpen ? <span className="tag jade">Available</span> : <span className="tag">Opens soon</span>}</dd>
+            <dd>{rented ? <span className="tag red">Raised</span> : rentOpen ? <span className="tag jade">Available</span> : <span className="tag">Rental paused</span>}</dd>
           </div>
           {rented && (
             <>
@@ -934,7 +935,7 @@ function BannerPanel({ banner, crowns, onClose, onRented }: { banner: Banner | n
           )}
         </dl>
 
-        {!rented && !rentOpen && <p className="muted rp-fine">Opens soon. Banner rental is paused during launch.</p>}
+        {!rented && !rentOpen && <p className="muted rp-fine">Banner rental is paused during launch.</p>}
 
         {!rented && rentOpen && (
           <form className="rp-rent" onSubmit={submit}>

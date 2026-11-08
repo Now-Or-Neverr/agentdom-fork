@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Flag, Map as MapIcon, ScrollText, Star } from 'lucide-react';
 import type { Agent, Banner, Commission, Decree, ProvinceInfo, RealmStatus } from '../../shared/types';
-import { PROVINCE, PROVINCES, ROUTE_KEYWORDS, isProvince, type Province, type ProvinceId } from '../../shared/realm';
+import { GUILDS, PROVINCE, PROVINCES, ROUTE_KEYWORDS, isProvince, type Province, type ProvinceId } from '../../shared/realm';
 import { AppShell } from '../app/AppShell';
 import { AgentCard, CommissionSlip, DecreeRow } from '../app/parts';
 import { IssueDecree, type IssuePreset } from '../app/IssueDecree';
@@ -17,6 +17,9 @@ import './guild.css';
 const vars = (p: Province) => ({ ['--g' as string]: p.color }) as CSSProperties;
 
 // ---------- /guilds : every guild as a card ----------
+const NUMBER_WORDS = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+const GUILD_COUNT_WORD = NUMBER_WORDS[GUILDS.length] ?? String(GUILDS.length);
+
 export function GuildIndex() {
   const [info, setInfo] = useState<Record<ProvinceId, ProvinceInfo> | null>(null);
   useEffect(() => {
@@ -26,9 +29,9 @@ export function GuildIndex() {
     <AppShell>
       <section className="band gd-index-hero">
         <div className="wrap">
-          <span className="kicker">The ten guilds</span>
+          <span className="kicker">{GUILD_COUNT_WORD} guilds and the Throne</span>
           <h1 className="display d-xl">
-            One realm, <em>ten guilds</em>.
+            One realm, <em>{GUILD_COUNT_WORD.toLowerCase()} guilds</em> and the Throne.
           </h1>
           <p className="lede">
             Each guild is a province of the realm with its own hall, its own agents and its own craft.
@@ -275,7 +278,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
 
             <div className="section-title">
               <h2>Recent decrees</h2>
-              <span className="muted">Titles only — details stay private</span>
+              <span className="muted">Titles are public; briefs and results stay private</span>
             </div>
             <div style={{ display: 'grid', gap: 10 }}>
               {decrees == null && [0, 1].map((i) => <div key={i} className="skeleton" style={{ height: 74 }} />)}
@@ -292,7 +295,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
             <div className="section-title">
               <h2>Banners of {p.name}</h2>
               <Link to="/realm" className="muted" style={{ fontSize: 13 }}>
-                Rent one on the map →
+                {crowns ? 'Rent one on the map →' : 'See them on the map →'}
               </Link>
             </div>
             <div className="gd-banners">
@@ -332,7 +335,7 @@ function GuildPage({ id }: { id: ProvinceId }) {
               {keywords.length > 0 && (
                 <>
                   <div className="label" style={{ marginTop: 14 }}>
-                    The Vizier routes decrees about
+                    Typical decrees for this guild
                   </div>
                   <div className="gd-keys">
                     {keywords.map((k) => (
@@ -429,7 +432,7 @@ function BannerSlot({ b }: { b: Banner }) {
               {b.until && <span className="muted"> · until {new Date(b.until).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
             </>
           ) : (
-            <span className="muted">{crowns ? `${fmt(b.pricePerDay)} ${BRAND.currencyShort} / day` : 'Rental opens soon'}</span>
+            <span className="muted">{crowns ? `${fmt(b.pricePerDay)} ${BRAND.currencyShort} / day` : 'Rental paused during launch'}</span>
           )}
         </div>
       </div>

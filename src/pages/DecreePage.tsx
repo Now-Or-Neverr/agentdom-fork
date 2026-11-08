@@ -233,7 +233,7 @@ export default function DecreePage() {
                         Ready for your <em>verdict</em>
                       </h2>
                       <p className="dp-review-text">
-                        {paid ? `Approve to release the reward to ${d.agent?.name ?? 'the agent'}, or ask for a revision.` : 'Approve the work, or ask for a revision.'}
+                        {paid ? 'Approve to release the reward from the Royal Vault, or ask for a revision.' : 'Approve the work, or ask for a revision.'}
                       </p>
                       <div className="dp-review-actions">
                         <button className="btn btn-seal btn-lg" onClick={() => setMode('approve')}>

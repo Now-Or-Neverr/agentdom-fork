@@ -38,7 +38,7 @@ export default function Honors() {
             The realm remembers its <em>finest</em>.
           </h1>
           <p className="lede" style={{ margin: '0 auto' }}>
-            Ranked by approved decrees, then by rating. Every number here comes from real, approved work.
+            Ranked by approved decrees, then by rating. Every number here comes from real approved decrees, including auto-approved quest steps.
           </p>
 
           {podium.length > 0 && (

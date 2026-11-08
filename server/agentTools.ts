@@ -633,7 +633,7 @@ const TOOLS: ToolDef[] = [
     name: 'make_video',
     label: 'Video render',
     description:
-      'Render a real H.264 .mp4 slideshow (gentle zoom/pan, fades, soft subtitles) from 3 to 6 images you generated for THIS decree with generate_image. Pass their url values in order and one short caption per image. Call it once, after all frames exist.',
+      'Render a real H.264 .mp4 slideshow (gentle zoom/pan, fades, captions burned into the picture) from 3 to 6 images you generated for THIS decree with generate_image. Pass their url values in order and one short caption per image. Call it once, after all frames exist.',
     schema: obj(
       {
         images: { type: 'array', items: { type: 'string' }, description: 'The /uploads/… url of each frame, in order (3-6).' },
@@ -1175,7 +1175,7 @@ const TOOLS: ToolDef[] = [
     name: 'make_film',
     label: 'Film render',
     description:
-      'Render ONE real short film (.mp4, H.264 + AAC): real Pixabay footage (clip_ids from stock_videos, played first) and/or images made for this decree (their urls), soft captions (one per scene, clips first), a spoken narration (Cloudflare MeloTTS; languages ' +
+      'Render ONE real short film (.mp4, H.264 + AAC): real Pixabay footage (clip_ids from stock_videos, played first) and/or images made for this decree (their urls), captions burned into the picture (one per scene, clips first), a spoken narration (Cloudflare MeloTTS; languages ' +
       I.TTS_LANGS.join(', ') +
       ') and a Freesound music bed (music_id from find_music) ducked under the voice. Up to 4 clips and 6 images, 2-8 scenes in total. The film is at least as long as the narration, so keep narration to about 15-40 seconds of speech (roughly 200-600 characters). Credits for every clip and the music (author, license, links) are recorded and shown with the player; list them in your result. Call it once, after you picked the clips and music.',
     schema: obj(
@@ -1747,7 +1747,7 @@ const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   heralds: ['news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'generate_image', 'draft_bluesky_post'],
   bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup'],
   treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'read_image_text', 'uk_company_search', 'uk_company_profile'],
-  court: ['case_law', 'federal_register', 'web_search', 'scan_url'],
+  court: ['case_law', 'federal_register', 'web_search', 'read_url', 'read_image_text', 'scan_url'],
 };
 
 export const toolNamesFor = (p: ProvinceId) => [...(GUILD_TOOLS[p] ?? []), ...COMMON];
@@ -1812,7 +1812,7 @@ export function toolGuidance(p: ProvinceId): string {
     case 'treasury':
       return '- Use stock_quote / company_profile / company_news (Finnhub) for listed companies, fred_series for official US rates and series, ask_wolfram for calculations, fx tools for exchange rates and world_bank_indicator for macro figures. Never guess these numbers, and note that this is not financial advice.\n- read_image_text reads a receipt, invoice or statement from a public image/PDF link (use table=true); rebuild it as a clean table and flag any digit the OCR may have misread. uk_company_search / uk_company_profile check UK companies on the official register.';
     case 'court':
-      return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.\n- When a scam or phishing link is part of the facts, scan_url records what it really loads (unlisted urlscan.io scan with screenshot) as evidence; report the verdict exactly.';
+      return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.\n- When a scam or phishing link is part of the facts, scan_url records what it really loads (unlisted urlscan.io scan with screenshot) as evidence; report the verdict exactly.\n- When the requester gives a public link to a contract, policy or terms page, read it with read_url; for a public image or PDF scan of a document, use read_image_text. Say how much of the document you could read.';
     case 'throne':
       return '- Use current_weather when the decree depends on the weather somewhere right now, and web_search for current facts.';
   }

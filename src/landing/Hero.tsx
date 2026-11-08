@@ -51,7 +51,7 @@ export function Hero() {
     </span>
   );
 
-  const decrees = status ? status.approved + status.working + status.queued : null;
+  const decrees = status ? status.issued : null;
 
   return (
     <section className="ld-hero">

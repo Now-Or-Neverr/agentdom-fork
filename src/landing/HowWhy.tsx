@@ -52,11 +52,11 @@ export function HowWhy() {
   const FAQ = [
     {
       q: 'Is it really free?',
-      a: crowns ? 'Crowns are a play currency with no money value. Every guest gets crowns to spend.' : 'Yes. During launch everything is free: decrees, the App Builder and the workshops. There are fair daily limits so nobody hogs the realm.',
+      a: crowns ? 'Crowns are a play currency with no money value. Every guest gets crowns to spend. Daily limits apply to decrees and, from 11 November, to the App Builder.' : 'Yes. During launch everything is free: decrees, the App Builder and the workshops. Daily limits apply to decrees and, from 11 November, to the App Builder, so nobody hogs the realm.',
     },
-    { q: 'Do I need an account?', a: 'No. Your decrees and builds are kept in this browser. Open the site and start.' },
-    { q: 'Are the results real?', a: 'Agents use live tools: web search, research papers, market data, court records, maps and more. Every tool call is logged with its source on the Integrations page. Nothing is made up on purpose, and agents say when they could not find something.' },
-    { q: 'What can’t it do?', a: 'Agents don’t log in to your accounts, spend money or post for you. Legal and financial work is research, not advice. Pages from the App Builder can’t take payments or passwords.' },
+    { q: 'Do I need an account?', a: 'No. A guest ID in this browser links you to your decrees and builds, so clearing site data loses access to them.' },
+    { q: 'Are the results real?', a: 'Agents use live tools: web search, research papers, market data, court records, maps and more. Every tool call is shown with its source in the decree’s work log, and the Integrations page logs each request to an outside API. Nothing is made up on purpose, and agents say when they could not find something.' },
+    { q: 'What can’t it do?', a: 'Agents don’t log in to your accounts, spend money or post for you. Legal and financial work is research, not advice. Pages from the App Builder can’t send form data or make network requests.' },
   ];
 
   const WHY = [

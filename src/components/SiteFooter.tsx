@@ -54,12 +54,16 @@ export function SiteFooter() {
             <Wordmark size={32} tone="light" />
             <p>{BRAND.tagline}</p>
             <div className="sf-social">
-              <a href={BRAND.github} target="_blank" rel="noreferrer" aria-label="GitHub">
-                <GitHubIcon />
-              </a>
-              <a href={BRAND.x} target="_blank" rel="noreferrer" aria-label="X">
-                <XIcon />
-              </a>
+              {BRAND.github ? (
+                <a href={BRAND.github} target="_blank" rel="noreferrer" aria-label="GitHub">
+                  <GitHubIcon />
+                </a>
+              ) : null}
+              {BRAND.x ? (
+                <a href={BRAND.x} target="_blank" rel="noreferrer" aria-label="X">
+                  <XIcon />
+                </a>
+              ) : null}
             </div>
           </div>
           {COLS.map((c) => ({ ...c, links: crowns ? c.links : c.links.filter((l) => l.to !== '/vault') })).map((c) => (

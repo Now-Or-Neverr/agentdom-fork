@@ -117,7 +117,7 @@ export default function Quests() {
               Plan with the <em>Vizier</em>
             </h3>
             <p className="soft">
-              Write one big goal. The Grand Vizier proposes 2–4 steps across guilds; you edit them before anything is charged.
+              Write one big goal. The Grand Vizier proposes 2–4 steps across guilds; you edit them {on ? 'before anything is charged' : 'before the quest starts'}.
             </p>
           </div>
           <button className="btn btn-gold" onClick={() => setPlanning(true)}>

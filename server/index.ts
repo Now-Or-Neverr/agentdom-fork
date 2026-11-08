@@ -120,6 +120,7 @@ app.get(
       working: runningDecrees().size,
       approved: count("SELECT COUNT(*) AS n FROM decrees WHERE status = 'approved'"),
       queued: count("SELECT COUNT(*) AS n FROM decrees WHERE status = 'queued'"),
+      issued: count("SELECT COUNT(*) AS n FROM decrees WHERE status != 'cancelled'"),
       crownsInVault: count("SELECT COALESCE(SUM(price), 0) AS n FROM decrees WHERE status IN ('queued','working','delivered')"),
       dailyLimitPerUser: LIMIT_USER,
       usedToday: u ? count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', u.id, startOfDay()) : null,

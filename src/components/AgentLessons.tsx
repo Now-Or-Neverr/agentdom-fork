@@ -28,7 +28,7 @@ export function AgentLessons({ agentId, name }: { agentId: string; name: string 
       {err && <div className="empty">{err}</div>}
       {!list && !err && <div className="skeleton" style={{ height: 80 }} />}
       {list?.length === 0 && (
-        <div className="empty">{name} has not learned any lessons yet. A lesson is written when a requester rates an approved decree or asks for a revision.</div>
+        <div className="empty">{name} has not learned any lessons yet. A lesson may be written when a requester rates an approved decree or asks for a revision.</div>
       )}
       {list && list.length > 0 && (
         <ul className="ls-list">

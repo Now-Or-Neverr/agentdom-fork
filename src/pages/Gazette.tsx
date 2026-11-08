@@ -171,7 +171,7 @@ export default function Gazette() {
             </h1>
             <div className="gz-rule">
               <span>{ed ? longDate(ed.date) : date ? longDate(date) : '…'}</span>
-              <span className="gz-motto">Every line checked against its source</span>
+              <span className="gz-motto">Every line links to its source</span>
               <span>
                 {ed ? `${ed.stats.duties} reports · ${ed.stats.decreesApproved} decrees approved · ${ed.stats.questsCompleted} quests completed` : ''}
               </span>

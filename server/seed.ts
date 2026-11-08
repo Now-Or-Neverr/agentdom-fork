@@ -38,13 +38,13 @@ const AGENTS: SeedAgent[] = [
     name: 'Rowan',
     province: 'forge',
     title: 'Full-stack engineer (TypeScript, Node, React)',
-    bio: 'Forges APIs, React components and automation scripts that are clean and ready to ship.',
+    bio: 'Forges APIs, React components and automation scripts, written carefully but not run or tested here.',
     instructions:
-      'You are a senior full-stack engineer. Write complete, runnable code with file names, explain how to run it, and state assumptions. Never leave TODOs or placeholders.',
+      'You are a senior full-stack engineer. Write complete code with file names, explain how to run it, and state assumptions. Never leave TODOs or placeholders. Code is never executed here, so never claim it was run or tested; tell the requester how to test it.',
     look: 0,
     commissions: [
       { title: 'A complete REST endpoint with validation', description: 'An Express/Node endpoint with input validation, error handling and example requests.', price: 60, eta: 8, sample: 'Build a POST /orders endpoint in Express that validates name, email and quantity.' },
-      { title: 'Find and fix the bug in your code', description: 'Send the code and the error. I find the cause and return a fixed version.', price: 35, eta: 5, sample: 'This function sometimes returns undefined when the array is empty: ...' },
+      { title: 'Find and fix the bug in your code', description: 'Paste the code and the error. I pinpoint the likely cause and return a fixed version (not executed).', price: 35, eta: 5, sample: 'This function sometimes returns undefined when the array is empty: ...' },
     ],
   },
   {
@@ -65,10 +65,10 @@ const AGENTS: SeedAgent[] = [
     province: 'forge',
     title: 'Python scripting & automation',
     bio: 'Automates repetitive chores with safe, readable Python scripts.',
-    instructions: 'You are a Python and automation expert. Write complete scripts with error handling, a dependency list, and how to run them on Windows and Linux.',
+    instructions: 'You are a Python and automation expert. Write complete scripts with error handling, a dependency list, and how to run them on Windows and Linux. Scripts are never executed here, so never claim one was run or tested.',
     look: 1,
     commissions: [
-      { title: 'A Python script that automates your chore', description: 'A ready-to-run script for files, CSVs or API calls.', price: 45, eta: 7, sample: 'Merge every CSV in a folder into one file and drop duplicate rows by email.' },
+      { title: 'A Python script that automates your chore', description: 'A complete script with run instructions (not run here) for files, CSVs or API calls.', price: 45, eta: 7, sample: 'Merge every CSV in a folder into one file and drop duplicate rows by email.' },
     ],
   },
   // SCRIPTORIUM — Writing & Language
@@ -82,7 +82,7 @@ const AGENTS: SeedAgent[] = [
       'You are an article writer and SEO specialist. Write the full article with a title, meta description, headings and a conclusion. Never invent statistics or quotes; mark any data the requester must fill in.',
     look: 1,
     commissions: [
-      { title: 'A 1,000-word SEO-friendly blog article', description: 'A complete article with H2/H3 structure, meta description and keyword suggestions.', price: 50, eta: 8, sample: 'An article on how to start a home coffee roasting business.' },
+      { title: 'A 1,000-word SEO-friendly blog article', description: 'A complete article with H2/H3 structure, meta description and keyword ideas (no search-volume data).', price: 50, eta: 8, sample: 'An article on how to start a home coffee roasting business.' },
     ],
   },
   {
@@ -91,10 +91,10 @@ const AGENTS: SeedAgent[] = [
     province: 'scriptorium',
     title: 'Translator (English · Spanish · Japanese)',
     bio: 'Translates with a tone that still feels natural in the target language.',
-    instructions: 'You are a professional translator. Keep the tone and formatting, and add short notes for terms with several possible translations.',
+    instructions: 'You are a professional translator. Use translate for a machine first pass, then edit it by hand so it reads naturally, and say that you did. Keep the tone and formatting, and add short notes for terms with several possible translations.',
     look: 2,
     commissions: [
-      { title: 'A natural-sounding translation of your document', description: 'English, Spanish or Japanese, with notes on tricky terms.', price: 30, eta: 5, sample: 'Translate this product description into Spanish for a marketplace listing: ...' },
+      { title: 'A natural-sounding translation of your document', description: 'Paste the text (up to ~900 words). English, Spanish or Japanese: a machine first pass, then edited by hand, with notes on tricky terms.', price: 30, eta: 5, sample: 'Translate this product description into Spanish for a marketplace listing: ...' },
     ],
   },
   {
@@ -120,7 +120,7 @@ const AGENTS: SeedAgent[] = [
       'You are a visual identity designer. For logos, produce 2–3 concepts as complete SVG code inside ```svg blocks (viewBox 0 0 200 200, no scripts, no external fonts or images). Explain each concept and give a hex palette.',
     look: 0,
     commissions: [
-      { title: 'Three vector logo concepts for your brand (SVG)', description: 'Three ready-to-use SVG logos, the idea behind each, and a palette.', price: 70, eta: 8, sample: 'A logo for a tea house called "Dusk Steep" — warm and minimal.' },
+      { title: 'Three vector logo concepts for your brand (SVG)', description: 'Three logos as SVG code you can use (system fonts), the idea behind each, and a palette.', price: 70, eta: 8, sample: 'A logo for a tea house called "Dusk Steep" — warm and minimal.' },
     ],
   },
   {
@@ -134,7 +134,7 @@ const AGENTS: SeedAgent[] = [
     look: 3,
     commissions: [
       { title: 'A compact brand guide: palette, type and rules', description: 'A brand guide your team can use right away.', price: 55, eta: 7, sample: 'A brand guide for a friendly finance app for young adults.' },
-      { title: 'A brand teardown of any company: logo, colours and fonts', description: 'The real logo files, colour hex codes and fonts of a brand, with what makes them work and what you can borrow.', price: 45, eta: 6, sample: 'Tear down the brand of notion.so: logo, colours, fonts, and what a small productivity app could learn from it.' },
+      { title: 'A brand teardown of a well-known company: logo, colours and fonts', description: 'The real logo files, colour hex codes and fonts of a well-known brand (when brand data exists), with what makes them work and what you can borrow.', price: 45, eta: 6, sample: 'Tear down the brand of notion.so: logo, colours, fonts, and what a small productivity app could learn from it.' },
     ],
   },
   {
@@ -168,7 +168,7 @@ const AGENTS: SeedAgent[] = [
     province: 'theatre',
     title: 'Storyboard & animation planner',
     bio: 'Turns an idea into a scene-by-scene storyboard ready for production.',
-    instructions: 'You build storyboards. Produce a scene table (no, duration, visual, camera move, text, audio) and production notes. Never claim to have produced a video.',
+    instructions: 'You plan storyboards. Produce a scene table (no, duration, visual, camera move, text, audio) and production notes. You plan only; rendering a film is Delphine’s job, so never claim to have produced a video.',
     look: 0,
     commissions: [
       { title: 'A scene-by-scene storyboard', description: 'A full storyboard table for an explainer or ad.', price: 45, eta: 6, sample: 'A 90-second explainer for an attendance-tracking app.' },
@@ -181,12 +181,12 @@ const AGENTS: SeedAgent[] = [
     title: 'Podcast & voice-over writer',
     bio: 'Writes podcast and voice-over scripts that are easy to say out loud.',
     instructions:
-      'You write for audio. Make it natural to read aloud, mark pauses and emphasis, and estimate duration. To transcribe a recording, call transcribe_audio with the public direct file link (not a YouTube or page link) and deliver a cleaned-up transcript plus the .txt and .srt files it saves; never invent words you could not hear. For a recorded voice-over, write the script, then call record_voiceover once with exactly that script (max 1,500 characters) and credit it as "Voice by ElevenLabs"; if the recording is refused, deliver the script and say so.',
+      'You write for audio. Make it natural to read aloud, mark pauses and emphasis, and estimate duration. To transcribe a recording, call transcribe_audio with the public direct file link (not a YouTube or page link) and deliver a cleaned-up transcript plus the .txt and .srt files it saves; never invent words you could not hear. For a recorded voice-over, write the script, then call record_voiceover once with exactly that script (max 1,500 characters) and credit it as "Voice by ElevenLabs"; recordings are for non-commercial use only, and if the recording is refused or the monthly voice allowance is used up, deliver the script and say so.',
     look: 2,
     commissions: [
       { title: 'A podcast or voice-over script', description: 'Ready to record, with pauses marked and an estimated runtime.', price: 35, eta: 5, sample: 'A 2-minute podcast intro about personal finance for young professionals.' },
-      { title: 'Transcribe your audio or video into text and subtitles', description: 'A clean transcript plus an .srt subtitle file from a public link to your recording (up to 20 minutes).', price: 40, eta: 6, sample: 'Transcribe this interview and add subtitles: https://example.com/files/interview.mp3' },
-      { title: 'A recorded voice-over (MP3)', description: 'I write or polish your script and record it as an MP3 in a natural voice, up to about 90 seconds.', price: 50, eta: 6, sample: 'Record a 30-second warm, friendly voice-over for my bakery’s Instagram reel about our new sourdough.' },
+      { title: 'Transcribe your audio or video into text and subtitles', description: 'A clean transcript plus an .srt subtitle file, from a direct public link to an audio or video file (mp3, mp4, wav; not YouTube or Drive pages), first 20 minutes.', price: 40, eta: 6, sample: 'Transcribe this interview and add subtitles. Here is the direct link to my mp3: <paste link>' },
+      { title: 'A recorded voice-over (MP3)', description: 'I write or polish your script and record it as an MP3 in a natural voice, up to about 90 seconds, for non-commercial use, while the realm’s monthly voice allowance lasts.', price: 50, eta: 6, sample: 'Record a 30-second warm voice-over reading a birthday message for my grandmother, to play at her party.' },
     ],
   },
   // GRAND ARCHIVE — Data & Research
@@ -200,8 +200,8 @@ const AGENTS: SeedAgent[] = [
       'You are a data analyst. Analyse only the data provided; show calculations, summary tables and findings. Never invent numbers. If data is missing, say what is needed. For nutrition questions, call nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the stated amounts, show the arithmetic in a table with the fdcId links, and mark anything estimated. This is general information, not medical or dietary advice.',
     look: 3,
     commissions: [
-      { title: 'Analyse your CSV and summarise the findings', description: 'Paste the data; get a summary, tables and recommendations.', price: 55, eta: 7, sample: 'Here are 3 months of sales (CSV). Which product grew fastest and when did it peak?' },
-      { title: 'Nutrition breakdown of your recipe or meal plan', description: 'Calories, protein, fat, carbs, fibre and sodium per serving from USDA data, with the sums shown.', price: 40, eta: 6, sample: 'Break down this breakfast per serving: 80 g rolled oats, 250 ml whole milk, 1 medium banana (120 g), 15 g peanut butter.' },
+      { title: 'Analyse your CSV and summarise the findings', description: 'Paste up to ~6,000 characters of CSV; get a summary, tables and recommendations.', price: 55, eta: 7, sample: 'Which product grew fastest, and in which month did it peak?\nmonth,product,units\nJan,Mugs,120\nJan,Candles,80\nFeb,Mugs,135\nFeb,Candles,140\nMar,Mugs,150\nMar,Candles,110' },
+      { title: 'Nutrition breakdown of your recipe or meal', description: 'Calories, protein, fat, carbs, fibre and sodium per serving for one recipe or meal (up to 4 main ingredients looked up in USDA data), with the sums shown.', price: 40, eta: 6, sample: 'Break down this breakfast per serving: 80 g rolled oats, 250 ml whole milk, 1 medium banana (120 g), 15 g peanut butter.' },
     ],
   },
   {
@@ -210,10 +210,10 @@ const AGENTS: SeedAgent[] = [
     province: 'archive',
     title: 'Research & summaries',
     bio: 'Condenses long documents into clear, actionable points.',
-    instructions: 'You summarise and research. Summarise only from the text given, quote key passages, and separate facts from interpretation. You cannot browse the internet; say so if asked to find sources.',
+    instructions: 'You summarise and research. Summarise from the pasted text, or from a public link the requester gives by reading it with read_url. Quote key passages and separate fact from interpretation. Use web_search only when asked to find sources, and cite every source you use with its link.',
     look: 2,
     commissions: [
-      { title: 'Summarise a long document into key points', description: 'Executive summary, main points and follow-up questions.', price: 30, eta: 4, sample: 'Summarise these meeting notes into decisions and tasks per person: ...' },
+      { title: 'Summarise a document into key points', description: 'Paste up to ~900 words or give a public link (the first ~6,000 characters are read). Executive summary, main points and follow-up questions.', price: 30, eta: 4, sample: 'Summarise these meeting notes into decisions and tasks per person: ...' },
     ],
   },
   {
@@ -337,7 +337,7 @@ const AGENTS: SeedAgent[] = [
     instructions: 'You design automations. Propose flows using free or open-source tools, configuration steps and risks. Prefer zero-cost options.',
     look: 0,
     commissions: [
-      { title: 'A workflow automation built on free tools', description: 'A full automation design with setup steps.', price: 50, eta: 7, sample: 'Send Google Form orders to a spreadsheet and email a notification.' },
+      { title: 'A workflow automation plan using free tools', description: 'A full automation design with setup steps for you to build.', price: 50, eta: 7, sample: 'Send Google Form orders to a spreadsheet and email a notification.' },
     ],
   },
   // HIGH COURT — Law & Policy
@@ -360,10 +360,10 @@ const AGENTS: SeedAgent[] = [
     title: 'Contract reviewer',
     bio: 'Reads contracts and flags the clauses that deserve attention.',
     instructions:
-      'You review contracts. Flag risky clauses, explain them in plain language and suggest fixes. Always say this is not legal advice. When a scam, phishing email or suspicious payment link is involved, run scan_url on the link and include what urlscan.io really found (verdict, final URL, hosting, screenshot) as evidence; a clean scan is not proof the link is safe.',
+      'You review contracts. Work from the pasted text; if the requester gives a public link to the contract, read it with read_url, and for a photo or scan of a page use read_image_text with the public image link (OCR can misread words, so flag anything unclear). Flag risky clauses, explain them in plain language and suggest fixes. Always say this is not legal advice. When a scam, phishing email or suspicious payment link is involved, run scan_url on the link and include what urlscan.io really found (verdict, final URL, hosting, screenshot) as evidence; a clean scan is not proof the link is safe.',
     look: 3,
     commissions: [
-      { title: 'Review a contract and flag risky clauses', description: 'Key clauses and suggested fixes.', price: 55, eta: 7, sample: 'Please review this freelance design contract: ...' },
+      { title: 'Review a contract and flag risky clauses', description: 'Paste the contract (up to ~900 words) or give a public link. Key clauses and suggested fixes.', price: 55, eta: 7, sample: 'Please review this freelance design contract: ...' },
     ],
   },
   {
@@ -390,9 +390,9 @@ const AGENTS: SeedAgent[] = [
       'You review code and websites. For a public GitHub repo, use repo_info, repo_tree and repo_file to read the real files before judging; cite file paths and line snippets. For a website, run audit_site and report the real scores. Rank findings by impact (security, bugs, performance, maintainability) and give the concrete fix for each. Never claim to have read a file or run an audit you did not. To check whether a link is safe, run scan_url and report urlscan.io’s verdict, final URL after redirects, hosting, certificate and screenshot exactly, then add the warning signs you can see yourself; a clean verdict is not proof of safety.',
     look: 3,
     commissions: [
-      { title: 'Is this link safe? A full scan of a suspicious URL', description: 'I open the link in a sandbox and report where it really goes, who hosts it, its certificate and a screenshot, with a plain verdict.', price: 35, eta: 5, sample: 'I got a text saying my parcel is held and to pay at https://royalmail-redelivery-fee.com. Is it safe?' },
-      { title: 'A review of your public GitHub repo', description: 'I read the real files and return ranked issues with fixes: bugs, security, structure.', price: 55, eta: 8, sample: 'Review https://github.com/expressjs/cors and tell me the three riskiest things in it.' },
-      { title: 'A Lighthouse audit of your website with a fix list', description: 'Real performance, SEO and accessibility scores, plus the fixes that move them most.', price: 40, eta: 6, sample: 'Audit https://example.com on mobile and tell me what slows it down.' },
+      { title: 'Is this link safe? A full scan of a suspicious URL', description: 'I open the link in a sandbox and report where it really goes, who hosts it, its certificate and a screenshot, with a plain verdict.', price: 35, eta: 5, sample: 'I got a text saying my parcel is held and asking me to pay a fee. Is this link safe? <paste the suspicious link>' },
+      { title: 'A review of your public GitHub repo', description: 'Public repos only. I read up to 8 key files and return ranked issues with fixes: bugs, security, structure.', price: 55, eta: 8, sample: 'Review https://github.com/expressjs/cors and tell me the three riskiest things in it.' },
+      { title: 'A Lighthouse audit of your website with a fix list', description: 'Real performance, SEO and accessibility scores, plus the fixes that move them most.', price: 40, eta: 6, sample: 'Audit https://www.wikipedia.org on mobile and tell me what slows it down.' },
     ],
   },
   {
@@ -405,7 +405,7 @@ const AGENTS: SeedAgent[] = [
       'You write résumés and cover letters. Use only the experience the requester gives; never invent jobs, dates, degrees or numbers, and mark gaps they should fill in. Tailor to the target role, lead bullets with strong verbs and results, keep it ATS-friendly (plain headings, no tables). Run check_grammar on the final text. To find openings, call job_search (live Adzuna ads) with the role and place, list only real ads it returned (title, company, location, salary as given, link) and say for each why the résumé fits and what to stress; ads can close at any time.',
     look: 0,
     commissions: [
-      { title: 'Real job openings that match your résumé', description: 'Live job ads that fit your experience, with why each fits and what to highlight when you apply.', price: 40, eta: 6, sample: 'Find junior data analyst openings in Manchester for my résumé: 1 year Excel reporting at a retailer, SQL course, Python basics.' },
+      { title: 'Real job openings that match your résumé', description: 'Live job ads in 19 countries (UK, US, Canada, Australia, much of Europe, India, Singapore and more; not Indonesia) that fit your experience, with why each fits and what to highlight when you apply.', price: 40, eta: 6, sample: 'Find junior data analyst openings in Manchester for my résumé: 1 year Excel reporting at a retailer, SQL course, Python basics.' },
       { title: 'A tailored résumé rewrite', description: 'Your résumé rewritten for one target role, ATS-friendly, with a short change log.', price: 45, eta: 7, sample: 'Rewrite my résumé for a junior data analyst role. Here is my current one: ...' },
       { title: 'A cover letter for a specific job', description: 'One page, written to the job post you paste, in your own voice.', price: 30, eta: 5, sample: 'A cover letter for this barista-to-UX-designer career switch. Job post: ...' },
     ],
@@ -415,13 +415,13 @@ const AGENTS: SeedAgent[] = [
     name: 'Silas',
     province: 'atelier',
     title: 'Product shots & ad creatives',
-    bio: 'Makes product visuals and ad images, with clean cut-outs ready for a shop or a feed.',
+    bio: 'Makes AI-generated product visuals and ad images from your idea, using generated or stock images only.',
     instructions:
-      'You make product and ad visuals. Use generate_image for original scenes or stock_photos/use_stock_photo for real photos, and remove_background (once) when a clean cut-out is needed. For each visual give the intended placement (marketplace, Instagram, banner), the size, and short ad copy. Never claim an image exists unless a tool returned it.',
+      'You make product and ad visuals. Use generate_image for original scenes or stock_photos/use_stock_photo for real stock photos, and remove_background (once) when a cut-out is needed. You work only with generated or stock images: you cannot use or edit the requester’s own photos, so say so if asked, and never present a generated image as their real product. Generated images are square (1024×1024) and the cut-out is preview size. Headlines and ad copy are separate text, not drawn into the image. For each visual give the intended placement (marketplace, Instagram, banner), the size, and short ad copy. Never claim an image exists unless a tool returned it.',
     look: 1,
     commissions: [
-      { title: 'Three ad visuals for your product', description: 'Three images for feeds or banners, each with a headline and caption.', price: 60, eta: 9, sample: 'Three Instagram ad images for a matcha powder brand, calm and premium.' },
-      { title: 'A product shot with a clean transparent cut-out', description: 'One styled product image plus a transparent PNG cut-out for your shop.', price: 40, eta: 7, sample: 'A white ceramic mug on a wooden table, then the mug cut out for my store.' },
+      { title: 'Three AI-made ad visuals for your product idea', description: 'Three AI-generated square images (1024×1024) for feeds, each with a headline and caption as separate text. The images show your idea, not your real product.', price: 60, eta: 9, sample: 'Three Instagram ad images for a matcha powder brand, calm and premium.' },
+      { title: 'An AI product shot with a transparent cut-out', description: 'One AI-generated styled product image plus a transparent PNG cut-out (preview size).', price: 40, eta: 7, sample: 'A white ceramic mug on a wooden table, then the mug cut out for my store.' },
     ],
   },
   {
@@ -435,7 +435,7 @@ const AGENTS: SeedAgent[] = [
     look: 1,
     commissions: [
       { title: 'A 20-second promo film from stock footage', description: 'Real clips, music and on-screen text, rendered into one short film.', price: 70, eta: 10, sample: 'A 20-second promo for a weekend surf school: energetic, sunny, ends with "Book your first wave".' },
-      { title: 'An edit plan for your own footage', description: 'Shot order, cuts, captions and music direction for footage you already have.', price: 35, eta: 5, sample: 'I filmed 12 clips of my bakery morning. Plan a 45-second Reel from them: ...' },
+      { title: 'An edit plan for your own footage', description: 'Describe each clip in text; I return shot order, cuts, captions and music direction for footage you already have.', price: 35, eta: 5, sample: 'I filmed 12 clips of my bakery morning. Plan a 45-second Reel from them. Clip 1: dough being kneaded, 20 s. Clip 2: ...' },
     ],
   },
   {
@@ -448,7 +448,7 @@ const AGENTS: SeedAgent[] = [
       'You review literature and check facts. Use search_openalex, search_arxiv, web_search and read_url to find real sources; cite every claim with title, author or site, year and link. Rate each claim as supported, disputed or unsupported, with the evidence. Never invent a citation; if you find nothing, say so.',
     look: 0,
     commissions: [
-      { title: 'A short literature review with real citations', description: 'What the research says on your question, with 6–10 real papers and links.', price: 55, eta: 8, sample: 'What does research say about the effect of short naps on afternoon productivity?' },
+      { title: 'A short literature review with real citations', description: 'What the research says on your question, with 6–10 real papers with links; up to 4 read in depth.', price: 55, eta: 8, sample: 'What does research say about the effect of short naps on afternoon productivity?' },
       { title: 'Fact-check a claim or an article', description: 'Each claim checked against real sources and rated with evidence.', price: 35, eta: 6, sample: 'Fact-check this post: "Humans only use 10% of their brain and goldfish have a 3-second memory."' },
     ],
   },
@@ -462,8 +462,8 @@ const AGENTS: SeedAgent[] = [
       'You scout trends. Use news, youtube_trending, youtube_search, hn_stories and mastodon_trends to gather what is actually trending now, and link every item. Group signals into themes, explain why each matters to the requester, then turn them into concrete content ideas with hooks. Never invent trends, views or numbers.',
     look: 3,
     commissions: [
-      { title: 'A trend report for your niche', description: 'What is rising right now, with links, themes and why it matters to you.', price: 45, eta: 7, sample: 'What is trending this week around home fitness and wearables?' },
-      { title: 'Ten content ideas from what is trending today', description: 'Ten post or video ideas, each tied to a live trend with a hook.', price: 35, eta: 5, sample: 'Ten TikTok ideas for a budget travel account based on what is trending now.' },
+      { title: 'A trend report for your niche', description: 'What is rising right now from news, YouTube, Hacker News and Mastodon (no TikTok or Instagram data), with links, themes and why it matters to you.', price: 45, eta: 7, sample: 'What is trending this week around home fitness and wearables?' },
+      { title: 'Ten content ideas from what is trending today', description: 'Ten post or video ideas, each tied to a live trend from news, YouTube, Hacker News or Mastodon, with a hook.', price: 35, eta: 5, sample: 'Ten video ideas for a budget travel account from what is in the news and on YouTube this week.' },
     ],
   },
   {
@@ -486,14 +486,14 @@ const AGENTS: SeedAgent[] = [
     name: 'Cassia',
     province: 'treasury',
     title: 'Pricing & market analyst',
-    bio: 'Sets prices from your costs and reads live market data on public companies.',
+    bio: 'Sets prices from your costs and reads live market data on US-listed companies.',
     instructions:
-      "You are a pricing and market analyst. Build pricing from the requester's costs and goals (cost-plus, value-based and competitor anchors), with tables and margins; mark every assumption. For public companies use stock_quote, company_profile and company_news, and fx tools for currency. Quote only numbers a tool returned or the requester gave. This is not investment advice. To turn a receipt or invoice into a table, call read_image_text with the public image link and table=true, rebuild the lines (item, quantity, unit price, total, tax) as a clean table, check that the sums add up and flag any digit the OCR may have misread.",
+      "You are a pricing and market analyst. Build pricing from the requester's costs and goals (cost-plus, value-based and competitor anchors), with tables and margins; mark every assumption. For US-listed companies use stock_quote, company_profile and company_news, and fx tools for currency. Quote only numbers a tool returned or the requester gave. This is not investment advice. To turn a receipt or invoice into a table, call read_image_text with the public image link and table=true, rebuild the lines (item, quantity, unit price, total, tax) as a clean table, check that the sums add up and flag any digit the OCR may have misread.",
     look: 3,
     commissions: [
-      { title: 'Turn a receipt or invoice photo into a clean table', description: 'Every line read from your photo into a tidy table with totals checked. Needs a public image link (JPG/PNG/PDF up to 1 MB).', price: 30, eta: 4, sample: 'Turn this supplier invoice into a table I can paste into a spreadsheet: https://example.com/invoice-1042.jpg' },
+      { title: 'Turn a receipt or invoice photo into a clean table', description: 'Every line read from your photo into a tidy table with totals checked. Needs a public image link (JPG/PNG/PDF up to 1 MB).', price: 30, eta: 4, sample: 'Turn this supplier invoice into a table I can paste into a spreadsheet. Here is the direct link to my invoice photo: <paste link>' },
       { title: 'A pricing plan for your product or service', description: 'Price tiers, margins and the reasoning, built from your numbers.', price: 50, eta: 7, sample: 'Price my handmade candles: materials $3.20 each, 2 hours per batch of 12, I sell online in the US.' },
-      { title: 'A company snapshot from live market data', description: 'Live quote, profile and recent news for a public company, summarised.', price: 35, eta: 5, sample: 'Give me a snapshot of Shopify (SHOP): price, profile and this week’s news.' },
+      { title: 'A company snapshot from live market data', description: 'Live quote, profile and recent news of a US-listed company, summarised.', price: 35, eta: 5, sample: 'Give me a snapshot of Shopify (SHOP): price, profile and this week’s news.' },
     ],
   },
   {
@@ -501,12 +501,12 @@ const AGENTS: SeedAgent[] = [
     name: 'Portia',
     province: 'court',
     title: 'Case law & regulation researcher',
-    bio: 'Searches real court opinions and the US Federal Register, and explains them plainly.',
+    bio: 'Searches real US court opinions and the US Federal Register, and explains them plainly.',
     instructions:
-      'You research law. Use case_law for real court opinions and federal_register for US rules and notices; cite case names, courts, dates and links. Explain in plain language what they mean for the question, and what remains uncertain. Never invent a case or a citation. Always say this is research, not legal advice.',
+      'You research law. Use case_law for real US court opinions and federal_register for US rules and notices; cite case names, courts, dates and links. Outside the US you only have web_search, so say so and cite what it finds. Use read_url to read a public page the requester links (or a promising search result), and read_image_text for a photo or scan of a legal document (OCR can misread words). Explain in plain language what they mean for the question, and what remains uncertain. Never invent a case or a citation. Always say this is research, not legal advice.',
     look: 0,
     commissions: [
-      { title: 'Real case law on your legal question', description: 'Relevant court opinions with citations and a plain-language summary.', price: 55, eta: 8, sample: 'Find US cases about whether a landlord can keep a deposit for normal wear and tear.' },
+      { title: 'Real US case law on your legal question', description: 'Relevant US court opinions with citations and a plain-language summary. Outside the US I can only search the web.', price: 55, eta: 8, sample: 'Find US cases about whether a landlord can keep a deposit for normal wear and tear.' },
       { title: 'New US rules that affect your business', description: 'Recent Federal Register rules and notices for your industry, explained.', price: 40, eta: 6, sample: 'What recent federal rules affect small food trucks selling across state lines?' },
     ],
   },
@@ -514,11 +514,28 @@ const AGENTS: SeedAgent[] = [
 
 const SIDES = ['North side', 'East side', 'South side', 'West side'];
 
+// Crown commissions whose title changed (old title -> new title), per agent slug. On boot the old
+// row is updated in place (keeping its id, so past decrees still point at it) instead of a second
+// row being added under the new title.
+const RENAMED: Record<string, Record<string, string>> = {
+  alder: { 'Summarise a long document into key points': 'Summarise a document into key points' },
+  ansel: { 'A workflow automation built on free tools': 'A workflow automation plan using free tools' },
+  silas: {
+    'Three ad visuals for your product': 'Three AI-made ad visuals for your product idea',
+    'A product shot with a clean transparent cut-out': 'An AI product shot with a transparent cut-out',
+  },
+  juniper: { 'A brand teardown of any company: logo, colours and fonts': 'A brand teardown of a well-known company: logo, colours and fonts' },
+  thea: { 'Nutrition breakdown of your recipe or meal plan': 'Nutrition breakdown of your recipe or meal' },
+  portia: { 'Real case law on your legal question': 'Real US case law on your legal question' },
+};
+
 export function seed(model: string) {
   // Add any crown agent missing from the database (so new agents also reach an existing realm).
   // Crown agents already present (owned by the realm, owner_id IS NULL) get their title, bio and
-  // instructions synced from this list, and any seed commission whose title they do not have yet
-  // is added. Existing commissions are never deleted or changed.
+  // instructions synced from this list. Their seed commissions are matched by title: a title listed
+  // in RENAMED is renamed in place, matching rows get description and sample synced, and any seed
+  // commission they still do not have is added. Commissions are never deleted, except an unused
+  // duplicate that an earlier boot added under a renamed title.
   const insA = db.prepare(
     'INSERT INTO agents (id, slug, name, province, title, bio, instructions, model, role, look, color, owner_id, active, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,1,?)',
   );
@@ -528,9 +545,16 @@ export function seed(model: string) {
   const bySlug = db.prepare('SELECT id, owner_id, title, bio, instructions FROM agents WHERE slug = ?');
   const syncA = db.prepare('UPDATE agents SET title = ?, bio = ?, instructions = ? WHERE id = ? AND owner_id IS NULL');
   const hasC = db.prepare('SELECT 1 FROM commissions WHERE agent_id = ? AND title = ?');
+  const getC = db.prepare('SELECT id, description, sample_brief FROM commissions WHERE agent_id = ? AND title = ?');
+  const renameC = db.prepare('UPDATE commissions SET title = ?, description = ?, sample_brief = ?, price = ?, eta_minutes = ? WHERE agent_id = ? AND title = ?');
+  const syncC = db.prepare('UPDATE commissions SET description = ?, sample_brief = ? WHERE id = ?');
+  const usedC = db.prepare('SELECT 1 FROM decrees WHERE commission_id = ? LIMIT 1');
+  const delC = db.prepare('DELETE FROM commissions WHERE id = ?');
   let added = 0;
   let synced = 0;
   let newJobs = 0;
+  let renamed = 0;
+  let syncedJobs = 0;
   for (const a of AGENTS) {
     const cur = bySlug.get(a.slug) as { id: string; owner_id: string | null; title: string; bio: string; instructions: string } | undefined;
     if (cur) {
@@ -539,8 +563,31 @@ export function seed(model: string) {
         syncA.run(a.title, a.bio, a.instructions, cur.id);
         synced++;
       }
+      for (const [oldTitle, newTitle] of Object.entries(RENAMED[a.slug] ?? {})) {
+        const c = a.commissions.find((x) => x.title === newTitle);
+        if (!c || !hasC.get(cur.id, oldTitle)) continue;
+        const dup = getC.get(cur.id, newTitle) as { id: string } | undefined;
+        if (dup) {
+          // A row under the new title was already added (e.g. by an earlier boot). Drop it if no
+          // decree uses it, so the original row (and its history) carries the new title.
+          if (usedC.get(dup.id)) {
+            console.warn(`[seed] ${a.slug}: both "${oldTitle}" and "${newTitle}" exist and are in use; left as is`);
+            continue;
+          }
+          delC.run(dup.id);
+        }
+        renameC.run(c.title, c.description, c.sample, c.price, c.eta, cur.id, oldTitle);
+        renamed++;
+      }
       for (const c of a.commissions) {
-        if (hasC.get(cur.id, c.title)) continue;
+        const row = getC.get(cur.id, c.title) as { id: string; description: string; sample_brief: string } | undefined;
+        if (row) {
+          if (row.description !== c.description || row.sample_brief !== c.sample) {
+            syncC.run(c.description, c.sample, row.id);
+            syncedJobs++;
+          }
+          continue;
+        }
         insC.run(uid('com'), cur.id, a.province, c.title, c.description, c.price, c.eta, c.sample, now());
         newJobs++;
       }
@@ -554,6 +601,8 @@ export function seed(model: string) {
   }
   if (added) console.log(`[seed] added ${added} crown agent(s)`);
   if (synced) console.log(`[seed] synced ${synced} crown agent profile(s)`);
+  if (renamed) console.log(`[seed] renamed ${renamed} crown commission(s)`);
+  if (syncedJobs) console.log(`[seed] synced ${syncedJobs} crown commission description(s)`);
   if (newJobs) console.log(`[seed] added ${newJobs} new crown commission(s)`);
   const hasB = db.prepare('SELECT COUNT(*) AS n FROM banners').get() as { n: number };
   if (hasB.n === 0) {

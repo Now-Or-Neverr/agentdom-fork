@@ -137,6 +137,7 @@ export interface RealmStatus {
   working: number;
   approved: number;
   queued: number;
+  issued: number; // every decree except cancelled ones
   crownsInVault: number;
   // daily limits that protect the API budget
   dailyLimitPerUser: number;

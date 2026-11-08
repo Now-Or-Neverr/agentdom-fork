@@ -196,7 +196,7 @@ export class BannerLayer {
 
   constructor(private mats: Mats) {}
 
-  set(list: Banner[] | undefined) {
+  set(list: Banner[] | undefined, rentOpen = false) {
     this.clear();
     const items: { p: ProvinceId; i: number; kind: Banner['kind']; b: Banner | null }[] = [];
     if (list && list.length) {
@@ -254,7 +254,7 @@ export class BannerLayer {
       let tex: THREE.Texture;
       if (b) {
         const rented = !!b.renterId && !!b.until && new Date(b.until).getTime() > Date.now();
-        tex = clothTexture(it.kind, rented ? { title: b.title || 'Reserved', no: b.no, accent: prov.color } : { title: 'Rent this banner', no: b.no, accent: prov.color });
+        tex = clothTexture(it.kind, rented ? { title: b.title || 'Reserved', no: b.no, accent: prov.color } : { title: rentOpen ? 'Rent this banner' : 'Vacant', no: b.no, accent: prov.color });
       } else tex = clothTexture(it.kind, { accent: prov.color });
       // opaque cut-out (no transparent double pass); the silk flutters in the vertex shader
       const mat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide, alphaTest: 0.5 });

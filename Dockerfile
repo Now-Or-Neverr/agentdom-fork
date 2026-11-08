@@ -2,6 +2,8 @@
 FROM node:24-bookworm-slim
 
 WORKDIR /app
+# A free font so ffmpeg (libass) can burn captions into videos.
+RUN apt-get update && apt-get install -y --no-install-recommends fonts-dejavu-core fontconfig && rm -rf /var/lib/apt/lists/*
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
     NODE_ENV=production
 

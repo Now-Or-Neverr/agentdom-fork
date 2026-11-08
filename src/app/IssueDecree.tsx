@@ -122,7 +122,7 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
           <div className="isd-warn">
             <AlertTriangle size={17} />
             <span>
-              Preview mode: the realm’s AI is not connected yet, so your decree will <b>wait in the queue</b>. You can cancel it any time for a full refund.
+              Preview mode: the realm’s AI is not connected yet, so your decree will <b>wait in the queue</b>. {crowns ? 'You can cancel it while it waits, for a full refund.' : 'You can cancel it while it waits.'}
             </span>
           </div>
         )}
@@ -186,6 +186,7 @@ export function IssueDecree({ preset, onClose }: { preset: IssuePreset; onClose:
               Show in the agent’s portfolio once approved
             </label>
           </div>
+          <p className="isd-public-note">The title always appears in the public ledger; the brief and result stay private unless you share them.</p>
         </div>
 
         <div className="sd-standing">

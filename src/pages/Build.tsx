@@ -20,11 +20,11 @@ const FORMATS: { id: BuildFormat; label: string }[] = [
 ];
 
 const IDEAS: { label: string; prompt: string; format: BuildFormat }[] = [
-  { label: 'Landing page', format: 'web', prompt: 'A landing page for a weekend pottery workshop in Lisbon: hero, what you will make, schedule, price, FAQ and a sign-up section. Warm, earthy and modern.' },
+  { label: 'Landing page', format: 'web', prompt: 'A landing page for a weekend pottery workshop in Lisbon: hero, what you will make, schedule, price, FAQ and a sign-up section (display only, no real sign-ups). Warm, earthy and modern.' },
   { label: 'Budget calculator', format: 'web', prompt: 'A monthly budget calculator: income, fixed costs and spending categories, a live chart of where the money goes, and the 50/30/20 rule check.' },
   { label: 'Mini game', format: 'web', prompt: 'A small browser game: catch falling stars with a basket using the arrow keys or touch, score, lives, speed that ramps up, and a restart button.' },
   { label: 'Portfolio', format: 'web', prompt: 'A one-page portfolio for a freelance illustrator called Mara Quinn: selected work grid with SVG placeholders, services, process, testimonials and contact.' },
-  { label: 'Wedding invite', format: 'web', prompt: 'An elegant wedding invitation page for Anna and Leo, 14 June, a countdown, the day plan, map directions text and an RSVP form that shows a thank-you message.' },
+  { label: 'Wedding invite', format: 'web', prompt: 'An elegant wedding invitation page for Anna and Leo, 14 June, a countdown, the day plan, map directions text and an RSVP form that shows a thank-you message (forms are display only).' },
   { label: 'Quiz', format: 'web', prompt: 'A 10-question quiz about the solar system with instant feedback, a score at the end and a share-your-score text.' },
   { label: 'README', format: 'md', prompt: 'A README for an open source habit tracker app: features, screenshots section, install, configuration, contributing and license.' },
   { label: 'Content plan', format: 'csv', prompt: 'A 30-day Instagram content plan for a vegan bakery as CSV: date, pillar, format, idea, caption hook, call to action.' },
@@ -57,7 +57,7 @@ function Progress({ b }: { b: BuildView }) {
         <p>
           {chars > 0 ? `${chars.toLocaleString('en')} characters written` : 'Starting up'} · {secs}s
         </p>
-        <small>Big pages take about a minute. You can leave this page; your build keeps going and stays in “Your builds”.</small>
+        <small>Big pages can take a minute or two. You can leave this page; your build keeps going and stays in “Your builds”.</small>
       </div>
     </div>
   );
@@ -202,7 +202,7 @@ function Result({ b, onChange, status }: { b: BuildView; onChange: (b: BuildView
             </ol>
           </details>
         )}
-        <p className="bd-fine">Anyone with the link can open it. Pages run in a locked sandbox: they can’t reach the internet, submit forms or read anything from this site.</p>
+        <p className="bd-fine">Anyone with the link can open it. Pages run in a locked sandbox: they can’t send data anywhere, submit forms or read anything from this site. They can load images and common libraries from public CDNs.</p>
       </aside>
     </div>
   );
@@ -339,7 +339,7 @@ export default function Build() {
             <h1 className="display">
               Build <em>anything.</em> Get a link.
             </h1>
-            <p className="lede">Describe a page, an app or a file in your own words. It is written for you and goes live at its own link in about a minute. No sign-up, no code.</p>
+            <p className="lede">Describe a page, an app or a file in your own words. It is written for you and goes live at its own link as soon as it is written, usually within a minute or two. No sign-up, no code.</p>
           </header>
 
           <form className="bd-composer" onSubmit={submit}>
@@ -409,7 +409,7 @@ export default function Build() {
             <section className="bd-mine">
               <div className="bd-mine-head">
                 <h2>Your builds</h2>
-                <span>Saved in this browser</span>
+                <span>Linked to this browser</span>
               </div>
               <div className="bd-grid">
                 {others.map((b) => (
@@ -448,7 +448,7 @@ export default function Build() {
             <div>
               <span className="bd-no">03</span>
               <h3>Share the link</h3>
-              <p>It is live right away. Ask for changes anytime, or download the file.</p>
+              <p>It goes live the moment it is written. Ask for changes anytime, or download the file.</p>
             </div>
           </section>
           <p className="bd-foot">
