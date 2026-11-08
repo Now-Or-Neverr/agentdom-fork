@@ -31,6 +31,24 @@ export const PLACE_CATEGORIES: Record<string, string> = {
 export const isPlaceCategory = (s: unknown): s is string =>
   typeof s === 'string' && s.split(',').length <= 3 && s.split(',').every((c) => /^[a-z_]+(\.[a-z_0-9]+){0,3}$/.test(c.trim()));
 
+// Short names ("cafe", "hotels", "Gym") become the full Geoapify category ("catering.cafe").
+// Geoapify rejects a bare word that is not a top-level category with HTTP 400.
+const TOP_LEVEL = new Set(['accommodation', 'activity', 'commercial', 'catering', 'education', 'entertainment', 'healthcare', 'leisure', 'office', 'pet', 'service', 'sport', 'tourism']);
+export function normalizePlaceCategory(s: string): string {
+  return s
+    .split(',')
+    .map((raw) => {
+      const c = raw.trim().toLowerCase().replace(/\s+/g, '_');
+      if (c.includes('.') || TOP_LEVEL.has(c)) return c;
+      const bare = c.replace(/s$/, '');
+      const hit = Object.keys(PLACE_CATEGORIES).find((k) => k.endsWith('.' + c) || k.endsWith('.' + bare));
+      if (hit) return hit;
+      const byLabel = Object.entries(PLACE_CATEGORIES).find(([, label]) => label.toLowerCase().includes(bare));
+      return byLabel ? byLabel[0] : c;
+    })
+    .join(',');
+}
+
 export interface GeoPlace {
   name: string;
   formatted: string;
@@ -104,7 +122,7 @@ export async function geoapifyGeocode(text: string, ctx: CallContext, limit = 1)
  */
 export async function localBusinesses(place: string, category: string, ctx: CallContext, opts: { limit?: number; radiusM?: number } = {}): Promise<LocalBusinesses> {
   const key = requireKey(P);
-  const cat = category.trim().toLowerCase();
+  const cat = normalizePlaceCategory(category);
   if (!isPlaceCategory(cat)) throw new Error('category must be a Geoapify category such as catering.cafe or commercial.supermarket.');
   const g = await geoapifyGeocode(place, ctx, 1);
   const area = g.results[0];

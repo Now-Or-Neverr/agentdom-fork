@@ -40,6 +40,7 @@ const INTERVAL_MS = Math.max(20_000, Number(process.env.DUTY_INTERVAL_MS) || 50_
 const PER_HOUR = Math.max(1, Number(process.env.DUTIES_PER_HOUR) || 60);
 const PROVIDER_GAP_MS = 60_000;
 const FAIL_COOLDOWN_MS = 15 * 60_000;
+const IDLE_COOLDOWN_MS = 30 * 60_000; // a kind with nothing new waits this long before it is tried again
 const POSTER_EVERY_MS = (Number(process.env.DUTY_POSTER_HOURS) || 4) * 60 * 60_000;
 
 export function toDuty(r: Row): Duty {
@@ -282,7 +283,7 @@ const KINDS: DutyKind[] = [
         if ([...seen].some((k) => k.startsWith(c + ':'))) continue;
         const r = await I.nextHolidays(c, ctx);
         const h = r.holidays.find((x) => x.date >= d);
-        if (!h) throw new Error(`Nager.Date returned no upcoming holiday for ${c}.`);
+        if (!h) continue; // Nager.Date has no data for some countries (e.g. IN): try the next one
         const days = Math.round((Date.parse(h.date) - Date.parse(d)) / 86400_000);
         const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
         const local = h.localName && h.localName !== h.name ? ` (${h.localName})` : '';
@@ -750,7 +751,12 @@ async function tick() {
         current = { agentId: agent.id, kind: k.kind, task: k.task, since: now() };
         try {
           const r = await k.run(ctx, seenKeys(k.kind, k.repeatHours));
-          if (!r) continue; // nothing new to report: no row
+          if (!r) {
+            // Nothing new to report: rest this kind for a while. Without this the scheduler kept
+            // retrying the same three empty kinds every tick and the realm went quiet for hours.
+            cooldown.set(k.kind, Date.now() + IDLE_COOLDOWN_MS);
+            continue;
+          }
           const row = saveDuty(agent, k, r);
           logActivity('duty_done', k.province, `${agent.name} · ${row.summary}`, agent.id);
           return;

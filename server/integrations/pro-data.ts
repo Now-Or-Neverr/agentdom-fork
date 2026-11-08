@@ -25,7 +25,7 @@ export {
 } from './github-read';
 // Grand Bazaar
 export { exaSearch, exaFindSimilar, EXA_CATEGORIES, type ExaCategory, type ExaResults, type ExaHit } from './exa';
-export { geoapifyGeocode, localBusinesses, isPlaceCategory, PLACE_CATEGORIES, osmPoint, type GeoPlace, type LocalBusiness, type LocalBusinesses } from './geoapify';
+export { geoapifyGeocode, localBusinesses, isPlaceCategory, normalizePlaceCategory, PLACE_CATEGORIES, osmPoint, type GeoPlace, type LocalBusiness, type LocalBusinesses } from './geoapify';
 // Heralds' Tower
 export { newsTop, newsSearch, GNEWS_CATEGORIES, type GnewsCategory, type NewsArticle, type NewsList } from './gnews';
 export { youtubeTrending, youtubeSearch, type YtVideo, type YtVideoList } from './youtube';

@@ -480,7 +480,7 @@ router.get(
   h(async (req, res) => {
     const place = text(req.query.place, 120, 'place');
     const category = q(req, 'category') || 'catering.cafe';
-    if (!I.isPlaceCategory(category)) throw new HttpError(400, 'category must be a Geoapify category such as catering.cafe.');
+    if (!I.isPlaceCategory(I.normalizePlaceCategory(category))) throw new HttpError(400, 'category must be a Geoapify category such as catering.cafe.');
     gate(req, 'geoapify', 8, 80);
     res.json(single('geoapify', { ...(await run(I.localBusinesses(place, category, WS('places'), { limit: 20 }))), known: I.PLACE_CATEGORIES }));
   }),
