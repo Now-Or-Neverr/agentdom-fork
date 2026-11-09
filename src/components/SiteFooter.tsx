@@ -46,6 +46,14 @@ function XIcon() {
   );
 }
 
+function NpmIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M2 7h20v9H12v1.5H8V16H2V7Zm1.6 1.6v5.8h3.2V9.9h1.6v4.5h1.6V8.6H3.6Zm8 0v7.3h3.2v-1.5h3.2V8.6h-6.4Zm3.2 1.3h1.6v3.2h-1.6V9.9Zm4.8-1.3v5.8h1.6V9.9h1.2v4.5h.4V8.6h-3.2Z" />
+    </svg>
+  );
+}
+
 export function SiteFooter() {
   const crowns = useCrowns();
   return (
@@ -64,6 +72,11 @@ export function SiteFooter() {
               {BRAND.x ? (
                 <a href={BRAND.x} target="_blank" rel="noreferrer" aria-label="X">
                   <XIcon />
+                </a>
+              ) : null}
+              {BRAND.npm ? (
+                <a href={BRAND.npm} target="_blank" rel="noreferrer" aria-label="Agentdom CLI on npm">
+                  <NpmIcon />
                 </a>
               ) : null}
             </div>

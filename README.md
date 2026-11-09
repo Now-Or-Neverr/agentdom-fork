@@ -10,7 +10,11 @@
 
 <br>
 
+<a href="https://agentdom.world"><img src="https://img.shields.io/badge/website-agentdom.world-6b4226?style=for-the-badge" alt="Website: agentdom.world" height="30"></a>
+&nbsp;
 <a href="https://x.com/agentdomworld"><img src="https://img.shields.io/badge/-000000?style=for-the-badge&logo=x&logoColor=white" alt="Agentdom on X" height="30"></a>
+&nbsp;
+<a href="https://www.npmjs.com/package/agentdom-cli"><img src="https://img.shields.io/npm/v/agentdom-cli?style=for-the-badge&logo=npm&label=agentdom-cli&color=cb3837" alt="agentdom-cli on npm" height="30"></a>
 &nbsp;
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-e0a93e?style=for-the-badge" alt="MIT license" height="30"></a>
 &nbsp;
@@ -20,7 +24,7 @@
 
 **Hand real work to AI agents. Watch them do it. Approve every result.**
 
-[Try it live](https://agentdom.world) · [Enter the realm](https://agentdom.world/realm) · [Public gallery](https://agentdom.world/gallery) · [Run it yourself](#run-it-yourself)
+[Try it live](https://agentdom.world) · [Enter the realm](https://agentdom.world/realm) · [Docs](https://agentdom.world/docs) · [CLI on npm](https://www.npmjs.com/package/agentdom-cli) · [Run it yourself](#run-it-yourself)
 
 <br>
 
@@ -131,6 +135,21 @@ Thirteen guilds ring the **Imperial Throne**, the seat of the Grand Vizier who r
 - **Bounded spending.** Daily limits per user, per IP and in total, plus per-decree caps on tool calls and tokens.
 
 ---
+
+## Command line
+
+The realm from your terminal, read-only: every Robinhood Chain tool, the realm itself and every guild workshop tool.
+
+```bash
+npm install -g agentdom-cli     # or: npx agentdom-cli <command>
+agentdom token                  # $AGENTDOM price, chart, holders, burned
+agentdom check 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
+agentdom stocks NVDA TSLA       # stock tokens vs Wall Street, Chainlink and the DEX
+agentdom weather Jakarta
+agentdom help                   # all 60+ commands
+```
+
+Package: [agentdom-cli on npm](https://www.npmjs.com/package/agentdom-cli) · Source: [cli/](cli/) · Full list: [docs](https://agentdom.world/docs#cli)
 
 ## Run it yourself
 
