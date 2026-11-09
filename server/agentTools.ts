@@ -391,6 +391,71 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
       },
     },
     {
+      name: 'chain_economy',
+      label: 'Robinhood Chain economy',
+      description: 'Robinhood Chain as a whole (DefiLlama): total value locked, DEX volume in 24 h and its daily change, fees in 24 h, stablecoins on the chain, and the top DEXes and fee earners.',
+      schema: obj({}, []),
+      doing: () => 'Reading the Robinhood Chain economy',
+      run: async (_i, c) => {
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.chainEconomy(ctxOf(c));
+        return { data: r, summary: `TVL $${Math.round((r.tvl ?? 0) / 1e6)}M · DEX volume $${Math.round((r.dexVolume24h ?? 0) / 1e6)}M in 24 h`, sourceName: name('defillama'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'token_holders',
+      label: 'Top holders of a token',
+      description: 'The top holders of any token on Robinhood Chain with their share of supply and explorer names (pools, lockers, exchanges), plus the total holder count (Blockscout).',
+      schema: obj({ address: { type: 'string', description: 'Token contract address.' } }, ['address']),
+      doing: (i) => `Counting the holders of ${String(i.address ?? '').slice(0, 10)}…`,
+      run: async (i, c) => {
+        const address = str(i, 'address', 60);
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.tokenHolders(address, ctxOf(c), 15);
+        return { data: r, summary: `${r.token.symbol ?? 'token'} · ${r.holdersCount ?? '?'} holders`, sourceName: name('blockscout'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'token_moves',
+      label: 'Big moves of a token',
+      description: 'The biggest transfers of one token in the last 1 to 24 hours (Alchemy), with named pools and lockers where known, the number of transfers and the amount sent to burn addresses.',
+      schema: obj({ address: { type: 'string', description: 'Token contract address.' }, hours: { type: 'number', description: '1 to 24, default 6.' } }, ['address']),
+      doing: (i) => `Watching big moves of ${String(i.address ?? '').slice(0, 10)}…`,
+      run: async (i, c) => {
+        const address = str(i, 'address', 60);
+        const hours = Math.min(24, Math.max(1, Number(i.hours) || 6));
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.tokenMoves(address, ctxOf(c), hours, 12);
+        return { data: r, summary: `${r.transfers} transfers in ${hours} h`, sourceName: name('alchemy'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'token_chart',
+      label: 'Token price chart',
+      description: 'Price candles (open, high, low, close in USD) for any token on Robinhood Chain from Codex: last 24 hours hourly, 7 days 4-hourly or 30 days daily, with the change over the period.',
+      schema: obj({ address: { type: 'string', description: 'Token contract address.' }, period: { type: 'string', enum: ['24h', '7d', '30d'], description: 'Default 24h.' } }, ['address']),
+      doing: () => 'Reading the price chart',
+      run: async (i, c) => {
+        const address = str(i, 'address', 60);
+        const period = oneOf(i, 'period', ['24h', '7d', '30d'], '24h');
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.tokenChart(address, ctxOf(c), period === '7d' ? 168 : period === '30d' ? 720 : 24);
+        return { data: r, summary: `${r.symbol ?? 'token'} · ${r.candles.length} candles · ${r.changePct ?? '?'}%`, sourceName: name('codex'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'new_launches',
+      label: 'New token launches',
+      description: 'The newest tokens on Robinhood Chain with at least $1,000 of liquidity (Codex): name, symbol, launch time, liquidity, market cap, 24 h volume and holders. A listing is not an endorsement: suggest contract_check before anyone touches one.',
+      schema: obj({}, []),
+      doing: () => 'Watching new launches',
+      run: async (_i, c) => {
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.newLaunches(ctxOf(c), 12);
+        return { data: r, summary: `${r.launches.length} new tokens`, sourceName: name('codex'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
       name: 'market_pulse',
       label: 'What is trading on Robinhood Chain',
       description: 'Trending pools and the newest pools on Robinhood Chain (GeckoTerminal): pair, DEX, token address, price, liquidity, 24 h volume and change, created time. Being listed is not an endorsement: suggest contract_check before anyone touches a token.',
@@ -2358,7 +2423,7 @@ const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   observatory: ['nasa_apod', 'near_earth_asteroids', 'nasa_images', 'earthquakes', 'iss_position', 'air_quality', 'current_weather', 'web_search', 'search_arxiv'],
   apothecary: ['drug_label', 'fda_recalls', 'pubmed_search', 'clinical_trials', 'nutrition_lookup', 'web_search', 'read_url'],
   arena: ['football_table', 'football_matches', 'film_search', 'film_trending', 'music_charts', 'music_artist', 'game_deals', 'free_games', 'youtube_search', 'web_search', 'design_image'],
-  mint: ['chain_pulse', 'chain_tx', 'chain_address', 'contract_check', 'stock_tokens', 'stock_token', 'corporate_actions', 'oracle_prices', 'market_pulse', 'agentdom_token', 'stock_quote', 'company_news', 'web_search', 'read_url'],
+  mint: ['chain_pulse', 'chain_tx', 'chain_address', 'contract_check', 'stock_tokens', 'stock_token', 'corporate_actions', 'oracle_prices', 'market_pulse', 'chain_economy', 'token_holders', 'token_moves', 'token_chart', 'new_launches', 'agentdom_token', 'stock_quote', 'company_news', 'web_search', 'read_url'],
 };
 
 export const toolNamesFor = (p: ProvinceId) => [...(GUILD_TOOLS[p] ?? []), ...COMMON];
@@ -2447,7 +2512,7 @@ export function toolGuidance(p: ProvinceId): string {
       ].join('\n');
     case 'mint':
       return [
-        '- Use chain_pulse, chain_tx, chain_address and contract_check (Robinhood Chain RPC), stock_tokens / stock_token / corporate_actions (official Robinhood Stock Token API + Chainlink oracles + DEX), oracle_prices (Chainlink onchain), market_pulse (GeckoTerminal) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
+        '- Use chain_pulse, chain_tx, chain_address and contract_check (Robinhood Chain RPC), stock_tokens / stock_token / corporate_actions (official Robinhood Stock Token API + Chainlink oracles + DEX), oracle_prices (Chainlink onchain), market_pulse (GeckoTerminal), new_launches and token_chart (Codex), token_holders (Blockscout), token_moves (Alchemy), chain_economy (DefiLlama) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
         '- Read-only: you cannot send, sign or trade anything. Never tell anyone to buy or sell, never predict prices, and end any token or market answer with: "Not financial advice."',
         '- contract_check shows what a contract could do (mint, pause, blacklist, fees). Explain each flag in plain words and say that a present function is not proof of abuse; a renounced owner cannot use owner-only functions.',
       ].join('\n');

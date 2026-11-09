@@ -771,3 +771,44 @@ router.get(
     res.json(single('geckoterminal', await run(I.marketPulse(WS('chain-markets'), 12))));
   }),
 );
+
+router.get(
+  '/tools/chain/economy',
+  h(async (req, res) => {
+    ws(req, 'chain-economy', 15);
+    res.json(single('defillama', await run(I.chainEconomy(WS('chain-economy')))));
+  }),
+);
+router.get(
+  '/tools/chain/holders',
+  h(async (req, res) => {
+    const address = text(req.query.address, 60, 'address');
+    ws(req, 'chain-holders', 15);
+    res.json(single('blockscout', await run(I.tokenHolders(address, WS('chain-holders'), 20))));
+  }),
+);
+router.get(
+  '/tools/chain/moves',
+  h(async (req, res) => {
+    const address = text(req.query.address, 60, 'address');
+    const hours = Math.min(24, Math.max(1, Number(q(req, 'hours')) || 6));
+    ws(req, 'chain-moves', 10);
+    res.json(single('alchemy', await run(I.tokenMoves(address, WS('chain-moves'), hours, 12))));
+  }),
+);
+router.get(
+  '/tools/chain/chart',
+  h(async (req, res) => {
+    const address = text(req.query.address, 60, 'address');
+    const hours = [24, 168, 720].includes(Number(q(req, 'hours'))) ? Number(q(req, 'hours')) : 24;
+    ws(req, 'chain-chart', 30);
+    res.json(single('codex', await run(I.tokenChart(address, WS('chain-chart'), hours))));
+  }),
+);
+router.get(
+  '/tools/chain/launches',
+  h(async (req, res) => {
+    ws(req, 'chain-launches', 15);
+    res.json(single('codex', await run(I.newLaunches(WS('chain-launches'), 12))));
+  }),
+);

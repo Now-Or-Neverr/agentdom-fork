@@ -1,6 +1,8 @@
-// Robinhood Chain (Ethereum L2, chain id 4663). Read-only: the public RPC for chain state,
-// DexScreener for pairs and prices, GeckoTerminal for holder counts and token flags.
-// Official stock tokens are recognised onchain: they implement uiMultiplier() (ERC-8056).
+// Robinhood Chain (Ethereum L2, chain id 4663), read-only. Chain state from RPC (Alchemy, Chainstack,
+// Goldsky, public RPC as fallbacks); stock tokens from Robinhood's Stock Token API and Chainlink;
+// markets from DexScreener, GeckoTerminal (CoinGecko key when set), Codex and DefiLlama; explorer data
+// from Blockscout; wallets from Alchemy and Zerion; token safety from GoPlus and Sourcify.
+import { createHash } from 'node:crypto';
 import { decodeAbiParameters, formatUnits, getAddress, hexToBigInt, isAddress, isHash, toFunctionSelector, type Hex } from 'viem';
 import { fetchJson, qs, UpstreamError, type CallContext } from './http';
 
@@ -13,6 +15,7 @@ function endpoints(): { url: string; provider: string }[] {
   const list: { url: string; provider: string }[] = [];
   if (alchemyOn()) list.push({ url: alchemyRpc(), provider: ALCHEMY });
   if (process.env.CHAINSTACK_RPC_URL) list.push({ url: process.env.CHAINSTACK_RPC_URL, provider: 'chainstack' });
+  if (process.env.GOLDSKY_API_KEY) list.push({ url: `https://edge.goldsky.com/standard/evm/4663?key=${process.env.GOLDSKY_API_KEY}`, provider: 'goldsky' });
   if (process.env.ROBINHOOD_RPC_URL) list.push({ url: process.env.ROBINHOOD_RPC_URL, provider: RPC });
   list.push({ url: CHAIN.rpc, provider: RPC });
   return list;
@@ -37,6 +40,12 @@ const DEAD = ['0x000000000000000000000000000000000000dEaD', '0x00000000000000000
 const RPC = 'robinhoodrpc';
 const DEX = 'dexscreener';
 const GECKO = 'geckoterminal';
+/** GeckoTerminal onchain API, through CoinGecko's keyed endpoint when COINGECKO_API_KEY is set. */
+function gt(path: string, ctx: CallContext, ttlMs: number, okStatuses?: number[]) {
+  const key = process.env.COINGECKO_API_KEY;
+  const url = key ? `https://api.coingecko.com/api/v3/onchain/networks/robinhood/${path}` : `https://api.geckoterminal.com/api/v2/networks/robinhood/${path}`;
+  return fetchJson<any>(url, { provider: GECKO, ctx, ttlMs, okStatuses, headers: key ? { 'x-cg-demo-api-key': key } : undefined });
+}
 
 export const txUrl = (h: string) => `${CHAIN.explorer}/tx/${h}`;
 export const addrUrl = (a: string) => `${CHAIN.explorer}/address/${a}`;
@@ -240,7 +249,7 @@ export async function explainTx(hash: string, ctx: CallContext): Promise<TxExpla
     from: getAddress(t.from),
     to: t.to ? getAddress(t.to) : null,
     contractCreated: r?.contractAddress ? getAddress(r.contractAddress) : null,
-    method: t.input && t.input.length >= 10 ? (KNOWN_METHODS[t.input.slice(0, 10)] ?? `unknown (${t.input.slice(0, 10)})`) : t.input === '0x' ? 'plain ETH transfer' : null,
+    method: t.input && t.input.length >= 10 ? (KNOWN_METHODS[t.input.slice(0, 10)] ?? (await decodeSelector(t.input.slice(0, 10), ctx).catch(() => null))?.split('(')[0] ?? `unknown (${t.input.slice(0, 10)})`) : t.input === '0x' ? 'plain ETH transfer' : null,
     valueEth: formatUnits(hexToBigInt(t.value), 18),
     feeEth: r && price ? formatUnits(hexToBigInt(r.gasUsed) * hexToBigInt(price), 18) : null,
     tokenTransfers,
@@ -607,6 +616,8 @@ export interface StockDetail extends StockGap {
   mintBurnUsd: number | null;
   supply: string | null;
   actions: CorporateAction[];
+  shareCandles: Candle[] | null;
+  tokenCandles: Candle[] | null;
   sourceUrl: string;
   fetchedAt: string;
 }
@@ -631,6 +642,8 @@ export async function stockDetail(symbolOrAddress: string, ctx: CallContext): Pr
     mintBurnUsd: q?.mintBurnUsd ?? null,
     supply: supply === null ? null : formatUnits(supply, 18),
     actions: acts.actions,
+    shareCandles: (await stockCandles(t.ticker, ctx).catch(() => null))?.candles ?? null,
+    tokenCandles: codexOn() ? ((await tokenChart(t.address, ctx, 24).catch(() => null))?.candles ?? null) : null,
     sourceUrl: t.url,
     fetchedAt: new Date().toISOString(),
   };
@@ -677,7 +690,7 @@ export interface MarketPulse {
   fetchedAt: string;
 }
 export async function marketPulse(ctx: CallContext, limit = 10): Promise<MarketPulse> {
-  const g = (path: string, ttlMs: number) => fetchJson<any>(`https://api.geckoterminal.com/api/v2/networks/robinhood/${path}`, { provider: GECKO, ctx, ttlMs });
+  const g = (path: string, ttlMs: number) => gt(path, ctx, ttlMs);
   const [t, nw, dx] = await Promise.all([g('trending_pools?page=1', 5 * 60_000), g('new_pools?page=1', 2 * 60_000), g('dexes?page=1', 6 * 60 * 60_000).catch(() => null)]);
   return {
     trending: pools(t.data?.data ?? []).slice(0, limit),
@@ -700,6 +713,9 @@ export interface AddressReport {
   allTokens: boolean;
   recent: TxRow[];
   activity: { transactions: number | null; tokenTransfers: number | null } | null;
+  transfers: TransferRow[];
+  nfts: { total: number; items: NftRow[] } | null;
+  portfolio: Portfolio | null;
   note: string;
   sourceUrl: string;
   fetchedAt: string;
@@ -762,6 +778,17 @@ export async function inspectAddress(address: string, ctx: CallContext): Promise
       }),
     );
   }
+  const [transfers, nfts, portfolio, prices] = await Promise.all([
+    alchemyOn() ? walletTransfers(a, ctx, 15).catch(() => [] as TransferRow[]) : Promise.resolve([] as TransferRow[]),
+    alchemyOn() ? walletNfts(a, ctx, 8).catch(() => null) : Promise.resolve(null),
+    walletPortfolio(a, ctx).catch(() => null),
+    tokenPrices(tokens.filter((t) => t.valueUsd === null).map((t) => t.address), ctx).catch(() => new Map<string, number>()),
+  ]);
+  for (const t of tokens) {
+    const p = prices.get(t.address.toLowerCase());
+    if (t.valueUsd === null && p) t.valueUsd = Math.round(Number(t.balance) * p * 100) / 100;
+  }
+  const extra = { transfers, nfts, portfolio };
   return {
     address: a,
     kind: code.data && code.data !== '0x' ? 'contract' : 'wallet',
@@ -772,6 +799,9 @@ export async function inspectAddress(address: string, ctx: CallContext): Promise
     allTokens,
     recent: act?.recent ?? [],
     activity: act ? { transactions: act.transactions, tokenTransfers: act.tokenTransfers } : null,
+    transfers: extra.transfers,
+    nfts: extra.nfts,
+    portfolio: extra.portfolio,
     note: allTokens
       ? 'Balances of every ERC-20 token the address holds and its recent transactions (Blockscout), ETH and counts from the chain. Stock values use Robinhood’s live token bid.'
       : `Read straight from the chain. ETH, AGENTDOM, WETH, USDG and all ${stocks.length} official stock tokens are checked; other tokens are not shown. Stock values use Robinhood’s live token bid.`,
@@ -810,6 +840,8 @@ export interface ContractReport {
   verified: VerifiedSource | null;
   reputation: string | null;
   topHolders: HolderRow[] | null;
+  goplus: GoPlusReport | null;
+  sourcify: { match: string; verifiedAt: string | null; url: string } | null;
   note: string;
   sourceUrl: string;
   fetchedAt: string;
@@ -819,7 +851,7 @@ export async function scanContract(address: string, ctx: CallContext): Promise<C
   const code = await rpc<Hex>('eth_getCode', [a, 'latest'], ctx, 10 * 60_000);
   const isContract = !!code.data && code.data !== '0x';
   if (!isContract) {
-    return { address: a, isContract, token: null, totalSupply: null, burned: null, owner: null, ownerRenounced: null, proxy: null, stockToken: null, flags: [], market: null, holders: null, honeypot: null, verified: null, reputation: null, topHolders: null, note: 'This address has no contract code: it is a wallet.', sourceUrl: addrUrl(a), fetchedAt: code.fetchedAt };
+    return { address: a, isContract, token: null, totalSupply: null, burned: null, owner: null, ownerRenounced: null, proxy: null, stockToken: null, flags: [], market: null, holders: null, honeypot: null, verified: null, reputation: null, topHolders: null, goplus: null, sourcify: null, note: 'This address has no contract code: it is a wallet.', sourceUrl: addrUrl(a), fetchedAt: code.fetchedAt };
   }
   let bytecode = code.data.toLowerCase();
   const slot = await rpc<Hex>('eth_getStorageAt', [a, IMPL_SLOT, 'latest'], ctx, 10 * 60_000).catch(() => null);
@@ -838,11 +870,12 @@ export async function scanContract(address: string, ctx: CallContext): Promise<C
     readUint(a, 'balanceOf(address)', ctx, encAddr(DEAD[0])),
     readUint(a, 'balanceOf(address)', ctx, encAddr(DEAD[1])),
     dexToken(a, ctx).catch(() => []),
-    fetchJson<any>(`https://api.geckoterminal.com/api/v2/networks/robinhood/tokens/${a}/info`, { provider: GECKO, ctx, ttlMs: 10 * 60_000, okStatuses: [404] }).catch(() => null),
+    gt(`tokens/${a}/info`, ctx, 10 * 60_000, [404]).catch(() => null),
   ]);
   const official = (await stockTokenList(ctx).catch(() => [] as StockToken[])).find((t) => t.address.toLowerCase() === a.toLowerCase());
   const dec = meta?.decimals ?? 18;
   const flags = FLAGS.map((f) => ({ label: f.label, why: f.why, found: f.sigs.filter((s) => bytecode.includes(sel(s).slice(2))).map((s) => s.split('(')[0]) })).filter((f) => f.found.length);
+  const [gp, sf] = await Promise.all([goplusCheck(a, ctx).catch(() => null), sourcifyMatch(a, ctx).catch(() => null)]);
   const [vs, th] = await Promise.all([verifiedSource(a, ctx).catch(() => null), blockscoutOn() && meta && (meta.name || meta.symbol) ? tokenHolders(a, ctx, 10).catch(() => null) : Promise.resolve(null)]);
   const g = gecko?.data?.data?.attributes;
   const renounced = owner === null ? null : DEAD.some((d) => d.toLowerCase() === owner.toLowerCase());
@@ -863,6 +896,8 @@ export async function scanContract(address: string, ctx: CallContext): Promise<C
     verified: vs,
     reputation: th?.token.reputation ?? null,
     topHolders: th?.holders ?? null,
+    goplus: gp,
+    sourcify: sf,
     note: 'A function being present is not proof of abuse: it shows what the controller could do. If the owner is renounced, owner-only functions can no longer be used. Read-only check, not financial advice.',
     sourceUrl: addrUrl(a),
     fetchedAt: code.fetchedAt,
@@ -885,6 +920,7 @@ export interface AgentdomStats {
   burnedPct: number | null;
   pairUrl: string | null;
   topHolders: HolderRow[] | null;
+  chart: Candle[] | null;
   sourceUrl: string;
   fetchedAt: string;
 }
@@ -892,7 +928,7 @@ export async function agentdomStats(ctx: CallContext): Promise<AgentdomStats> {
   const a = getAddress(AGENTDOM_CA);
   const [dex, gecko, supply, dead, zero] = await Promise.all([
     dexToken(a, ctx, 60_000),
-    fetchJson<any>(`https://api.geckoterminal.com/api/v2/networks/robinhood/tokens/${a}/info`, { provider: GECKO, ctx, ttlMs: 10 * 60_000 }).catch(() => null),
+    gt(`tokens/${a}/info`, ctx, 10 * 60_000).catch(() => null),
     readUint(a, 'totalSupply()', ctx),
     readUint(a, 'balanceOf(address)', ctx, encAddr(DEAD[0])),
     readUint(a, 'balanceOf(address)', ctx, encAddr(DEAD[1])),
@@ -916,6 +952,7 @@ export async function agentdomStats(ctx: CallContext): Promise<AgentdomStats> {
     burnedPct: supply ? Math.round((Number(burnedRaw * 1000000n / supply) / 10000) * 100) / 100 : null,
     pairUrl: m.url,
     topHolders: th?.holders ?? null,
+    chart: codexOn() ? ((await tokenChart(a, ctx, 24).catch(() => null))?.candles ?? null) : null,
     sourceUrl: tokenUrl(a),
     fetchedAt: new Date().toISOString(),
   };
@@ -1232,5 +1269,293 @@ export async function walletNfts(address: string, ctx: CallContext, limit = 8): 
       tokenId: String(x.tokenId),
       image: x.image?.thumbnailUrl ?? x.image?.cachedUrl ?? null,
     })),
+  };
+}
+
+// ---------------- more sources: DefiLlama, GoPlus, Sourcify, OpenChain, Codex, Zerion, Chainlink candles ----------------
+
+// ---- DefiLlama: the chain's economy (no key) ----
+export interface ChainEconomy {
+  tvl: number | null;
+  dexVolume24h: number | null;
+  dexVolumeChange1d: number | null;
+  fees24h: number | null;
+  stablecoins: number | null;
+  topDexes: { name: string; volume24h: number }[];
+  topFees: { name: string; fees24h: number }[];
+  sourceUrl: string;
+  fetchedAt: string;
+}
+export async function chainEconomy(ctx: CallContext): Promise<ChainEconomy> {
+  const LL = 'defillama';
+  const q = '?excludeTotalDataChart=true&excludeTotalDataChartBreakdown=true';
+  const [chains, dex, fees, stables] = await Promise.all([
+    fetchJson<any[]>('https://api.llama.fi/v2/chains', { provider: LL, ctx, ttlMs: 30 * 60_000, timeoutMs: 20_000 }).catch(() => null),
+    fetchJson<any>(`https://api.llama.fi/overview/dexs/robinhood${q}`, { provider: LL, ctx, ttlMs: 30 * 60_000, timeoutMs: 25_000 }).catch(() => null),
+    fetchJson<any>(`https://api.llama.fi/overview/fees/robinhood${q}`, { provider: LL, ctx, ttlMs: 30 * 60_000, timeoutMs: 25_000 }).catch(() => null),
+    fetchJson<any[]>('https://stablecoins.llama.fi/stablecoinchains', { provider: LL, ctx, ttlMs: 30 * 60_000, timeoutMs: 20_000 }).catch(() => null),
+  ]);
+  const chain = ((chains?.data ?? []) as any[]).find((c) => c.chainId === CHAIN.id);
+  const st = ((stables?.data ?? []) as any[]).find((c) => /robinhood/i.test(c.name));
+  if (!chain && !dex && !fees) throw new Error('DefiLlama did not answer.');
+  const top = (list: any[] | undefined) => [...(list ?? [])].filter((p) => p.total24h).sort((a, b) => b.total24h - a.total24h).slice(0, 6);
+  return {
+    tvl: chain?.tvl ?? null,
+    dexVolume24h: dex?.data?.total24h ?? null,
+    dexVolumeChange1d: dex?.data?.change_1d ?? null,
+    fees24h: fees?.data?.total24h ?? null,
+    stablecoins: st?.totalCirculatingUSD?.peggedUSD ?? null,
+    topDexes: top(dex?.data?.protocols).map((p) => ({ name: String(p.displayName ?? p.name), volume24h: p.total24h })),
+    topFees: top(fees?.data?.protocols).map((p) => ({ name: String(p.displayName ?? p.name), fees24h: p.total24h })),
+    sourceUrl: 'https://defillama.com/chain/robinhood-chain',
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+// ---- GoPlus token security (keyed when GOPLUS_APP_KEY/SECRET are set, open otherwise) ----
+let goplusToken: { value: string; exp: number } | null = null;
+async function goplusAuth(ctx: CallContext): Promise<Record<string, string>> {
+  const k = process.env.GOPLUS_APP_KEY;
+  const s = process.env.GOPLUS_APP_SECRET;
+  if (!k || !s) return {};
+  if (!goplusToken || goplusToken.exp < Date.now() + 60_000) {
+    const t = Math.floor(Date.now() / 1000);
+    const r = await fetchJson<any>('https://api.gopluslabs.io/api/v1/token', {
+      provider: 'goplus',
+      ctx,
+      method: 'POST',
+      ttlMs: 0,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ app_key: k, time: t, sign: createHash('sha1').update(k + t + s).digest('hex') }),
+      logEndpoint: 'goplus:token',
+    }).catch(() => null);
+    const v = r?.data?.result?.access_token;
+    if (!v) return {};
+    goplusToken = { value: v, exp: Date.now() + (Number(r!.data.result.expires_in) || 3600) * 1000 };
+  }
+  return { Authorization: goplusToken.value };
+}
+export interface GoPlusReport {
+  buyTax: number | null;
+  sellTax: number | null;
+  honeypot: boolean | null;
+  cannotSellAll: boolean | null;
+  mintable: boolean | null;
+  ownerCanChangeBalance: boolean | null;
+  hiddenOwner: boolean | null;
+  canTakeBackOwnership: boolean | null;
+  transferPausable: boolean | null;
+  blacklist: boolean | null;
+  openSource: boolean | null;
+  creator: string | null;
+  holders: number | null;
+  lpLockedPct: number | null;
+  sourceUrl: string;
+}
+const yes = (v: unknown) => (v === '1' ? true : v === '0' ? false : null);
+export async function goplusCheck(address: string, ctx: CallContext): Promise<GoPlusReport | null> {
+  const a = checkAddress(address).toLowerCase();
+  const r = await fetchJson<any>(`https://api.gopluslabs.io/api/v1/token_security/${CHAIN.id}?contract_addresses=${a}`, { provider: 'goplus', ctx, ttlMs: 10 * 60_000, headers: await goplusAuth(ctx) });
+  const d = r.data?.result?.[a];
+  if (!d) return null;
+  const lp = (d.lp_holders ?? []) as any[];
+  const locked = lp.filter((x) => x.is_locked === 1 || x.is_locked === '1').reduce((t, x) => t + Number(x.percent ?? 0), 0);
+  const pctOf = (v: unknown) => (v !== undefined && v !== null && v !== '' ? Math.round(Number(v) * 10000) / 100 : null);
+  return {
+    buyTax: pctOf(d.buy_tax),
+    sellTax: pctOf(d.sell_tax),
+    honeypot: yes(d.is_honeypot),
+    cannotSellAll: yes(d.cannot_sell_all),
+    mintable: yes(d.is_mintable),
+    ownerCanChangeBalance: yes(d.owner_change_balance),
+    hiddenOwner: yes(d.hidden_owner),
+    canTakeBackOwnership: yes(d.can_take_back_ownership),
+    transferPausable: yes(d.transfer_pausable),
+    blacklist: yes(d.is_blacklisted),
+    openSource: yes(d.is_open_source),
+    creator: d.creator_address ? getAddress(d.creator_address) : null,
+    holders: d.holder_count ? Number(d.holder_count) : null,
+    lpLockedPct: lp.length ? Math.round(locked * 10000) / 100 : null,
+    sourceUrl: `https://gopluslabs.io/token-security/${CHAIN.id}/${a}`,
+  };
+}
+
+// ---- Sourcify (verified source, no key) ----
+export async function sourcifyMatch(address: string, ctx: CallContext): Promise<{ match: string; verifiedAt: string | null; url: string } | null> {
+  const a = checkAddress(address);
+  const r = await fetchJson<any>(`https://sourcify.dev/server/v2/contract/${CHAIN.id}/${a}`, { provider: 'sourcify', ctx, ttlMs: 60 * 60_000, okStatuses: [404] }).catch(() => null);
+  const m = r?.data?.match;
+  return m ? { match: String(m), verifiedAt: r!.data.verifiedAt ?? null, url: `https://repo.sourcify.dev/${CHAIN.id}/${a}` } : null;
+}
+
+// ---- OpenChain: name an unknown function selector (no key) ----
+const sigCache = new Map<string, string | null>();
+export async function decodeSelector(selector: string, ctx: CallContext): Promise<string | null> {
+  const s = selector.toLowerCase();
+  if (sigCache.has(s)) return sigCache.get(s)!;
+  const r = await fetchJson<any>(`https://api.openchain.xyz/signature-database/v1/lookup?function=${s}&filter=true`, { provider: 'openchain', ctx, ttlMs: 24 * 60 * 60_000 }).catch(() => null);
+  const list = (r?.data?.result?.function?.[s] ?? []) as any[];
+  const name = list[0]?.name ? String(list[0].name) : null;
+  sigCache.set(s, name);
+  return name;
+}
+
+// ---- Codex: price candles and fresh launches ----
+export const codexOn = () => !!process.env.CODEX_API_KEY;
+async function codex<T = any>(query: string, ctx: CallContext, ttlMs = 60_000): Promise<T> {
+  if (!codexOn()) throw new Error('This needs CODEX_API_KEY on this server.');
+  const r = await fetchJson<any>('https://graph.codex.io/graphql', {
+    provider: 'codex',
+    ctx,
+    method: 'POST',
+    ttlMs,
+    timeoutMs: 20_000,
+    headers: { 'content-type': 'application/json', Authorization: process.env.CODEX_API_KEY! },
+    body: JSON.stringify({ query }),
+    logEndpoint: 'codex:graphql',
+  });
+  if (r.data?.errors?.length) throw new UpstreamError('codex', 200, `Codex: ${r.data.errors[0].message}`);
+  return r.data?.data as T;
+}
+export interface Candle {
+  t: string;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+}
+export interface TokenChart {
+  address: string;
+  symbol: string | null;
+  resolution: string;
+  candles: Candle[];
+  changePct: number | null;
+  sourceUrl: string;
+  fetchedAt: string;
+}
+/** OHLC candles for any token on Robinhood Chain (Codex). hours: 24 = hourly, up to 168 = 4-hourly, more = daily. */
+export async function tokenChart(address: string, ctx: CallContext, hours = 24): Promise<TokenChart> {
+  const a = checkAddress(address).toLowerCase();
+  const res = hours <= 24 ? '60' : hours <= 168 ? '240' : '1D';
+  const now = Math.floor(Date.now() / 1000);
+  const d = await codex<any>(`{ getBars(symbol: "${a}:${CHAIN.id}", from: ${now - hours * 3600}, to: ${now}, resolution: "${res}") { o h l c t } getTokenInfo(address: "${a}", networkId: ${CHAIN.id}) { symbol } }`, ctx, 5 * 60_000);
+  const b = d?.getBars ?? {};
+  const candles: Candle[] = ((b.t ?? []) as number[])
+    .map((t, i) => ({ t: new Date(t * 1000).toISOString(), o: Number(b.o[i]), h: Number(b.h[i]), l: Number(b.l[i]), c: Number(b.c[i]) }))
+    .filter((x) => Number.isFinite(x.c) && x.c > 0);
+  const first = candles[0]?.o;
+  const last = candles.at(-1)?.c;
+  return {
+    address: getAddress(a),
+    symbol: d?.getTokenInfo?.symbol ?? null,
+    resolution: res === '60' ? '1h' : res === '240' ? '4h' : '1d',
+    candles,
+    changePct: first && last ? Math.round(((last - first) / first) * 10000) / 100 : null,
+    sourceUrl: `https://www.defined.fi/robinhood/${a}`,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+export interface Launch {
+  address: string;
+  name: string;
+  symbol: string;
+  createdAt: string;
+  liquidityUsd: number | null;
+  marketCapUsd: number | null;
+  volume24h: number | null;
+  holders: number | null;
+  url: string;
+}
+/** The newest tokens on Robinhood Chain with their first numbers (Codex). */
+export async function newLaunches(ctx: CallContext, limit = 12): Promise<{ launches: Launch[]; note: string; sourceUrl: string; fetchedAt: string }> {
+  const d = await codex<any>(
+    `{ filterTokens(filters: { network: [${CHAIN.id}], liquidity: { gt: 1000 } }, rankings: { attribute: createdAt, direction: DESC }, limit: ${limit}) { results { token { address name symbol } createdAt liquidity marketCap volume24 holders } } }`,
+    ctx,
+    2 * 60_000,
+  );
+  return {
+    launches: ((d?.filterTokens?.results ?? []) as any[]).map((x) => ({
+      address: getAddress(x.token.address),
+      name: String(x.token.name ?? ''),
+      symbol: String(x.token.symbol ?? ''),
+      createdAt: new Date(Number(x.createdAt) * 1000).toISOString(),
+      liquidityUsd: n(x.liquidity),
+      marketCapUsd: n(x.marketCap),
+      volume24h: n(x.volume24),
+      holders: n(x.holders),
+      url: tokenUrl(x.token.address),
+    })),
+    note: 'Newest tokens with at least $1,000 of liquidity, from Codex. A listing is not an endorsement: run a contract check first. Not financial advice.',
+    sourceUrl: 'https://www.defined.fi/tokens/discover?network=robinhood',
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+// ---- Zerion: wallet portfolio on Robinhood Chain ----
+export interface Portfolio {
+  totalUsd: number | null;
+  positions: { symbol: string; name: string; quantity: number; valueUsd: number | null; change1dPct: number | null }[];
+  sourceUrl: string;
+}
+export async function walletPortfolio(address: string, ctx: CallContext): Promise<Portfolio | null> {
+  if (!process.env.ZERION_API_KEY) return null;
+  const a = checkAddress(address);
+  const r = await fetchJson<any>(`https://api.zerion.io/v1/wallets/${a}/positions/?filter[chain_ids]=robinhood&filter[positions]=only_simple&currency=usd&sort=-value`, {
+    provider: 'zerion',
+    ctx,
+    ttlMs: 2 * 60_000,
+    okStatuses: [400, 404],
+    headers: { accept: 'application/json', authorization: 'Basic ' + Buffer.from(process.env.ZERION_API_KEY + ':').toString('base64') },
+    logEndpoint: 'zerion:wallets/positions',
+  }).catch(() => null);
+  if (!Array.isArray(r?.data?.data)) return null;
+  const positions = (r!.data.data as any[]).slice(0, 20).map((p) => ({
+    symbol: String(p.attributes?.fungible_info?.symbol ?? '?'),
+    name: String(p.attributes?.fungible_info?.name ?? ''),
+    quantity: Number(p.attributes?.quantity?.float ?? 0),
+    valueUsd: typeof p.attributes?.value === 'number' ? p.attributes.value : null,
+    change1dPct: typeof p.attributes?.changes?.percent_1d === 'number' ? p.attributes.changes.percent_1d : null,
+  }));
+  return { totalUsd: Math.round(positions.reduce((t, p) => t + (p.valueUsd ?? 0), 0) * 100) / 100, positions, sourceUrl: `https://app.zerion.io/${a}/overview` };
+}
+
+// ---- Chainlink Candlestick: OHLC of the underlying share (Data Streams) ----
+let clToken: { value: string; exp: number } | null = null;
+export async function stockCandles(symbol: string, ctx: CallContext, hours = 24): Promise<{ symbol: string; candles: Candle[]; sourceUrl: string } | null> {
+  const u = process.env.CHAINLINK_CANDLESTICK_USER;
+  const p = process.env.CHAINLINK_CANDLESTICK_API_KEY;
+  if (!u || !p) return null;
+  const base = 'https://priceapi.dataengine.chain.link';
+  if (!clToken || clToken.exp < Date.now() + 60_000) {
+    const r = await fetchJson<any>(`${base}/api/v1/authorize`, {
+      provider: 'chainlinkcandles',
+      ctx,
+      method: 'POST',
+      ttlMs: 0,
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ login: u, password: p }).toString(),
+      logEndpoint: 'chainlink-candles:authorize',
+    }).catch(() => null);
+    const v = r?.data?.d?.access_token;
+    if (!v) return null;
+    clToken = { value: v, exp: (Number(r!.data.d.expiration) || Math.floor(Date.now() / 1000) + 600) * 1000 };
+  }
+  const sym = `${symbol.toUpperCase()}USD`;
+  const now = Math.floor(Date.now() / 1000);
+  const r = await fetchJson<any>(`${base}/api/v1/history?symbol=${sym}&resolution=1h&from=${now - hours * 3600}&to=${now}`, {
+    provider: 'chainlinkcandles',
+    ctx,
+    ttlMs: 5 * 60_000,
+    headers: { authorization: `Bearer ${clToken.value}` },
+    okStatuses: [404],
+    logEndpoint: `chainlink-candles:history ${sym}`,
+  }).catch(() => null);
+  const d = r?.data;
+  if (!d || d.s !== 'ok') return null;
+  const sc = (v: unknown) => Number(v) / 1e18;
+  return {
+    symbol: sym,
+    candles: ((d.t ?? []) as number[]).map((t, i) => ({ t: new Date(t * 1000).toISOString(), o: sc(d.o[i]), h: sc(d.h[i]), l: sc(d.l[i]), c: sc(d.c[i]) })),
+    sourceUrl: 'https://data.chain.link/streams',
   };
 }
