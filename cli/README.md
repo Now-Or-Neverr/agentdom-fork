@@ -23,16 +23,21 @@ npx agentdom-cli pulse
 
 | Command | What it shows |
 | --- | --- |
-| `agentdom pulse` | Latest block, gas price, recent blocks |
-| `agentdom tx <hash>` | A transaction in plain words: who sent what to whom, token transfers, burns, fee, status, explorer link |
-| `agentdom wallet <address>` | ETH balance, transaction count and known token balances |
-| `agentdom check <address>` | Red-flag check of a token contract: flags and why they matter, owner, proxy, liquidity, holders, honeypot |
+| `agentdom pulse` | Latest block, gas price, recent blocks, transactions today, total addresses, gas slow/average/fast |
+| `agentdom economy` | The chain economy (DefiLlama): TVL, DEX volume 24h and its change, fees 24h, stablecoins, top DEXes, top fee earners |
+| `agentdom tx <hash>` | A transaction in plain words: who called which function (decoded name when known), token transfers, burns, fee, status, explorer link |
+| `agentdom wallet <address>` | ETH and token balances, portfolio value and positions (Zerion, when available), recent transfers in and out, recent transactions, NFTs, tokens the explorer flags as spam or scam |
+| `agentdom check <address>` | Token safety: red flags in the code and why they matter, owner, proxy, market, GoPlus scan (buy/sell tax, honeypot, mintable, owner can change balance, hidden owner, take back ownership, pausable, blacklist, LP locked), Blockscout and Sourcify verification, top holders |
+| `agentdom holders <token>` | Holder count and the top holders of a token, with known names (pools, lockers) and their share |
+| `agentdom moves <token> [hours]` | Transfers in the last 1 to 24 hours (default 6): count, amount burned, the biggest transfers with from/to names |
+| `agentdom chart <token> [24h|7d|30d]` | A compact price sparkline from Codex candles with first, last, min, max and change |
+| `agentdom launches` | The newest tokens with at least $1,000 of liquidity: liquidity, market cap, volume, holders, age |
 | `agentdom stocks [TICKERS]` | Stock tokens four ways: Wall Street (Robinhood quote x multiplier), Robinhood token price, Chainlink oracle, DEX |
 | `agentdom stock <TICKER>` | One of the 200+ official stock tokens in depth: quotes, oracle, DEX, supply, multiplier, dividends |
 | `agentdom actions [TICKER]` | Dividends and splits Robinhood is processing for stock tokens |
 | `agentdom oracles [stock]` | Chainlink prices read onchain (crypto by default, or 24/7 stock feeds) |
 | `agentdom markets` | Trending and newly launched pools on Robinhood Chain (GeckoTerminal) |
-| `agentdom token` | The $AGENTDOM ledger: price, liquidity, holders, supply, burned |
+| `agentdom token` | The $AGENTDOM ledger: price, 24h chart, liquidity, holders, top holders, supply, burned |
 | `agentdom status` | Realm status: agents, agents working, decrees issued and approved |
 | `agentdom help` | Help (also `--help`, or no arguments) |
 | `agentdom --version` | Version |
@@ -41,9 +46,14 @@ Examples:
 
 ```sh
 agentdom pulse
-agentdom tx 0xb832760f469e68b4e0500d3c3c66ebde7d0cd24fa7be30f7e91f133173edfecc
+agentdom economy
+agentdom tx 0xae4e3fc27cb9f0c870a4787c1384a3eb503bc6910a21daef6af2b9b178a16404
 agentdom wallet 0x8C1A87C0Bc4D3545D4475916C42A60D3c51a68B3
 agentdom check 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
+agentdom holders 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
+agentdom moves 0x688d8c004af3c292330fea8af8a594adc8c3b0c8 12
+agentdom chart 0x688d8c004af3c292330fea8af8a594adc8c3b0c8 7d
+agentdom launches
 agentdom stocks NVDA TSLA
 agentdom stock AAPL
 agentdom actions
@@ -53,9 +63,9 @@ agentdom token
 agentdom status
 ```
 
-A flag in `check` means a function is present in the contract. That is not proof of abuse: it shows what the controller could do. Market output is not financial advice.
+A flag in `check` means a function is present in the contract. That is not proof of abuse: it shows what the controller could do. The GoPlus scan and verification come from outside services and can be missing or wrong for new tokens. A token showing up in `launches` or `markets` is not an endorsement: run `check` first. Market output is not financial advice.
 
-Addresses must be `0x` followed by 40 hex characters, transaction hashes `0x` followed by 64. Bad input is rejected before any request is sent.
+Addresses must be `0x` followed by 40 hex characters, transaction hashes `0x` followed by 64. `moves` takes 1 to 24 hours; `chart` takes 24h, 7d or 30d. Bad input is rejected before any request is sent.
 
 ## Options
 

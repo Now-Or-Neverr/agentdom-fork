@@ -74,8 +74,62 @@ function when(v) {
   return d.toISOString().replace('T', ' ').replace(/\.\d+Z$/, ' UTC').replace(/Z$/, ' UTC');
 }
 
+function usdBig(v) {
+  // Large dollar figures (TVL, volume) in compact form: $1.06B, $387.4M.
+  if (!isNum(v)) return NA;
+  const n = Number(v);
+  const a = Math.abs(n);
+  if (a >= 1e9) return `$${(n / 1e9).toFixed(2)}B`;
+  if (a >= 1e6) return `$${(n / 1e6).toFixed(2)}M`;
+  if (a >= 1e4) return `$${(n / 1e3).toFixed(1)}K`;
+  return usd(n);
+}
+
+function ago(v) {
+  if (!v) return NA;
+  const t = new Date(v).getTime();
+  if (Number.isNaN(t)) return String(v);
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+  return `${Math.floor(s / 86400)}d ${Math.floor((s % 86400) / 3600)}h`;
+}
+
+const SPARK = '▁▂▃▄▅▆▇█';
+function sparkline(values, width = 60) {
+  let v = values.filter((x) => Number.isFinite(x));
+  if (!v.length) return '';
+  if (v.length > width) {
+    // Downsample by taking the last value of each bucket.
+    const step = v.length / width;
+    v = Array.from({ length: width }, (_, i) => v[Math.min(v.length - 1, Math.floor((i + 1) * step) - 1)]);
+  }
+  const lo = Math.min(...v);
+  const hi = Math.max(...v);
+  if (hi === lo) return SPARK[3].repeat(v.length);
+  return v.map((x) => SPARK[Math.round(((x - lo) / (hi - lo)) * (SPARK.length - 1))]).join('');
+}
+
+function changeOf(candles) {
+  const first = candles?.[0]?.o;
+  const last = candles?.at?.(-1)?.c;
+  return isNum(first) && isNum(last) && Number(first) > 0 ? ((last - first) / first) * 100 : null;
+}
+
 const short = (a) => (typeof a === 'string' && a.length > 14 ? `${a.slice(0, 6)}…${a.slice(-4)}` : a ?? NA);
+const who = (addr, name) => (name ? name : short(addr));
 const yesNo = (v) => (v === true ? 'yes' : v === false ? 'no' : 'unknown');
+// For risk questions: "yes" is the bad answer, so color it.
+const risk = (v) => (v === true ? c.red('yes') : v === false ? c.green('no') : 'unknown');
+
+function holdersTable(list) {
+  table(
+    ['#', 'Holder', 'Share', 'Balance', ''],
+    list.map((h, i) => [String(i + 1), who(h.address, h.name), pct(h.pct), amount(h.balance), h.isContract ? c.dim('contract') : '']),
+    [0, 2, 3],
+  );
+}
 
 function rows(pairs) {
   const list = pairs.filter(Boolean);
@@ -123,6 +177,12 @@ function needAddress(v, cmd) {
   return v;
 }
 
+function needToken(v, cmd, extra = '') {
+  if (!v) throw new CliError(`Missing token address. Usage: agentdom ${cmd} <token>${extra}`);
+  if (!ADDRESS_RE.test(v)) throw new CliError(`"${v}" is not a valid token address (0x followed by 40 hex characters).`);
+  return v;
+}
+
 function needHash(v) {
   if (!v) throw new CliError('Missing transaction hash. Usage: agentdom tx <hash>');
   if (!HASH_RE.test(v)) throw new CliError(`"${v}" is not a valid transaction hash (0x followed by 64 hex characters).`);
@@ -167,6 +227,18 @@ const commands = {
       ['Gas price', isNum(d.gasPriceGwei) ? `${num(d.gasPriceGwei, 6)} gwei` : NA],
       ['Base fee', isNum(d.baseFeeGwei) ? `${num(d.baseFeeGwei, 6)} gwei` : NA],
     ]);
+    const st = d.stats;
+    if (st) {
+      section('Chain stats');
+      const g = st.gas;
+      rows([
+        ['Txs today', num(st.transactionsToday, 0)],
+        ['Total txs', num(st.totalTransactions, 0)],
+        ['Total addresses', num(st.totalAddresses, 0)],
+        isNum(st.avgBlockMs) ? ['Avg block time', `${num(st.avgBlockMs, 0)} ms (explorer)`] : null,
+        g ? ['Gas slow/avg/fast', `${num(g.slow, 6)} / ${num(g.average, 6)} / ${num(g.fast, 6)} gwei`] : null,
+      ]);
+    }
     const blocks = Array.isArray(d.blocks) ? d.blocks : [];
     if (blocks.length) {
       section('Recent blocks');
@@ -193,7 +265,16 @@ const commands = {
     if (d.contractCreated) {
       lines.push(`${short(d.from)} created a new contract at ${d.contractCreated}.`);
     } else {
-      const call = d.method ? `called "${d.method}" on` : 'sent a transaction to';
+      // method is a decoded function name when known (e.g. "multicall"),
+      // "unknown (0x12345678)" when no name was found, or "plain ETH transfer".
+      const m = d.method || '';
+      const call = !m
+        ? 'sent a transaction to'
+        : m === 'plain ETH transfer'
+          ? 'sent ETH to'
+          : /^unknown\b/.test(m)
+            ? `called an unknown function ${m.replace(/^unknown\s*\(?|\)$/g, '')} on`
+            : `called "${m}" on`;
       lines.push(`${short(d.from)} ${call} ${short(d.to)}${sent ? `, sending ${amount(d.valueEth)} ETH` : ''}.`);
     }
     for (const t of d.tokenTransfers || []) {
@@ -248,18 +329,77 @@ const commands = {
       ['Kind', d.kind || NA],
       ['ETH balance', `${amount(d.ethBalance)} ETH`],
       ['Tx count', num(d.txCount, 0)],
-      ['Tokens checked', num(d.checkedTokens, 0)],
+      [d.allTokens ? 'Tokens held' : 'Tokens checked', num(d.allTokens ? (d.tokens || []).length : d.checkedTokens, 0)],
+      d.nfts ? ['NFTs', num(d.nfts.total, 0)] : null,
+      d.portfolio && isNum(d.portfolio.totalUsd) ? ['Portfolio', `${usd(d.portfolio.totalUsd)}  ${c.dim('(Zerion)')}`] : null,
     ]);
+
+    const pos = (d.portfolio?.positions || []).filter((p) => !isNum(p.valueUsd) || Number(p.valueUsd) >= 0.01);
+    if (pos.length) {
+      section('Portfolio positions');
+      table(
+        ['Asset', 'Quantity', 'Value', '1d'],
+        pos.map((p) => [p.symbol || p.name || NA, amount(p.quantity), usd(p.valueUsd), pct(p.change1dPct, true)]),
+        [1, 2, 3],
+      );
+    }
+
     const tokens = d.tokens || [];
+    const flagged = tokens.filter((t) => t.flagged);
     section('Token balances');
     if (tokens.length) {
       table(
-        ['Symbol', 'Balance', 'Name', 'Token'],
-        tokens.map((t) => [t.symbol || NA, amount(t.balance), t.name || '', short(t.address)]),
-        [1],
+        ['Symbol', 'Balance', 'Value', 'Name', 'Token', ''],
+        tokens.map((t) => [
+          t.symbol || NA,
+          amount(t.balance),
+          usd(t.valueUsd),
+          t.name || '',
+          short(t.address),
+          t.flagged ? c.yellow('flagged') : '',
+        ]),
+        [1, 2],
       );
     } else {
-      console.log('  None of the checked tokens are held.');
+      console.log(d.allTokens ? '  No tokens held.' : '  None of the checked tokens are held.');
+    }
+    if (flagged.length) {
+      console.log('');
+      console.log(c.yellow(`  ${flagged.length} flagged token(s): ${flagged.map((t) => t.symbol || short(t.address)).join(', ')}.`));
+      console.log(c.dim('  The explorer marks these as possible spam or scam tokens. Do not interact with them before a check: agentdom check <address>'));
+    }
+
+    const transfers = d.transfers || [];
+    if (transfers.length) {
+      section('Recent transfers');
+      table(
+        ['Time', 'Dir', 'Amount', 'Asset', 'Counterparty', ''],
+        transfers.map((t) => [
+          when(t.time),
+          t.direction === 'in' ? c.green('in') : t.direction === 'out' ? c.red('out') : t.direction || NA,
+          /^erc(721|1155)$/i.test(t.category) && !isNum(t.amount) ? '1' : amount(t.amount),
+          t.asset || (/^erc(721|1155)$/i.test(t.category) ? `NFT ${short(t.token)}` : short(t.token)),
+          t.direction === 'in' && /^0x0{40}$/i.test(t.from || '') ? c.dim('mint') : short(t.direction === 'in' ? t.from : t.to),
+          t.burn ? c.yellow('burn') : '',
+        ]),
+        [2],
+      );
+    }
+
+    const recent = d.recent || [];
+    if (recent.length) {
+      section('Recent transactions');
+      table(
+        ['Time', 'Method', 'To', 'Value', 'OK'],
+        recent.map((t) => [when(t.time), t.method || NA, who(t.to, t.toName), `${amount(t.valueEth)} ETH`, t.ok ? c.green('yes') : c.red('no')]),
+        [3],
+      );
+    }
+
+    const nfts = d.nfts?.items || [];
+    if (nfts.length) {
+      section(`NFTs (${num(d.nfts.total, 0)})`);
+      for (const n of nfts) console.log(`  ${n.name || `#${n.tokenId}`}${n.collection ? c.dim(`  ${n.collection}`) : ''}`);
     }
     if (d.note) {
       console.log('');
@@ -328,12 +468,63 @@ const commands = {
     } else {
       console.log('  No trading pair found.');
     }
-    if (d.holders) {
-      section('Holders');
+    const g = d.goplus;
+    section('GoPlus security scan');
+    if (g) {
+      const tax = (v) => (isNum(v) ? (Number(v) > 10 ? c.red(pct(v)) : Number(v) > 0 ? c.yellow(pct(v)) : c.green(pct(v))) : 'unknown');
       rows([
-        ['Holders', num(d.holders.count, 0)],
-        ['Top 10 hold', pct(d.holders.top10Pct)],
+        ['Buy / sell tax', `${tax(g.buyTax)} / ${tax(g.sellTax)}`],
+        ['Honeypot', risk(g.honeypot)],
+        g.cannotSellAll !== null && g.cannotSellAll !== undefined ? ['Cannot sell all', risk(g.cannotSellAll)] : null,
+        ['Mintable', risk(g.mintable)],
+        ['Owner can change balance', risk(g.ownerCanChangeBalance)],
+        ['Hidden owner', risk(g.hiddenOwner)],
+        ['Can take back ownership', risk(g.canTakeBackOwnership)],
+        ['Transfers pausable', risk(g.transferPausable)],
+        ['Blacklist', risk(g.blacklist)],
+        ['Open source', yesNo(g.openSource)],
+        ['LP locked', isNum(g.lpLockedPct) ? pct(g.lpLockedPct) : 'unknown'],
+        g.creator ? ['Creator', g.creator] : null,
+        g.sourceUrl ? ['Report', g.sourceUrl] : null,
       ]);
+    } else {
+      console.log('  No GoPlus report for this address.');
+    }
+
+    const v = d.verified;
+    const sf = d.sourcify;
+    section('Verification');
+    rows([
+      [
+        'Blockscout',
+        v?.verified
+          ? `${c.green('verified')}${v.name ? ` as ${v.name}` : ''}`
+          : v
+            ? c.yellow('not verified')
+            : 'unknown',
+      ],
+      v?.verified && v.compiler ? ['Compiler', `${v.compiler}${v.language ? ` (${v.language})` : ''}`] : null,
+      v?.verified && v.license ? ['License', v.license] : null,
+      v?.verifiedAt ? ['Verified at', when(v.verifiedAt)] : null,
+      v?.proxyType ? ['Proxy type', v.proxyType] : null,
+      ...(v?.implementations || []).map((im) => ['Implementation', `${im.address}${im.name ? `  ${im.name}` : ''}`]),
+      ['Sourcify', sf ? `${c.green(sf.match)} match${sf.verifiedAt ? `  ${c.dim(when(sf.verifiedAt))}` : ''}` : 'no match found'],
+      sf?.url ? ['Sourcify files', sf.url] : null,
+      d.reputation ? ['Explorer reputation', d.reputation === 'ok' ? d.reputation : c.yellow(d.reputation)] : null,
+    ]);
+
+    if (d.holders || d.topHolders?.length) {
+      section('Holders');
+      if (d.holders) {
+        rows([
+          ['Holders', num(d.holders.count, 0)],
+          ['Top 10 hold', pct(d.holders.top10Pct)],
+        ]);
+      }
+      if (d.topHolders?.length) {
+        console.log('');
+        holdersTable(d.topHolders.slice(0, 10));
+      }
     }
     console.log('');
     console.log(c.dim(`  ${d.note || 'A function being present is not proof of abuse: it shows what the controller could do.'}`));
@@ -460,6 +651,143 @@ const commands = {
       ['Burned', `${amount(d.burned)}${isNum(d.burnedPct) ? ` (${pct(d.burnedPct)})` : ''}`],
       d.pairUrl ? ['Chart', d.pairUrl] : null,
     ]);
+    const candles = d.chart || [];
+    if (candles.length) {
+      section('Price, last 24 h (Codex candles)');
+      console.log(`  ${sparkline(candles.map((k) => k.c))}`);
+      rows([['Change', `${pct(changeOf(candles), true)}  ${c.dim(`${candles.length} candles, ${usd(candles[0].o)} to ${usd(candles.at(-1).c)}`)}`]]);
+    }
+    if (d.topHolders?.length) {
+      section('Top holders');
+      holdersTable(d.topHolders.slice(0, 10));
+    }
+    source(d);
+    notAdvice();
+  },
+
+  async economy(api) {
+    const d = await get(api, '/tools/chain/economy');
+    if (this.json) return d;
+    title('Robinhood Chain economy');
+    rows([
+      ['TVL', usdBig(d.tvl)],
+      ['DEX volume 24h', `${usdBig(d.dexVolume24h)}  ${isNum(d.dexVolumeChange1d) ? `${pct(d.dexVolumeChange1d, true)} vs day before` : ''}`.trimEnd()],
+      ['Fees 24h', usdBig(d.fees24h)],
+      ['Stablecoins', usdBig(d.stablecoins)],
+    ]);
+    if (d.topDexes?.length) {
+      section('Top DEXes by volume (24h)');
+      table(['DEX', 'Volume 24h'], d.topDexes.map((x) => [x.name, usdBig(x.volume24h)]), [1]);
+    }
+    if (d.topFees?.length) {
+      section('Top fee earners (24h)');
+      table(['Protocol', 'Fees 24h'], d.topFees.map((x) => [x.name, usdBig(x.fees24h)]), [1]);
+    }
+    source(d);
+    notAdvice();
+  },
+
+  async holders(api, [address]) {
+    needToken(address, 'holders');
+    const d = await get(api, `/tools/chain/holders?address=${encodeURIComponent(address)}`);
+    if (this.json) return d;
+    const tk = d.token || {};
+    title(`Top holders: ${tk.name || short(address)}${tk.symbol ? ` (${tk.symbol})` : ''}`);
+    rows([
+      ['Token', tk.address || address],
+      ['Holders', num(d.holdersCount, 0)],
+      ['Total supply', amount(d.totalSupply)],
+      tk.reputation && tk.reputation !== 'ok' ? ['Reputation', c.yellow(tk.reputation)] : null,
+    ]);
+    const list = d.holders || [];
+    console.log('');
+    if (list.length) holdersTable(list);
+    else console.log('  No holders found.');
+    console.log(c.dim('\n  Pools, lockers and contracts are named where the explorer knows them.'));
+    source(d);
+  },
+
+  async moves(api, [address, hoursArg]) {
+    needToken(address, 'moves', ' [hours 1-24]');
+    let hours = 6;
+    if (hoursArg !== undefined) {
+      hours = Number(String(hoursArg).replace(/h$/i, ''));
+      if (!Number.isInteger(hours) || hours < 1 || hours > 24) throw new CliError('Hours must be a whole number from 1 to 24. Usage: agentdom moves <token> [hours]');
+    }
+    const d = await get(api, `/tools/chain/moves?address=${encodeURIComponent(address)}&hours=${hours}`);
+    if (this.json) return d;
+    const tk = d.token || {};
+    const sym = tk.symbol || short(address);
+    title(`Big moves: ${tk.name || sym}${tk.symbol ? ` (${tk.symbol})` : ''}, last ${num(d.hours, 0)} h`);
+    rows([
+      ['Transfers', `${num(d.transfers, 0)}${Number(d.transfers) >= 1000 ? c.dim(' (capped at 1,000)') : ''}`],
+      ['Burned', `${amount(d.burned)} ${sym}`],
+    ]);
+    const big = d.biggest || [];
+    section('Biggest transfers');
+    if (big.length) {
+      table(
+        ['Time', 'Amount', 'From', 'To', ''],
+        big.map((t) => [when(t.time), amount(t.amount), who(t.from, t.fromName), who(t.to, t.toName), t.burn ? c.yellow('burn') : '']),
+        [1],
+      );
+    } else {
+      console.log('  No transfers in this window.');
+    }
+    if (d.note) console.log(c.dim(`\n  ${d.note}`));
+    source(d);
+  },
+
+  async chart(api, [address, rangeArg]) {
+    needToken(address, 'chart', ' [24h|7d|30d]');
+    const ranges = { '24h': 24, '1d': 24, '7d': 168, '30d': 720 };
+    const range = (rangeArg || '24h').toLowerCase();
+    const hours = ranges[range];
+    if (!hours) throw new CliError(`Unknown range "${rangeArg}". Use 24h, 7d or 30d.`);
+    const d = await get(api, `/tools/chain/chart?address=${encodeURIComponent(address)}&hours=${hours}`);
+    if (this.json) return d;
+    const candles = d.candles || [];
+    title(`Price chart: ${d.symbol || short(address)}, last ${range === '1d' ? '24h' : range} (${d.resolution || '?'} candles)`);
+    if (!candles.length) {
+      console.log('  No price data for this token in this range.');
+      source(d);
+      return;
+    }
+    const closes = candles.map((k) => k.c);
+    const lo = Math.min(...candles.map((k) => k.l));
+    const hi = Math.max(...candles.map((k) => k.h));
+    console.log(c.dim(`  ${usd(Math.max(...closes))} highest close`));
+    console.log(`  ${sparkline(closes)}`);
+    console.log(c.dim(`  ${usd(Math.min(...closes))} lowest close`));
+    console.log('');
+    rows([
+      ['First', `${usd(candles[0].o)}  ${c.dim(when(candles[0].t))}`],
+      ['Last', `${usd(closes.at(-1))}  ${c.dim(when(candles.at(-1).t))}`],
+      ['Min close', usd(Math.min(...closes))],
+      ['Max close', usd(Math.max(...closes))],
+      ['Low / high', `${usd(lo)} / ${usd(hi)}  ${c.dim('(wicks)')}`],
+      ['Change', pct(isNum(d.changePct) ? d.changePct : changeOf(candles), true)],
+      ['Candles', num(candles.length, 0)],
+    ]);
+    source(d);
+    notAdvice();
+  },
+
+  async launches(api) {
+    const d = await get(api, '/tools/chain/launches');
+    if (this.json) return d;
+    title('New launches on Robinhood Chain');
+    const list = d.launches || [];
+    if (list.length) {
+      table(
+        ['Token', 'Name', 'Age', 'Liquidity', 'Market cap', 'Volume 24h', 'Holders', 'Address'],
+        list.map((x) => [c.bold(x.symbol || NA), x.name || '', ago(x.createdAt), usdBig(x.liquidityUsd), usdBig(x.marketCapUsd), usdBig(x.volume24h), num(x.holders, 0), x.address]),
+        [2, 3, 4, 5, 6],
+      );
+    } else {
+      console.log('  No new launches found.');
+    }
+    console.log(c.yellow('\n  A listing is not an endorsement. Check any token before touching it: agentdom check <address>'));
     source(d);
     notAdvice();
   },
@@ -485,16 +813,21 @@ Usage
   agentdom <command> [args] [--json] [--api <url>]
 
 Commands
-  pulse               Robinhood Chain pulse: latest block, gas, recent blocks
+  pulse               Chain pulse: latest block, gas, txs today, recent blocks
+  economy             Chain economy: TVL, DEX volume, fees, stablecoins, top DEXes
   tx <hash>           Explain a transaction in plain words
-  wallet <address>    ETH and token balances of an address
-  check <address>     Red-flag check of a token contract
+  wallet <address>    Balances, portfolio value, recent transfers, NFTs
+  check <address>     Token safety: red flags, GoPlus scan, verification, holders
+  holders <token>     Top holders of a token, with known names and share
+  moves <token> [h]   Biggest transfers and burns in the last 1-24 h (default 6)
+  chart <token> [r]   Price sparkline for 24h, 7d or 30d (default 24h)
+  launches            Newest tokens with liquidity, market cap and holders
   stocks [TICKERS]    Stock tokens vs Wall Street, Chainlink and the DEX
   stock <TICKER>      One stock token in depth (any of the 200+ official ones)
   actions [TICKER]    Dividends and splits for stock tokens
   oracles [stock]     Chainlink prices onchain (crypto by default)
   markets             Trending and newly launched pools on Robinhood Chain
-  token               $AGENTDOM ledger: price, holders, supply, burned
+  token               $AGENTDOM ledger: price, 24h chart, holders, supply, burned
   status              Realm status: agents, work, decrees
   help                Show this help
 
@@ -506,10 +839,15 @@ Options
 
 Examples
   agentdom pulse
-  agentdom tx 0xb832760f469e68b4e0500d3c3c66ebde7d0cd24fa7be30f7e91f133173edfecc
+  agentdom economy
+  agentdom tx 0xae4e3fc27cb9f0c870a4787c1384a3eb503bc6910a21daef6af2b9b178a16404
+  agentdom wallet 0x8C1A87C0Bc4D3545D4475916C42A60D3c51a68B3
   agentdom check 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
+  agentdom holders 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
+  agentdom moves 0x688d8c004af3c292330fea8af8a594adc8c3b0c8 12
+  agentdom chart 0x688d8c004af3c292330fea8af8a594adc8c3b0c8 7d
+  agentdom launches
   agentdom stock NVDA
-  agentdom markets
   AGENTDOM_API=http://localhost:8790 agentdom status --json
 
 This tool is read-only. It never asks for keys and never signs anything.

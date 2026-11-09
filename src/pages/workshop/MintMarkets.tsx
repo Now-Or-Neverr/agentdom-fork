@@ -2,12 +2,15 @@
 // dividends and splits, Chainlink oracles and what is trading on Robinhood Chain.
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { Search } from 'lucide-react';
-import { chainTools, num } from '../../lib/toolsApi';
+import { chainTools, compact, num } from '../../lib/toolsApi';
 import { Ext, Panel, Source, Status, useRun } from './shared';
 import { NotFinancial } from './MintTools';
+import { CandleChart, Change, Stats } from './MintCharts';
 
 const table: CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 14 };
 const cell: CSSProperties = { padding: '5px 6px', borderBottom: '1px solid rgba(127,127,127,.2)', textAlign: 'left', whiteSpace: 'nowrap' };
+// The lookup table is not in a scroll box, so its cells may wrap on a phone.
+const wrap: CSSProperties = { ...cell, whiteSpace: 'normal', verticalAlign: 'top', overflowWrap: 'break-word' };
 const usd = (v: number | null | undefined, d = 2) => (v === null || v === undefined ? '—' : '$' + v.toLocaleString('en', { minimumFractionDigits: d, maximumFractionDigits: d }));
 const small = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v < 0.01 ? '$' + v.toPrecision(3) : usd(v, v < 1 ? 4 : 2));
 const pctTxt = (p: number | null | undefined) => (p === null || p === undefined ? '—' : `${p > 0 ? '+' : ''}${p}%`);
@@ -105,44 +108,50 @@ export function StockLookupTool() {
             <table style={table}>
               <tbody>
                 <tr>
-                  <td style={cell}>Wall Street bid / ask</td>
-                  <td style={cell}>
+                  <td style={wrap}>Wall Street bid / ask</td>
+                  <td style={wrap}>
                     {usd(d.wallStreetBid)} / {usd(d.wallStreetAsk)} · day {usd(d.dailyLow)}–{usd(d.dailyHigh)}
                   </td>
                 </tr>
                 <tr>
-                  <td style={cell}>Fair token price</td>
-                  <td style={cell}>
+                  <td style={wrap}>Fair token price</td>
+                  <td style={wrap}>
                     {usd(d.fairTokenPrice)} (multiplier {d.multiplier.toFixed(6)}
                     {d.pendingMultiplier ? `, changing to ${d.pendingMultiplier.toFixed(6)}${d.pendingAt ? ` on ${d.pendingAt.slice(0, 10)}` : ''}` : ''})
                   </td>
                 </tr>
                 <tr>
-                  <td style={cell}>Robinhood token bid / ask</td>
-                  <td style={cell}>
+                  <td style={wrap}>Robinhood token bid / ask</td>
+                  <td style={wrap}>
                     {usd(d.robinhoodTokenBid)} / {usd(d.robinhoodTokenAsk)}
                   </td>
                 </tr>
                 <tr>
-                  <td style={cell}>Chainlink oracle</td>
-                  <td style={cell}>
+                  <td style={wrap}>Chainlink oracle</td>
+                  <td style={wrap}>
                     {usd(d.oraclePrice)} · updated {ago(d.oracleUpdatedAt)}
                   </td>
                 </tr>
                 <tr>
-                  <td style={cell}>DEX</td>
-                  <td style={cell}>
+                  <td style={wrap}>DEX</td>
+                  <td style={wrap}>
                     {usd(d.tokenPriceUsd)} · gap {pctTxt(d.gapPct)} · liquidity {usd(d.liquidityUsd, 0)}
                   </td>
                 </tr>
                 <tr>
-                  <td style={cell}>Supply onchain</td>
-                  <td style={cell}>
+                  <td style={wrap}>Supply onchain</td>
+                  <td style={wrap}>
                     {d.supply === null ? '—' : Number(d.supply).toLocaleString('en', { maximumFractionDigits: 2 })} tokens · minted/burned today {usd(d.mintBurnUsd, 0)}
                   </td>
                 </tr>
               </tbody>
             </table>
+            {(d.shareCandles || d.tokenCandles) && (
+              <div className="ws-grid2">
+                {d.shareCandles && <CandleChart candles={d.shareCandles} label={`${d.ticker} share, last 24 h (Chainlink)`} empty="No share price candles in this window." />}
+                {d.tokenCandles && <CandleChart candles={d.tokenCandles} label={`${d.ticker} token on DEX, last 24 h (Codex)`} empty="Not enough DEX trades yet to draw a chart." />}
+              </div>
+            )}
             {d.actions.length > 0 && (
               <>
                 <h4>Dividends and splits</h4>
@@ -283,6 +292,139 @@ export function MarketsTool({ onCheck }: { onCheck?: (address: string) => void }
               {d.dexCount ? `${d.dexCount} DEXes are active on Robinhood Chain. ` : ''}
               {d.note}
             </p>
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}
+
+export function EconomyTool() {
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.economy>>>();
+  useEffect(() => {
+    run(chainTools.economy());
+  }, []);
+  const money = (v: number | null) => (v === null ? '—' : '$' + compact(v));
+  const rank = (rows: { name: string; value: number }[]) => {
+    const max = Math.max(...rows.map((r) => r.value), 1);
+    return (
+      <ul className="ws-list">
+        {rows.map((r) => (
+          <li key={r.name} style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '4px 12px', alignItems: 'center' }}>
+            <span style={{ overflowWrap: 'anywhere' }}>{r.name}</span>
+            <b style={{ fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 13 }}>{money(r.value)}</b>
+            <span style={{ gridColumn: '1 / -1', height: 5, borderRadius: 99, background: 'var(--bg-2)', overflow: 'hidden' }}>
+              <i style={{ display: 'block', height: '100%', width: `${(r.value / max) * 100}%`, background: 'var(--gold)', borderRadius: 99 }} />
+            </span>
+          </li>
+        ))}
+      </ul>
+    );
+  };
+  return (
+    <Panel title="Robinhood Chain economy" sub="How much money lives on the chain and how much moves through it in a day: value locked, DEX volume, fees and stablecoins, from DefiLlama.">
+      <Status s={s} label="Reading DefiLlama…">
+        {(d) => (
+          <>
+            <Stats
+              items={[
+                { label: 'Value locked (TVL)', value: money(d.tvl) },
+                {
+                  label: 'DEX volume, 24 h',
+                  value: money(d.dexVolume24h),
+                  note: d.dexVolumeChange1d === null ? undefined : (
+                    <>
+                      <Change pct={d.dexVolumeChange1d} /> vs the day before
+                    </>
+                  ),
+                },
+                { label: 'Fees paid, 24 h', value: money(d.fees24h) },
+                { label: 'Stablecoins', value: money(d.stablecoins) },
+              ]}
+            />
+            {(d.topDexes.length > 0 || d.topFees.length > 0) && (
+              <div className="ws-grid2">
+                {d.topDexes.length > 0 && (
+                  <div>
+                    <h4>Top DEXes by 24 h volume</h4>
+                    {rank(d.topDexes.map((x) => ({ name: x.name, value: x.volume24h })))}
+                  </div>
+                )}
+                {d.topFees.length > 0 && (
+                  <div>
+                    <h4>Top fee earners, 24 h</h4>
+                    {rank(d.topFees.map((x) => ({ name: x.name, value: x.fees24h })))}
+                  </div>
+                )}
+              </div>
+            )}
+            <p className="ws-muted">DefiLlama totals are updated a few times a day and count only protocols it tracks.</p>
+            <NotFinancial />
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}
+
+export function LaunchesTool({ onCheck }: { onCheck?: (address: string) => void }) {
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.launches>>>();
+  useEffect(() => {
+    run(chainTools.launches());
+  }, []);
+  return (
+    <Panel title="New launches" sub="The newest tokens on Robinhood Chain with at least $1,000 of liquidity, from Codex. Press Check to run one through the contract check.">
+      <div className="ws-row ws-end">
+        <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.launches())}>
+          Refresh
+        </button>
+      </div>
+      <Status s={s} label="Reading Codex…">
+        {(d) => (
+          <>
+            {d.launches.length ? (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={table}>
+                  <thead>
+                    <tr>
+                      <th style={cell}>Token</th>
+                      <th style={cell}>Launched</th>
+                      <th style={cell}>Liquidity</th>
+                      <th style={cell}>Market cap</th>
+                      <th style={cell}>Volume 24 h</th>
+                      <th style={cell}>Holders</th>
+                      <th style={cell} />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {d.launches.map((l) => (
+                      <tr key={l.address}>
+                        <td style={{ ...cell, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis' }} title={`${l.name} (${l.symbol})`}>
+                          <Ext href={l.url}>{l.symbol || short(l.address)}</Ext> <span className="ws-muted">{l.name}</span>
+                        </td>
+                        <td style={cell}>{ago(l.createdAt)}</td>
+                        <td style={cell}>{usd(l.liquidityUsd, 0)}</td>
+                        <td style={cell}>{usd(l.marketCapUsd, 0)}</td>
+                        <td style={cell}>{usd(l.volume24h, 0)}</td>
+                        <td style={cell}>{l.holders === null ? '—' : num(l.holders, 0)}</td>
+                        <td style={cell}>
+                          {onCheck && (
+                            <button className="btn btn-sm" onClick={() => onCheck(l.address)}>
+                              Check
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="ws-muted">No new tokens with enough liquidity right now.</p>
+            )}
+            <p className="ws-muted">{d.note}</p>
             <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
           </>
         )}

@@ -113,6 +113,11 @@ export const chainTools = {
   oracles: (kind: 'crypto' | 'stock' | 'all') => req<Named<I.OracleBoard>>('/tools/chain/oracles' + qs({ kind })),
   markets: () => req<Named<I.MarketPulse>>('/tools/chain/markets'),
   agentdom: () => req<Named<I.AgentdomStats>>('/tools/chain/agentdom'),
+  economy: () => req<Named<I.ChainEconomy>>('/tools/chain/economy'),
+  holders: (address: string) => req<Named<I.TokenHolders>>('/tools/chain/holders' + qs({ address })),
+  moves: (address: string, hours = 6) => req<Named<I.TokenMoves>>('/tools/chain/moves' + qs({ address, hours })),
+  chart: (address: string, hours: 24 | 168 | 720 = 24) => req<Named<I.TokenChart>>('/tools/chain/chart' + qs({ address, hours })),
+  launches: () => req<Named<{ launches: I.Launch[]; note: string; sourceUrl: string; fetchedAt: string }>>('/tools/chain/launches'),
 };
 
 /** "12:04:31" local time, for "fetched at" labels. */

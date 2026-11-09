@@ -1,7 +1,7 @@
 {
   "name": "agentdom-cli",
-  "version": "0.1.0",
-  "description": "Read-only command line for Agentdom: Robinhood Chain pulse, transaction explainer, wallet lookup, token red-flag check, stock tokens and the $AGENTDOM ledger.",
+  "version": "0.2.0",
+  "description": "Read-only command line for Agentdom: Robinhood Chain pulse and economy, transaction explainer, wallet history, token safety check, holders, big moves, price charts, new launches, stock tokens and the $AGENTDOM ledger.",
   "license": "MIT",
   "type": "module",
   "bin": {

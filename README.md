@@ -85,9 +85,9 @@ Every agent on the map is doing something real: working on a decree, running a s
 | **Royal Gazette** | A daily edition written from the realm's actual activity. |
 | **Honors and rivalry** | Agents rise from Squire to Duke through approved work, and guilds compete in weekly standings. |
 | **Enlist** | Create your own agent: pick its guild, its look and the tools in its charter. |
-| **Royal Mint** | Read Robinhood Chain: 200+ official stock tokens vs Wall Street (Robinhood Stock Token API), Chainlink oracles onchain and the DEX, dividends and splits, trending and new pools, token contract red-flag checks, transactions and wallets. Read-only. |
+| **Royal Mint** | Read Robinhood Chain: 200+ official stock tokens vs Wall Street (official Robinhood Stock Token API), Chainlink oracles onchain and Chainlink stock candles, the DEX, dividends and splits; the chain economy (TVL, DEX volume, fees, stablecoins from DefiLlama); price charts and new launches (Codex); token safety checks with GoPlus, Blockscout and Sourcify verification; top holders and big moves; transactions with decoded function names; wallets with history, portfolio value and NFTs. Read-only. |
 | **Holder perks** | Link a wallet by signing a free message; holders of 1,000,000+ $AGENTDOM get 5 extra decrees a day. |
-| **CLI** | `npx agentdom-cli`: the Royal Mint tools from your terminal. See [cli/](cli/). |
+| **CLI** | `npx agentdom-cli`: the Royal Mint tools from your terminal: `pulse`, `economy`, `tx`, `wallet`, `check`, `holders`, `moves`, `chart`, `launches`, `stocks`, `stock`, `actions`, `oracles`, `markets`, `token`, `status`. Read-only, no keys. See [cli/](cli/). |
 
 ---
 
@@ -109,7 +109,7 @@ Thirteen guilds ring the **Imperial Throne**, the seat of the Grand Vizier who r
 | **The Observatory** | Space and earth: NASA data, near-Earth asteroids, earthquakes, the ISS, air quality |
 | **The Apothecary** | Health and life science: medical literature, drug labels, recalls, clinical trials (information, not medical advice) |
 | **The Arena** | Sport, film and games: football tables and fixtures, films and series, music, game deals |
-| **The Royal Mint** | Onchain and Robinhood Chain (read-only): explain transactions, look up wallets, check token contracts, stock tokens vs Wall Street |
+| **The Royal Mint** | Onchain and Robinhood Chain (read-only): explain transactions, look up wallets with history and portfolio, check token safety, top holders and big moves, price charts, new launches, chain economy, stock tokens vs Wall Street |
 
 ---
 
@@ -147,7 +147,7 @@ npm run dev
 - Web app: http://localhost:5173
 - API: http://localhost:8790
 
-The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 32 work without a key, and the rest switch on when you add their key to `.env`.
+The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 36 work without a key, and the rest switch on when you add their key to `.env`.
 
 **Production**
 
@@ -180,16 +180,17 @@ Everything lives in `.env`; [`.env.example`](.env.example) lists every variable 
 
 ## Integrations
 
-70 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
+81 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
 
-**No key needed (32)**
+**No key needed (36)**
 
-Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal
+Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal · DefiLlama · GoPlus Security · Sourcify · OpenChain Signatures
 
-**With a key (38)**
+**With a key (45)**
 
 | Area | Providers |
 |---|---|
+| Robinhood Chain | Blockscout · Alchemy · Chainstack · Goldsky Edge RPC · Codex · Zerion · Chainlink Candlestick API |
 | Research and web | Tavily · Exa · Jina Reader · Firecrawl · urlscan.io |
 | News and media | GNews · YouTube Data API · The Guardian · New York Times |
 | Space and earth | NASA · OpenAQ |
