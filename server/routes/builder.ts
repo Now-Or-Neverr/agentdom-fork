@@ -231,7 +231,26 @@ function shell(title: string, slug: string, body: string, head = '') {
 <body><main><div class="bar"><span>${esc(title)}</span><a href="?download=1" target="_blank" rel="noopener">Download</a></div><div class="doc">${body}</div></main>${badge(slug)}</body></html>`;
 }
 
+// Cloudflare's Email Obfuscation turns addresses into "[email protected]" and needs its own script
+// to decode them, which the sandboxed /p/ page blocks. email_off keeps addresses as written.
+function emailOff(html: string) {
+  const open = /<body\b[^>]*>/i.exec(html);
+  const close = html.toLowerCase().lastIndexOf('</body>');
+  if (open && close > open.index) {
+    const at = open.index + open[0].length;
+    return html.slice(0, at) + '<!--email_off-->' + html.slice(at, close) + '<!--/email_off-->' + html.slice(close);
+  }
+  const doc = /^\s*<!doctype[^>]*>/i.exec(html);
+  const at = doc ? doc[0].length : 0;
+  return html.slice(0, at) + '<!--email_off-->' + html.slice(at) + '<!--/email_off-->';
+}
+
 function render(b: any, opts: { thumb: boolean; local: boolean }): { type: string; body: string } {
+  const r = renderRaw(b, opts);
+  return r.type.startsWith('text/html') ? { ...r, body: emailOff(r.body) } : r;
+}
+
+function renderRaw(b: any, opts: { thumb: boolean; local: boolean }): { type: string; body: string } {
   const ext = extOf(b.filename);
   const c: string = b.content;
   if (ext === 'html') {
