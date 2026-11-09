@@ -44,7 +44,7 @@ export { musicBrainzArtist, gameDeals, freeGames, FREE_GAME_PLATFORMS, type Game
 // Forge (vulnerabilities) / Bazaar (recipes)
 export { osvQuery, OSV_ECOSYSTEMS, type OsvEcosystem, type Vuln, type VulnReport } from './osv';
 export { mealSearch, type Meal, type MealSearch } from './mealdb';
-export { AGENTDOM_CA, CHAIN as ROBINHOOD_CHAIN, STOCK_TICKERS, agentdomStats, chainPulse, checkAddress, checkTxHash, corporateActions, explainTx, formatTokens, inspectAddress, marketPulse, oraclePrices, scanContract, stockBoard, stockDetail, stockTokenList, tokenBalance, type CorporateAction, type MarketPulse, type OracleBoard, type StockDetail, type AddressReport, type AgentdomStats, type ChainPulse, type ContractReport, type StockBoard, type TxExplained } from './robinhood';
+export { AGENTDOM_CA, CHAIN as ROBINHOOD_CHAIN, STOCK_TICKERS, agentdomStats, chainPulse, checkAddress, checkTxHash, blockscoutOn, chainStats, corporateActions, explainTx, tokenHolders, type HolderRow, type TokenHolders, type TxRow, formatTokens, inspectAddress, marketPulse, oraclePrices, scanContract, stockBoard, stockDetail, stockTokenList, tokenBalance, type CorporateAction, type MarketPulse, type OracleBoard, type StockDetail, type AddressReport, type AgentdomStats, type ChainPulse, type ContractReport, type StockBoard, type TxExplained } from './robinhood';
 // Lantern Theatre (local ffmpeg, no external API)
 export { makeSlideshow, type SlideshowInput, type Slideshow } from './video';
 
