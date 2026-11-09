@@ -807,6 +807,178 @@ const commands = {
   },
 };
 
+
+// ---------- realm and workshop commands (non-chain) ----------
+// Every guild workshop tool and the public realm pages, printed by one generic formatter.
+// Issuing decrees, builds and quests is not possible here: those need the website's human check.
+
+const SKIP_KEYS = new Set(['provider', 'name', 'sourceUrl', 'fetchedAt', 'image', 'imageUrl', 'poster', 'logo', 'thumbnail', 'crest', 'icon', 'avatar', 'look', 'color', 'html', 'svg']);
+const LABEL_KEYS = ['title', 'headline', 'name', 'label', 'symbol', 'word', 'team', 'place', 'city', 'kind', 'type'];
+const isPrim = (v) => v === null || ['string', 'number', 'boolean'].includes(typeof v);
+const human = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/^./, (s) => s.toUpperCase());
+function fmtVal(k, v) {
+  if (v === null || v === undefined || v === '') return NA;
+  if (typeof v === 'boolean') return v ? 'yes' : 'no';
+  if (typeof v === 'number') return /year|^date|block|count|^id$/i.test(k) ? String(v) : /usd|price|value|cost/i.test(k) ? usd(v) : num(v, 4);
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return when(s);
+  return s.length > 220 ? s.slice(0, 217) + '…' : s;
+}
+function itemLine(it) {
+  if (isPrim(it)) return fmtVal('', it);
+  const keys = 'slug' in it && it.name ? ['name', ...LABEL_KEYS] : LABEL_KEYS;
+  const label = keys.map((k) => it[k]).find((v) => typeof v === 'string' && v);
+  const shown = keys.find((k) => it[k] === label);
+  const extras = Object.entries(it)
+    .filter(([k, v]) => isPrim(v) && v !== null && v !== '' && !SKIP_KEYS.has(k) && k !== shown && !/url|link|href|^id$|slug|Id$/i.test(k))
+    .slice(0, 5)
+    .map(([k, v]) => `${c.dim(human(k).toLowerCase() + ':')} ${fmtVal(k, v)}`);
+  return [label ? c.bold(label) : null, ...extras].filter(Boolean).join('  ');
+}
+function show(v, depth = 0) {
+  const ind = '  '.repeat(depth + 1);
+  if (Array.isArray(v)) {
+    if (!v.length) return console.log(`${ind}${c.dim('(none)')}`);
+    for (const it of v.slice(0, 20)) {
+      console.log(`${ind}- ${itemLine(it)}`);
+      const link = it && typeof it === 'object' ? it.url || it.link || it.sourceUrl : null;
+      if (link && depth < 2) console.log(`${ind}  ${c.dim(link)}`);
+    }
+    if (v.length > 20) console.log(`${ind}${c.dim(`… and ${v.length - 20} more (use --json for all)`)}`);
+    return;
+  }
+  if (!v || typeof v !== 'object') return console.log(`${ind}${fmtVal('', v)}`);
+  // a Section from the server: { provider, name, ok, data, error }
+  if ('ok' in v && 'data' in v && 'provider' in v) {
+    section(v.name || v.provider);
+    if (!v.ok) return console.log(`  ${c.yellow('unavailable:')} ${v.error || 'no answer'}`);
+    return show(v.data, depth);
+  }
+  const prims = Object.entries(v).filter(([k, x]) => isPrim(x) && !SKIP_KEYS.has(k) && x !== null && x !== '');
+  if (prims.length) rows(prims.map(([k, x]) => [human(k), fmtVal(k, x)]));
+  for (const [k, x] of Object.entries(v)) {
+    if (isPrim(x) || SKIP_KEYS.has(k) || x === undefined) continue;
+    if (Array.isArray(x) || (x && typeof x === 'object')) {
+      if (!('ok' in (x || {}) && 'provider' in (x || {}))) section(human(k));
+      show(x, Array.isArray(x) ? 0 : depth);
+    }
+  }
+}
+async function post(base, path, body) {
+  const url = base.replace(/\/+$/, '') + '/api' + path;
+  let res;
+  try {
+    res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json', 'user-agent': `agentdom-cli/${VERSION}` }, body: JSON.stringify(body), signal: AbortSignal.timeout(60_000) });
+  } catch (e) {
+    throw new CliError(`Could not reach ${base} (${e?.cause?.code || e.message}).`);
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new CliError(data?.error || `Request failed with HTTP ${res.status}.`);
+  return data;
+}
+const qsOf = (o) => {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== null && v !== '') p.set(k, String(v));
+  const s = p.toString();
+  return s ? `?${s}` : '';
+};
+
+// name: [path, params (positional), { rest: last param takes the remaining words, need: required count, help, title, post, notAdvice }]
+const SIMPLE = {
+  // realm
+  realm: ['/realm/live', [], { title: 'The realm right now', help: 'Live map summary: agents at work, weather, holiday, ledger' }],
+  agents: ['/agents', [], { title: 'Agents', help: 'Every agent: guild, title, rank, rating' }],
+  agent: ['/agents/:id', ['id'], { need: 1, title: 'Agent', help: 'One agent by id or slug, e.g. agent corvin' }],
+  guilds: ['/provinces', [], { title: 'Guilds', help: 'The guilds of the realm' }],
+  commissions: ['/commissions', [], { title: 'Commissions', help: 'Ready-made commissions in the Decree Hall' }],
+  gazette: ['/gazette', ['date'], { title: 'The Royal Gazette', help: 'Today’s gazette, or gazette YYYY-MM-DD' }],
+  honors: ['/leaderboard', [], { title: 'Hall of Honors', help: 'Agents ranked by approved work' }],
+  rivalry: ['/rivalry', ['week'], { title: 'Guild rivalry', help: 'This week’s guild standings' }],
+  gallery: ['/gallery', [], { title: 'Public gallery', help: 'Approved work people chose to share' }],
+  activity: ['/activity', [], { title: 'Royal ledger', help: 'Latest activity in the realm' }],
+  decree: ['/decrees/:id/public', ['id'], { need: 1, title: 'Decree', help: 'A shared decree by id' }],
+  templates: ['/quests/templates', [], { title: 'Quest templates', help: 'Multi-guild quest templates' }],
+  duties: ['/duties', [], { title: 'Royal duties', help: 'Automatic duties the agents run' }],
+  couriers: ['/integrations', [], { title: 'Royal Couriers', help: 'Every API the realm calls, with 24 h stats' }],
+  // workshop tools
+  weather: ['/tools/weather', ['city'], { rest: true, title: 'Weather', help: 'weather <city>' }],
+  fx: ['/tools/fx', ['from', 'to', 'amount'], { need: 2, title: 'Exchange rate', help: 'fx USD IDR [amount]' }],
+  holidays: ['/tools/holidays', ['country', 'year'], { title: 'Public holidays', help: 'holidays [ID] [2026]' }],
+  worldbank: ['/tools/worldbank', ['country', 'indicator'], { need: 1, title: 'World Bank', help: 'worldbank ID [gdp|gdp-per-capita|growth|inflation|population|unemployment|internet|exports]' }],
+  define: ['/tools/words', ['word'], { need: 1, title: 'Word desk', help: 'define <word>' }],
+  research: ['/tools/research', ['q'], { rest: true, need: 1, title: 'Research', help: 'research <topic> (papers, books, encyclopedia)' }],
+  search: ['/tools/websearch', ['q'], { rest: true, need: 1, title: 'Web search', help: 'search <query>' }],
+  read: ['/tools/readlink', ['url'], { need: 1, title: 'Read a link', help: 'read <url>' }],
+  audit: ['/tools/audit', ['url', 'strategy'], { need: 1, title: 'Site audit', help: 'audit <url> [mobile|desktop] (PageSpeed)' }],
+  repo: ['/tools/repo', ['repo'], { need: 1, title: 'Repository', help: 'repo <owner/name>' }],
+  similar: ['/tools/similar', ['url'], { need: 1, title: 'Similar companies', help: 'similar <company url>' }],
+  places: ['/tools/places', ['place', 'category'], { need: 1, title: 'Local businesses', help: 'places <city> [category]' }],
+  quote: ['/tools/stock', ['symbol'], { need: 1, title: 'Stock quote', help: 'quote <SYMBOL> (Finnhub)', notAdvice: true }],
+  fred: ['/tools/fred', ['series'], { need: 1, title: 'FRED series', help: 'fred <SERIES_ID>' }],
+  wolfram: ['/tools/wolfram', ['q'], { rest: true, need: 1, title: 'Wolfram|Alpha', help: 'wolfram <question>' }],
+  news: ['/tools/news', ['q'], { rest: true, title: 'News', help: 'news [topic]' }],
+  trends: ['/tools/trends', ['q'], { rest: true, title: 'Trends', help: 'trends [topic] (HN, Mastodon)' }],
+  youtube: ['/tools/youtube', ['q'], { rest: true, title: 'YouTube', help: 'youtube [query]' }],
+  cases: ['/tools/cases', ['q'], { rest: true, need: 1, title: 'Case law', help: 'cases <query> (CourtListener)' }],
+  regulations: ['/tools/regulations', ['q'], { rest: true, need: 1, title: 'Federal Register', help: 'regulations <query>' }],
+  space: ['/tools/space', [], { title: 'Sky and ground right now', help: 'Earthquakes, the ISS, asteroids today' }],
+  apod: ['/tools/apod', ['date'], { title: 'NASA picture of the day', help: 'apod [YYYY-MM-DD]' }],
+  air: ['/tools/air', ['city'], { rest: true, need: 1, title: 'Air quality', help: 'air <city> (OpenAQ)' }],
+  drug: ['/tools/drug', ['name'], { rest: true, need: 1, title: 'Drug label', help: 'drug <name> (openFDA; information, not medical advice)' }],
+  recalls: ['/tools/recalls', ['kind', 'q'], { title: 'FDA recalls', help: 'recalls [drug|food|device] [query]' }],
+  medresearch: ['/tools/medresearch', ['q'], { rest: true, need: 1, title: 'Medical research', help: 'medresearch <topic> (PubMed, trials)' }],
+  football: ['/tools/football', ['competition'], { title: 'Football', help: 'football [PL|PD|BL1|SA|FL1|CL|…]' }],
+  films: ['/tools/screen', ['q'], { rest: true, title: 'Films and TV', help: 'films [title] (TMDB; empty = trending)' }],
+  music: ['/tools/music', ['artist'], { rest: true, title: 'Music', help: 'music [artist] (Last.fm; empty = chart)' }],
+  games: ['/tools/games', ['title'], { rest: true, title: 'Game deals', help: 'games [title] (CheapShark, FreeToGame)' }],
+  grammar: ['/tools/grammar', ['text'], { rest: true, need: 1, post: true, title: 'Grammar check', help: 'grammar "<English text>" (LanguageTool)' }],
+};
+
+for (const [name, [path, params, opt]] of Object.entries(SIMPLE)) {
+  commands[name] = async function (api, args) {
+    const vals = {};
+    params.forEach((p, i) => {
+      vals[p] = opt.rest && i === params.length - 1 ? args.slice(i).join(' ') : args[i];
+    });
+    const given = params.filter((p) => vals[p]).length;
+    if (opt.need && given < opt.need) throw new CliError(`Missing input. Usage: agentdom ${opt.help}`);
+    let p = path;
+    const query = {};
+    for (const k of params) {
+      if (p.includes(`:${k}`)) p = p.replace(`:${k}`, encodeURIComponent(vals[k] ?? ''));
+      else query[k] = vals[k];
+    }
+    if (name === 'fx' && query.from) {
+      query.from = query.from.toUpperCase();
+      query.to = (query.to || '').toUpperCase();
+    }
+    if (name === 'quote' && query.symbol) query.symbol = query.symbol.toUpperCase();
+    if (name === 'worldbank') {
+      const WB = { gdp: 'NY.GDP.MKTP.CD', 'gdp-per-capita': 'NY.GDP.PCAP.CD', growth: 'NY.GDP.MKTP.KD.ZG', inflation: 'FP.CPI.TOTL.ZG', population: 'SP.POP.TOTL', unemployment: 'SL.UEM.TOTL.ZS', internet: 'IT.NET.USER.ZS', exports: 'NE.EXP.GNFS.ZS' };
+      if (query.indicator) query.indicator = WB[query.indicator.toLowerCase()] || query.indicator;
+    }
+    if (name === 'agent' && p.includes('/agents/')) {
+      // accept a name or slug as well as an id
+      const id = vals.id || '';
+      if (!/^agt_/.test(id)) {
+        const list = await get(api, '/agents');
+        const hit = (Array.isArray(list) ? list : []).find((a) => [a.slug, a.name, a.id].some((x) => String(x || '').toLowerCase() === id.toLowerCase()));
+        if (!hit) throw new CliError(`No agent called "${id}". Run "agentdom agents" for the list.`);
+        p = `/agents/${encodeURIComponent(hit.id)}`;
+      }
+    }
+    const d = opt.post ? await post(api, p, query) : await get(api, p + qsOf(query));
+    if (this.json) return d;
+    title(opt.title);
+    show(d);
+    if (d && typeof d === 'object' && !Array.isArray(d) && d.sourceUrl) source(d);
+    if (opt.notAdvice) notAdvice();
+  };
+}
+const MORE_HELP = Object.entries(SIMPLE)
+  .map(([n, [, , o]]) => `  ${pad(n, 18)}${o.help}`)
+  .join('\n');
+
 const HELP = `agentdom ${VERSION}: read-only command line for Agentdom and Robinhood Chain
 
 Usage
@@ -830,6 +1002,10 @@ Commands
   token               $AGENTDOM ledger: price, 24h chart, holders, supply, burned
   status              Realm status: agents, work, decrees
   help                Show this help
+
+
+Realm and guild workshops (not onchain)
+${MORE_HELP}
 
 Options
   --json              Print the raw JSON from the API

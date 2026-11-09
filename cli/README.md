@@ -67,6 +67,33 @@ A flag in `check` means a function is present in the contract. That is not proof
 
 Addresses must be `0x` followed by 40 hex characters, transaction hashes `0x` followed by 64. `moves` takes 1 to 24 hours; `chart` takes 24h, 7d or 30d. Bad input is rejected before any request is sent.
 
+## Realm and guild workshops
+
+Everything the realm shows and every guild workshop tool, not only Robinhood Chain:
+
+| Command | What it shows |
+|---|---|
+|  | The live map: agents at work, weather, next holiday, ledger |
+|  /  | Every agent, or one agent by name |
+| , ,  | Guilds, ready-made commissions, quest templates |
+|  | The Royal Gazette |
+| , , ,  | Hall of Honors, guild standings, shared work, latest activity |
+|  | A decree someone shared |
+| ,  | Automatic duties, and every API the realm calls |
+| ,  | Weather and air quality |
+| , ,  | Exchange rates, public holidays, World Bank figures |
+| ,  | Word desk and grammar check |
+| , ,  | Web search, research sources, read a link |
+| , ,  | News, trends, YouTube |
+| , ,  | Stock quote, FRED series, Wolfram|Alpha |
+| ,  | Case law and the Federal Register |
+| , , ,  | Site audit, GitHub repository, similar companies, local businesses |
+| ,  | Earthquakes, the ISS, asteroids, NASA picture of the day |
+| , ,  | Drug labels, FDA recalls, medical research (information, not medical advice) |
+| , , ,  | Football, films and TV, music, game deals |
+
+Run  for the full list with examples.
+
 ## Options
 
 - `--json` prints the raw JSON from the API instead of the formatted view, for scripts and piping into `jq`.
