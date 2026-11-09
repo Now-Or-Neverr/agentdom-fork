@@ -341,13 +341,65 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     {
       name: 'stock_tokens',
       label: 'Stock tokens vs Wall Street',
-      description: 'Official Robinhood stock tokens on Robinhood Chain (confirmed onchain by their uiMultiplier), each with its DEX price, liquidity, the real share price from Finnhub, the multiplier, the fair token price (share price x multiplier) and the gap in percent. Share prices may be delayed or the last close. Not financial advice.',
-      schema: obj({}, []),
+      description: 'Robinhood stock tokens on Robinhood Chain (official list from the Robinhood Stock Token API) compared four ways: Wall Street bid/ask (Robinhood live quote), fair token price (mid x multiplier), Robinhood token bid/ask, the Chainlink oracle price read onchain, and the DEX price with liquidity, plus the DEX gap in percent. Default symbols: ' + I.STOCK_TICKERS.join(', ') + '. Not financial advice.',
+      schema: obj({ symbols: { type: 'array', items: { type: 'string' }, description: 'Optional tickers, max 15, e.g. ["NVDA","TSLA"].' } }, []),
       doing: () => 'Comparing stock tokens with Wall Street prices',
+      run: async (i, c) => {
+        const syms = Array.isArray(i.symbols) ? (i.symbols as unknown[]).map(String).filter((s) => /^[A-Za-z.]{1,8}$/.test(s)).slice(0, 15) : [];
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.stockBoard(ctxOf(c), syms.length ? syms : undefined);
+        return { data: r, summary: `${r.tokens.length} stock tokens compared`, sourceName: name('robinhoodapi'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'stock_token',
+      label: 'One stock token in depth',
+      description: 'Everything about one Robinhood stock token (ticker like "AAPL" or its contract address): Wall Street bid/ask, daily high/low and volume, token bid/ask, Chainlink oracle price, DEX price and liquidity, multiplier and any pending change, supply onchain, mint/burn volume today, trading halt, and its dividends and splits.',
+      schema: obj({ symbol: { type: 'string', description: 'Ticker (e.g. "AAPL") or token contract address.' } }, ['symbol']),
+      doing: (i) => `Reading the ${String(i.symbol ?? '').toUpperCase()} stock token`,
+      run: async (i, c) => {
+        const symbol = str(i, 'symbol', 60);
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.stockDetail(symbol, ctxOf(c));
+        return { data: r, summary: `${r.ticker} · fair $${r.fairTokenPrice?.toFixed(2) ?? '?'} · oracle $${r.oraclePrice?.toFixed(2) ?? '?'}`, sourceName: name('robinhoodapi'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'corporate_actions',
+      label: 'Dividends and splits',
+      description: 'Dividends and stock splits Robinhood is processing or has processed for its stock tokens, newest first: symbol, type, amount or ratio, process date and status. Optionally for one ticker.',
+      schema: obj({ symbol: { type: 'string', description: 'Optional ticker, e.g. "AAPL".' } }, []),
+      doing: () => 'Reading dividends and splits',
+      run: async (i, c) => {
+        const symbol = optStr(i, 'symbol', 10);
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.corporateActions(ctxOf(c), symbol, 25);
+        return { data: r, summary: `${r.actions.length} corporate action(s)${symbol ? ` for ${symbol.toUpperCase()}` : ''}`, sourceName: name('robinhoodapi'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'oracle_prices',
+      label: 'Chainlink prices onchain',
+      description: 'Chainlink data feed prices on Robinhood Chain, read onchain: crypto (BTC, ETH, LINK, stablecoins) and/or stock feeds (24/7), each with its last update time and feed link.',
+      schema: obj({ kind: { type: 'string', enum: ['crypto', 'stock', 'all'], description: 'Default crypto.' } }, []),
+      doing: () => 'Reading Chainlink oracles onchain',
+      run: async (i, c) => {
+        const kind = oneOf(i, 'kind', ['crypto', 'stock', 'all'], 'crypto') as 'crypto' | 'stock' | 'all';
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.oraclePrices(ctxOf(c), kind, 40);
+        return { data: r, summary: `${r.feeds.length} Chainlink feeds (${kind})`, sourceName: name('chainlink'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'market_pulse',
+      label: 'What is trading on Robinhood Chain',
+      description: 'Trending pools and the newest pools on Robinhood Chain (GeckoTerminal): pair, DEX, token address, price, liquidity, 24 h volume and change, created time. Being listed is not an endorsement: suggest contract_check before anyone touches a token.',
+      schema: obj({}, []),
+      doing: () => 'Watching the Robinhood Chain markets',
       run: async (_i, c) => {
         cap(c, 'chain', 10, 'Chain');
-        const r = await I.stockBoard(ctxOf(c));
-        return { data: r, summary: `${r.tokens.length} stock tokens compared`, sourceName: name('dexscreener'), sourceUrl: r.sourceUrl };
+        const r = await I.marketPulse(ctxOf(c), 10);
+        return { data: r, summary: `${r.trending.length} trending · ${r.newest.length} new pools`, sourceName: name('geckoterminal'), sourceUrl: r.sourceUrl };
       },
     },
     {
@@ -2306,7 +2358,7 @@ const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   observatory: ['nasa_apod', 'near_earth_asteroids', 'nasa_images', 'earthquakes', 'iss_position', 'air_quality', 'current_weather', 'web_search', 'search_arxiv'],
   apothecary: ['drug_label', 'fda_recalls', 'pubmed_search', 'clinical_trials', 'nutrition_lookup', 'web_search', 'read_url'],
   arena: ['football_table', 'football_matches', 'film_search', 'film_trending', 'music_charts', 'music_artist', 'game_deals', 'free_games', 'youtube_search', 'web_search', 'design_image'],
-  mint: ['chain_pulse', 'chain_tx', 'chain_address', 'contract_check', 'stock_tokens', 'agentdom_token', 'stock_quote', 'web_search', 'read_url'],
+  mint: ['chain_pulse', 'chain_tx', 'chain_address', 'contract_check', 'stock_tokens', 'stock_token', 'corporate_actions', 'oracle_prices', 'market_pulse', 'agentdom_token', 'stock_quote', 'company_news', 'web_search', 'read_url'],
 };
 
 export const toolNamesFor = (p: ProvinceId) => [...(GUILD_TOOLS[p] ?? []), ...COMMON];
@@ -2395,7 +2447,7 @@ export function toolGuidance(p: ProvinceId): string {
       ].join('\n');
     case 'mint':
       return [
-        '- Use chain_pulse, chain_tx, chain_address and contract_check (Robinhood Chain public RPC), stock_tokens (DexScreener + Finnhub) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
+        '- Use chain_pulse, chain_tx, chain_address and contract_check (Robinhood Chain RPC), stock_tokens / stock_token / corporate_actions (official Robinhood Stock Token API + Chainlink oracles + DEX), oracle_prices (Chainlink onchain), market_pulse (GeckoTerminal) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
         '- Read-only: you cannot send, sign or trade anything. Never tell anyone to buy or sell, never predict prices, and end any token or market answer with: "Not financial advice."',
         '- contract_check shows what a contract could do (mint, pause, blacklist, fees). Explain each flag in plain words and say that a present function is not proof of abuse; a renounced owner cannot use owner-only functions.',
       ].join('\n');

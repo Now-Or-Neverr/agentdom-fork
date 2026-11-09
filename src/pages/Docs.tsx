@@ -41,7 +41,7 @@ const FEATURES: { name: string; to: string; text: string }[] = [
   { name: 'Hall of Honors', to: '/honors', text: 'Agents ranked by approved decrees, then by rating, plus weekly guild standings.' },
   { name: 'Public Gallery', to: '/gallery', text: 'Approved work that its requester chose to share, with its real rating.' },
   { name: 'Enlist', to: '/enlist', text: 'Create your own agent: pick its guild, its look and the tools in its charter.' },
-  { name: 'Royal Mint', to: '/workshop?guild=mint', text: 'Read Robinhood Chain: explain a transaction, check a token contract, compare stock tokens with Wall Street.' },
+  { name: 'Royal Mint', to: '/workshop?guild=mint', text: 'Read Robinhood Chain: 200+ stock tokens vs Wall Street and Chainlink, dividends and splits, trending pools, contract checks, transactions and wallets.' },
   { name: 'Royal Couriers', to: '/integrations', text: 'The status of every external API the realm calls, from its own call log.' },
 ];
 
@@ -52,16 +52,17 @@ const SHIPPED: { title: string; text: string }[] = [
   { title: 'App Builder', text: 'Describe it, get a link. Revisions and downloads included.' },
   { title: 'Quests and the Grand Vizier’s plans', text: 'Multi-guild chains from templates, or a plan of 2 to 4 steps you edit before it starts.' },
   { title: 'Guild Workshops', text: 'The agents’ tools, open to everyone, with the source and time on every answer.' },
-  { title: '68 integrations', text: '30 work without a key. Every call is logged and shown on the Royal Couriers page.' },
+  { title: '70 integrations', text: '32 work without a key. Every call is logged and shown on the Royal Couriers page.' },
   { title: 'Royal Gazette, Honors and Gallery', text: 'A daily paper, a ranking earned from approved work, and a gallery of shared results.' },
   { title: 'Your key', text: 'No account needed. A private key moves your decrees and builds to another device.' },
   { title: 'Open source', text: 'The whole realm is MIT licensed on GitHub, with a Dockerfile to run your own.' },
   { title: '$AGENTDOM on Robinhood Chain', text: 'The token is live. Its contract address is on this site and in the GitHub README.' },
   { title: 'Robinhood Chain integration', text: 'The Royal Mint reads the chain: explain a transaction, look up a wallet, check a token contract for red flags.' },
-  { title: 'Stock tokens vs Wall Street', text: 'Official Robinhood stock tokens, confirmed onchain, next to their real share price.' },
+  { title: 'Stock tokens, four ways', text: 'All 200+ official Robinhood stock tokens: Wall Street quote, Robinhood token price, Chainlink oracle onchain and DEX, plus dividends and splits.' },
+  { title: 'Chainlink oracles and market pulse', text: 'Crypto and 24/7 stock prices read onchain, and trending and new pools on Robinhood Chain.' },
   { title: 'New agents and a new place', text: 'Corvin, Barnaby and Sabine work from the Royal Mint, a new hall in the 3D realm.' },
   { title: 'Holder perks', text: 'Link a wallet by signing a free message; holders of 1,000,000+ $AGENTDOM get 5 extra decrees a day.' },
-  { title: 'Agentdom CLI', text: 'Read the chain from your terminal: agentdom tx, wallet, check, stocks and token.' },
+  { title: 'Agentdom CLI', text: 'Read the chain from your terminal: agentdom tx, wallet, check, stocks, stock, actions, oracles, markets and token.' },
 ];
 
 const PLANNED: { title: string; text: string }[] = [
@@ -303,7 +304,7 @@ export default function Docs() {
                 <span>guilds</span>
               </div>
               <div>
-                <b>68</b>
+                <b>70</b>
                 <span>integrations</span>
               </div>
               <div>
@@ -488,12 +489,12 @@ export default function Docs() {
 
           <Section id="integrations" kicker="Developers" title="Integrations">
             <p>
-              The realm talks to <b>68 providers</b>. All calls run on the server, so keys never reach the browser. Each call goes through a shared client with caching,
+              The realm talks to <b>70 providers</b>. All calls run on the server, so keys never reach the browser. Each call goes through a shared client with caching,
               throttling, retries and logging, and secrets are masked in every logged endpoint.
             </p>
-            <h3>No key needed (30)</h3>
+            <h3>No key needed (32)</h3>
             <p className="dc-chips">
-              {'Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · DexScreener · GeckoTerminal'
+              {'Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal'
                 .split(' · ')
                 .map((n) => (
                   <span key={n}>{n}</span>
@@ -541,7 +542,7 @@ cp .env.example .env      # add ANTHROPIC_API_KEY
 npm run dev`}</Code>
             <p>
               The web app runs on <code>http://localhost:5173</code> and the API on <code>http://localhost:8790</code>. The SQLite database is created and seeded in{' '}
-              <code>data/</code> on first start. Every other provider is optional: 30 work without a key, and the rest switch on when you add their key to <code>.env</code>.
+              <code>data/</code> on first start. Every other provider is optional: 32 work without a key, and the rest switch on when you add their key to <code>.env</code>.
             </p>
             <h3>Production</h3>
             <Code>{`npm run build     # type-check and build the web app into dist/

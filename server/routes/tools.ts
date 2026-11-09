@@ -695,7 +695,7 @@ router.get(
 router.get(
   '/tools/chain/pulse',
   h(async (req, res) => {
-    ws(req, 'chain', 30);
+    ws(req, 'chain-pulse', 30);
     res.json(single('robinhoodrpc', await run(I.chainPulse(WS('chain-pulse')))));
   }),
 );
@@ -703,7 +703,7 @@ router.get(
   '/tools/chain/tx',
   h(async (req, res) => {
     const hash = text(req.query.hash, 80, 'hash');
-    ws(req, 'chain', 30);
+    ws(req, 'chain-tx', 30);
     res.json(single('robinhoodrpc', await run(I.explainTx(hash, WS('chain-tx')))));
   }),
 );
@@ -711,7 +711,7 @@ router.get(
   '/tools/chain/address',
   h(async (req, res) => {
     const address = text(req.query.address, 60, 'address');
-    ws(req, 'chain', 20);
+    ws(req, 'chain-address', 20);
     res.json(single('robinhoodrpc', await run(I.inspectAddress(address, WS('chain-address')))));
   }),
 );
@@ -719,21 +719,55 @@ router.get(
   '/tools/chain/contract',
   h(async (req, res) => {
     const address = text(req.query.address, 60, 'address');
-    ws(req, 'chain', 20);
+    ws(req, 'chain-contract', 20);
     res.json(single('robinhoodrpc', await run(I.scanContract(address, WS('chain-contract')))));
   }),
 );
 router.get(
   '/tools/chain/stocks',
   h(async (req, res) => {
-    ws(req, 'chain', 15);
-    res.json(single('dexscreener', await run(I.stockBoard(WS('chain-stocks')))));
+    const symbols = q(req, 'symbols').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[A-Z.]{1,8}$/.test(x)).slice(0, 20);
+    ws(req, 'chain-stocks', 15);
+    res.json(single('robinhoodapi', await run(I.stockBoard(WS('chain-stocks'), symbols.length ? symbols : undefined))));
   }),
 );
 router.get(
   '/tools/chain/agentdom',
   h(async (req, res) => {
-    ws(req, 'chain', 30);
+    ws(req, 'chain-agentdom', 30);
     res.json(single('dexscreener', await run(I.agentdomStats(WS('chain-agentdom')))));
+  }),
+);
+
+router.get(
+  '/tools/chain/stock',
+  h(async (req, res) => {
+    const symbol = text(req.query.symbol, 60, 'symbol');
+    ws(req, 'chain-stock', 20);
+    res.json(single('robinhoodapi', await run(I.stockDetail(symbol, WS('chain-stock')))));
+  }),
+);
+router.get(
+  '/tools/chain/actions',
+  h(async (req, res) => {
+    const symbol = q(req, 'symbol').toUpperCase() || undefined;
+    ws(req, 'chain-actions', 20);
+    res.json(single('robinhoodapi', await run(I.corporateActions(WS('chain-actions'), symbol, 40))));
+  }),
+);
+router.get(
+  '/tools/chain/oracles',
+  h(async (req, res) => {
+    const k = q(req, 'kind');
+    const kind = k === 'stock' || k === 'all' ? k : 'crypto';
+    ws(req, 'chain-oracles', 15);
+    res.json(single('chainlink', await run(I.oraclePrices(WS('chain-oracles'), kind, 62))));
+  }),
+);
+router.get(
+  '/tools/chain/markets',
+  h(async (req, res) => {
+    ws(req, 'chain-markets', 15);
+    res.json(single('geckoterminal', await run(I.marketPulse(WS('chain-markets'), 12))));
   }),
 );

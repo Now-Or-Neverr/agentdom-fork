@@ -797,16 +797,7 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
   },
   mint: {
     label: 'Robinhood Chain',
-    render: () => (
-      <>
-        <Mint.AgentdomVaultTool />
-        <Mint.StockBoardTool />
-        <Mint.ContractTool />
-        <Mint.TxTool />
-        <Mint.AddressTool />
-        <Mint.ChainPulseTool />
-      </>
-    ),
+    render: () => <Mint.MintWorkshop />,
   },
 };
 

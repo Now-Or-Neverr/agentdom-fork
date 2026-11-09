@@ -1,0 +1,292 @@
+// Royal Mint workshop: Robinhood stock tokens (official Stock Token API + Chainlink + DEX),
+// dividends and splits, Chainlink oracles and what is trading on Robinhood Chain.
+import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { Search } from 'lucide-react';
+import { chainTools, num } from '../../lib/toolsApi';
+import { Ext, Panel, Source, Status, useRun } from './shared';
+import { NotFinancial } from './MintTools';
+
+const table: CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 14 };
+const cell: CSSProperties = { padding: '5px 6px', borderBottom: '1px solid rgba(127,127,127,.2)', textAlign: 'left', whiteSpace: 'nowrap' };
+const usd = (v: number | null | undefined, d = 2) => (v === null || v === undefined ? '—' : '$' + v.toLocaleString('en', { minimumFractionDigits: d, maximumFractionDigits: d }));
+const small = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v < 0.01 ? '$' + v.toPrecision(3) : usd(v, v < 1 ? 4 : 2));
+const pctTxt = (p: number | null | undefined) => (p === null || p === undefined ? '—' : `${p > 0 ? '+' : ''}${p}%`);
+const ago = (iso: string | null) => {
+  if (!iso) return '—';
+  const m = Math.round((Date.now() - Date.parse(iso)) / 60_000);
+  return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 48 * 60 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
+};
+const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+
+export function StockBoardTool() {
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.stocks>>>();
+  useEffect(() => {
+    run(chainTools.stocks());
+  }, []);
+  return (
+    <Panel title="Stock tokens vs Wall Street" sub="Each token four ways: Wall Street (Robinhood's live quote × the token's multiplier), Robinhood's token price, the Chainlink oracle read onchain, and the DEX.">
+      <div className="ws-row ws-end">
+        <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.stocks())}>
+          Refresh
+        </button>
+      </div>
+      <Status s={s} label="Reading Robinhood, Chainlink and the DEX…">
+        {(d) => (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={table}>
+                <thead>
+                  <tr>
+                    <th style={cell}>Token</th>
+                    <th style={cell}>Wall Street × mult.</th>
+                    <th style={cell}>Robinhood token</th>
+                    <th style={cell}>Chainlink</th>
+                    <th style={cell}>DEX</th>
+                    <th style={cell}>DEX gap</th>
+                    <th style={cell}>DEX liquidity</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {d.tokens.map((t) => (
+                    <tr key={t.address}>
+                      <td style={cell}>
+                        {t.logo && <img src={t.logo} alt="" width={18} height={18} style={{ borderRadius: 4, verticalAlign: '-4px', marginRight: 6 }} loading="lazy" />}
+                        <Ext href={t.url}>{t.ticker}</Ext> {t.halted && <span className="tag">halted</span>}
+                      </td>
+                      <td style={cell}>{usd(t.fairTokenPrice)}</td>
+                      <td style={cell}>{usd(t.robinhoodTokenBid)}</td>
+                      <td style={cell} title={t.oracleUpdatedAt ? `updated ${ago(t.oracleUpdatedAt)}` : ''}>
+                        {usd(t.oraclePrice)}
+                      </td>
+                      <td style={cell}>{usd(t.tokenPriceUsd)}</td>
+                      <td style={{ ...cell, color: t.gapPct !== null && Math.abs(t.gapPct) >= 1 ? 'var(--warn)' : undefined }}>{pctTxt(t.gapPct)}</td>
+                      <td style={cell}>{usd(t.liquidityUsd, 0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="ws-muted">
+              {num(d.listed, 0)} official stock tokens are listed by Robinhood; look any of them up below. {d.note}
+            </p>
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}
+
+export function StockLookupTool() {
+  const [sym, setSym] = useState('');
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.stock>>>();
+  return (
+    <Panel title="Look up a stock token" sub="Any of the official Robinhood stock tokens, by ticker or contract address: quotes, oracle, DEX, supply onchain, multiplier and dividends.">
+      <form
+        className="ws-row ws-wrap"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault();
+          if (sym.trim()) run(chainTools.stock(sym.trim()));
+        }}
+      >
+        <input className="field ws-grow" value={sym} onChange={(e) => setSym(e.target.value)} placeholder="Ticker, e.g. AAPL, or 0x… address" maxLength={60} spellCheck={false} />
+        <button className="btn btn-seal" disabled={s.loading || !sym.trim()}>
+          <Search size={15} /> Look up
+        </button>
+      </form>
+      <Status s={s} label="Reading the stock token…">
+        {(d) => (
+          <>
+            <p style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {d.logo && <img src={d.logo} alt="" width={28} height={28} style={{ borderRadius: 6 }} />}
+              <b>{d.ticker}</b> {d.name} · <Ext href={d.url}>{short(d.address)}</Ext>
+              {d.halted && <span className="tag">trading halt</span>}
+            </p>
+            <table style={table}>
+              <tbody>
+                <tr>
+                  <td style={cell}>Wall Street bid / ask</td>
+                  <td style={cell}>
+                    {usd(d.wallStreetBid)} / {usd(d.wallStreetAsk)} · day {usd(d.dailyLow)}–{usd(d.dailyHigh)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={cell}>Fair token price</td>
+                  <td style={cell}>
+                    {usd(d.fairTokenPrice)} (multiplier {d.multiplier.toFixed(6)}
+                    {d.pendingMultiplier ? `, changing to ${d.pendingMultiplier.toFixed(6)}${d.pendingAt ? ` on ${d.pendingAt.slice(0, 10)}` : ''}` : ''})
+                  </td>
+                </tr>
+                <tr>
+                  <td style={cell}>Robinhood token bid / ask</td>
+                  <td style={cell}>
+                    {usd(d.robinhoodTokenBid)} / {usd(d.robinhoodTokenAsk)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={cell}>Chainlink oracle</td>
+                  <td style={cell}>
+                    {usd(d.oraclePrice)} · updated {ago(d.oracleUpdatedAt)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={cell}>DEX</td>
+                  <td style={cell}>
+                    {usd(d.tokenPriceUsd)} · gap {pctTxt(d.gapPct)} · liquidity {usd(d.liquidityUsd, 0)}
+                  </td>
+                </tr>
+                <tr>
+                  <td style={cell}>Supply onchain</td>
+                  <td style={cell}>
+                    {d.supply === null ? '—' : Number(d.supply).toLocaleString('en', { maximumFractionDigits: 2 })} tokens · minted/burned today {usd(d.mintBurnUsd, 0)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            {d.actions.length > 0 && (
+              <>
+                <h4>Dividends and splits</h4>
+                <ul className="ws-list">
+                  {d.actions.map((a, i) => (
+                    <li key={i}>
+                      <span className="tag">{a.type}</span> {a.detail} · {a.date} · {a.status}
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <NotFinancial />
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}
+
+export function ActionsTool() {
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.actions>>>();
+  useEffect(() => {
+    run(chainTools.actions());
+  }, []);
+  return (
+    <Panel title="Dividends and splits" sub="Corporate actions Robinhood is processing for its stock tokens, newest first. Splits are applied through each token's multiplier.">
+      <Status s={s} label="Reading corporate actions…">
+        {(d) => (
+          <>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={table}>
+                <tbody>
+                  {d.actions.slice(0, 15).map((a, i) => (
+                    <tr key={i}>
+                      <td style={cell}>{a.url ? <Ext href={a.url}>{a.symbol}</Ext> : a.symbol}</td>
+                      <td style={cell}>{a.type}</td>
+                      <td style={cell}>{a.detail}</td>
+                      <td style={cell}>{a.date}</td>
+                      <td style={cell}>{a.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}
+
+export function OracleTool() {
+  const [kind, setKind] = useState<'crypto' | 'stock'>('crypto');
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.oracles>>>();
+  useEffect(() => {
+    run(chainTools.oracles(kind));
+  }, [kind]);
+  return (
+    <Panel title="Chainlink prices onchain" sub="Price oracles on Robinhood Chain, read straight from the Chainlink feed contracts.">
+      <div className="ws-row">
+        <button className={'btn btn-sm' + (kind === 'crypto' ? ' btn-seal' : '')} onClick={() => setKind('crypto')}>
+          Crypto
+        </button>
+        <button className={'btn btn-sm' + (kind === 'stock' ? ' btn-seal' : '')} onClick={() => setKind('stock')}>
+          Stocks (24/7)
+        </button>
+      </div>
+      <Status s={s} label="Reading Chainlink feeds…">
+        {(d) => (
+          <>
+            <ul className="ws-list" style={{ columns: 2, columnGap: 24 }}>
+              {d.feeds
+                .filter((f) => f.price !== null)
+                .map((f) => (
+                  <li key={f.url} style={{ breakInside: 'avoid' }}>
+                    <Ext href={f.url}>{f.name.replace(/^Robinhood\s+/, '')}</Ext> <b>{small(f.price)}</b> <span className="ws-muted">· {ago(f.updatedAt)}</span>
+                  </li>
+                ))}
+            </ul>
+            <p className="ws-muted">{d.note}</p>
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}
+
+export function MarketsTool({ onCheck }: { onCheck?: (address: string) => void }) {
+  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.markets>>>();
+  useEffect(() => {
+    run(chainTools.markets());
+  }, []);
+  const list = (rows: NonNullable<typeof s.data>['trending'], fresh: boolean) => (
+    <div style={{ overflowX: 'auto' }}>
+      <table style={table}>
+        <tbody>
+          {rows.map((p) => (
+            <tr key={p.url}>
+              <td style={cell}>
+                <Ext href={p.url}>{p.name}</Ext> <span className="ws-muted">{p.dex}</span>
+              </td>
+              <td style={cell}>{small(p.priceUsd)}</td>
+              <td style={cell}>{fresh ? ago(p.createdAt) : pctTxt(p.change24h === null ? null : Math.round(p.change24h * 10) / 10)}</td>
+              <td style={cell}>liq {usd(p.liquidityUsd, 0)}</td>
+              <td style={cell}>vol {usd(p.volume24h, 0)}</td>
+              <td style={cell}>
+                {p.token && onCheck && (
+                  <button className="btn btn-sm" onClick={() => onCheck(p.token!)}>
+                    Check
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+  return (
+    <Panel title="What is trading on Robinhood Chain" sub="Trending pools and brand-new pools from GeckoTerminal. Press Check to run a token through the contract check.">
+      <div className="ws-row ws-end">
+        <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.markets())}>
+          Refresh
+        </button>
+      </div>
+      <Status s={s} label="Reading GeckoTerminal…">
+        {(d) => (
+          <>
+            <h4>Trending</h4>
+            {list(d.trending, false)}
+            <h4>Just launched</h4>
+            {list(d.newest, true)}
+            <p className="ws-muted">
+              {d.dexCount ? `${d.dexCount} DEXes are active on Robinhood Chain. ` : ''}
+              {d.note}
+            </p>
+            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
+          </>
+        )}
+      </Status>
+    </Panel>
+  );
+}

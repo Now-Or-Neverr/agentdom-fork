@@ -107,7 +107,11 @@ export const chainTools = {
   tx: (hash: string) => req<Named<I.TxExplained>>('/tools/chain/tx' + qs({ hash })),
   address: (address: string) => req<Named<I.AddressReport>>('/tools/chain/address' + qs({ address })),
   contract: (address: string) => req<Named<I.ContractReport>>('/tools/chain/contract' + qs({ address })),
-  stocks: () => req<Named<I.StockBoard>>('/tools/chain/stocks'),
+  stocks: (symbols?: string) => req<Named<I.StockBoard>>('/tools/chain/stocks' + qs({ symbols })),
+  stock: (symbol: string) => req<Named<I.StockDetail>>('/tools/chain/stock' + qs({ symbol })),
+  actions: (symbol?: string) => req<Named<{ actions: I.CorporateAction[]; sourceUrl: string; fetchedAt: string }>>('/tools/chain/actions' + qs({ symbol })),
+  oracles: (kind: 'crypto' | 'stock' | 'all') => req<Named<I.OracleBoard>>('/tools/chain/oracles' + qs({ kind })),
+  markets: () => req<Named<I.MarketPulse>>('/tools/chain/markets'),
   agentdom: () => req<Named<I.AgentdomStats>>('/tools/chain/agentdom'),
 };
 

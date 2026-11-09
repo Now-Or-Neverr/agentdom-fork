@@ -1,9 +1,10 @@
 // Workshop tools for the Royal Mint: read-only Robinhood Chain data. Every answer shows its
 // source, an explorer link to verify it, and when it was fetched. Nothing here can send or sign.
-import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { AlertTriangle, Search } from 'lucide-react';
 import { chainTools, num } from '../../lib/toolsApi';
 import { Ext, Panel, Source, Status, useRun } from './shared';
+import * as Markets from './MintMarkets';
 
 const table: CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 14 };
 const cell: CSSProperties = { padding: '5px 6px', borderBottom: '1px solid rgba(127,127,127,.2)', textAlign: 'left', whiteSpace: 'nowrap' };
@@ -96,58 +97,6 @@ export function AgentdomVaultTool() {
               )}
             </p>
             <NotFinancial />
-            <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
-          </>
-        )}
-      </Status>
-    </Panel>
-  );
-}
-
-export function StockBoardTool() {
-  const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.stocks>>>();
-  useEffect(() => {
-    run(chainTools.stocks());
-  }, []);
-  return (
-    <Panel title="Stock tokens vs Wall Street" sub="Official Robinhood stock tokens, confirmed onchain by their multiplier, next to the real share price (Finnhub) × that multiplier.">
-      <div className="ws-row ws-end">
-        <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.stocks())}>
-          Refresh
-        </button>
-      </div>
-      <Status s={s} label="Comparing stock tokens with Wall Street…">
-        {(d) => (
-          <>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={table}>
-                <thead>
-                  <tr>
-                    <th style={cell}>Token</th>
-                    <th style={cell}>Onchain</th>
-                    <th style={cell}>Share × mult.</th>
-                    <th style={cell}>Gap</th>
-                    <th style={cell}>Liquidity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {d.tokens.map((t) => (
-                    <tr key={t.address}>
-                      <td style={cell}>
-                        <Ext href={t.url}>{t.ticker}</Ext> <span className="ws-muted">{t.name}</span>
-                      </td>
-                      <td style={cell}>{usd(t.tokenPriceUsd)}</td>
-                      <td style={cell}>{usd(t.fairTokenPrice)}</td>
-                      <td style={{ ...cell, color: t.gapPct === null ? undefined : Math.abs(t.gapPct) >= 1 ? 'var(--warn)' : undefined }}>
-                        {t.gapPct === null ? '—' : `${t.gapPct > 0 ? '+' : ''}${t.gapPct}%`}
-                      </td>
-                      <td style={cell}>{usd(t.liquidityUsd, 0)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="ws-muted">{d.note}</p>
             <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
           </>
         )}
@@ -264,10 +213,18 @@ export function AddressTool() {
   );
 }
 
-export function ContractTool() {
+export function ContractTool({ preset }: { preset?: { address: string; n: number } | null }) {
   const [addr, setAddr] = useState('');
   const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.contract>>>();
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!preset) return;
+    setAddr(preset.address);
+    run(chainTools.contract(preset.address));
+    box.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [preset?.n]);
   return (
+    <div ref={box} style={{ scrollMarginTop: 90 }}>
     <Panel title="Check a token contract" sub="Before you touch a token: who controls it, what they could change, how deep its liquidity is and how its holders are spread.">
       <AddrForm value={addr} set={setAddr} onGo={() => run(chainTools.contract(addr.trim()))} busy={s.loading} placeholder="0x… token contract" button="Check" />
       <Status s={s} label="Reading the contract…">
@@ -336,5 +293,25 @@ export function ContractTool() {
         }
       </Status>
     </Panel>
+    </div>
+  );
+}
+
+/** The Royal Mint workshop: market panels plus the chain tools, with Check wiring. */
+export function MintWorkshop() {
+  const [preset, setPreset] = useState<{ address: string; n: number } | null>(null);
+  return (
+    <>
+      <AgentdomVaultTool />
+      <Markets.StockBoardTool />
+      <Markets.StockLookupTool />
+      <Markets.MarketsTool onCheck={(address) => setPreset((p) => ({ address, n: (p?.n ?? 0) + 1 }))} />
+      <ContractTool preset={preset} />
+      <TxTool />
+      <AddressTool />
+      <Markets.ActionsTool />
+      <Markets.OracleTool />
+      <ChainPulseTool />
+    </>
   );
 }

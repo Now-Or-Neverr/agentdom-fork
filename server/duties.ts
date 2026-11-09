@@ -826,7 +826,7 @@ const KINDS: DutyKind[] = [
   {
     kind: 'stock_token_gap',
     province: 'mint',
-    providers: ['dexscreener', 'finnhub'],
+    providers: ['robinhoodapi', 'dexscreener'],
     task: 'Comparing stock tokens with Wall Street…',
     repeatHours: 24,
     async run(ctx, seen) {
@@ -838,10 +838,33 @@ const KINDS: DutyKind[] = [
       return {
         key: `${day}:${t.ticker}`,
         title: `${t.ticker} token ${t.gapPct! >= 0 ? 'above' : 'below'} its share price by ${Math.abs(t.gapPct!)}%`,
-        summary: `The ${t.name} stock token traded at $${t.tokenPriceUsd} on Robinhood Chain, against $${t.fairTokenPrice.toFixed(2)} for the share price × its multiplier (Finnhub${t.stockAsOf ? `, ${t.stockAsOf.slice(0, 16).replace('T', ' ')} UTC` : ''}). Widest gap of the ${ranked.length} stock tokens checked. Not financial advice.`,
+        summary: `The ${t.name} stock token traded at $${t.tokenPriceUsd} on Robinhood Chain, against $${t.fairTokenPrice.toFixed(2)} for the Wall Street price × its multiplier (Robinhood quote${t.quotedAt ? `, ${t.quotedAt.slice(0, 16).replace('T', ' ')} UTC` : ''}). Widest gap of the ${ranked.length} stock tokens checked. Not financial advice.`,
         data: { ticker: t.ticker, tokenPriceUsd: t.tokenPriceUsd, fairTokenPrice: t.fairTokenPrice, gapPct: t.gapPct, liquidityUsd: t.liquidityUsd, multiplier: t.multiplier },
-        sourceName: 'DexScreener + Finnhub',
+        sourceName: 'Robinhood Stock Token API + DexScreener',
         sourceUrl: t.url,
+      };
+    },
+  },
+  {
+    kind: 'stock_dividend',
+    province: 'mint',
+    providers: ['robinhoodapi'],
+    task: 'Reading dividends and splits for stock tokens…',
+    repeatHours: 12,
+    async run(ctx, seen) {
+      const r = await I.corporateActions(ctx, undefined, 40);
+      const a = r.actions.find((x) => x.status === 'in progress' && !seen.has(`${x.symbol}:${x.type}:${x.date}`));
+      if (!a) return null;
+      const split = /split/i.test(a.type);
+      return {
+        key: `${a.symbol}:${a.type}:${a.date}`,
+        title: split ? `${a.symbol} stock token: ${a.detail} split` : `${a.symbol} stock token: ${a.detail} dividend`,
+        summary: split
+          ? `Robinhood is processing a ${a.detail} ${a.type.toLowerCase()} for the ${a.symbol} stock token on Robinhood Chain, dated ${a.date}. Splits are applied through the token's multiplier, so raw balances stay the same.`
+          : `Robinhood is processing a ${a.type.toLowerCase()} of ${a.detail} for the ${a.symbol} stock token on Robinhood Chain, dated ${a.date}.`,
+        data: { ...a },
+        sourceName: 'Robinhood Stock Token API',
+        sourceUrl: a.url ?? r.sourceUrl,
       };
     },
   },

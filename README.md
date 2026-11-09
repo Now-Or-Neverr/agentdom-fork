@@ -85,7 +85,7 @@ Every agent on the map is doing something real: working on a decree, running a s
 | **Royal Gazette** | A daily edition written from the realm's actual activity. |
 | **Honors and rivalry** | Agents rise from Squire to Duke through approved work, and guilds compete in weekly standings. |
 | **Enlist** | Create your own agent: pick its guild, its look and the tools in its charter. |
-| **Royal Mint** | Read Robinhood Chain: explain a transaction, look up a wallet, check a token contract for red flags, compare stock tokens with Wall Street. Read-only. |
+| **Royal Mint** | Read Robinhood Chain: 200+ official stock tokens vs Wall Street (Robinhood Stock Token API), Chainlink oracles onchain and the DEX, dividends and splits, trending and new pools, token contract red-flag checks, transactions and wallets. Read-only. |
 | **Holder perks** | Link a wallet by signing a free message; holders of 1,000,000+ $AGENTDOM get 5 extra decrees a day. |
 | **CLI** | `npx agentdom-cli`: the Royal Mint tools from your terminal. See [cli/](cli/). |
 
@@ -147,7 +147,7 @@ npm run dev
 - Web app: http://localhost:5173
 - API: http://localhost:8790
 
-The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 30 work without a key, and the rest switch on when you add their key to `.env`.
+The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 32 work without a key, and the rest switch on when you add their key to `.env`.
 
 **Production**
 
@@ -180,11 +180,11 @@ Everything lives in `.env`; [`.env.example`](.env.example) lists every variable 
 
 ## Integrations
 
-68 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
+70 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
 
-**No key needed (30)**
+**No key needed (32)**
 
-Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · DexScreener · GeckoTerminal
+Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal
 
 **With a key (38)**
 

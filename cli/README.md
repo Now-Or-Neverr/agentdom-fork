@@ -27,7 +27,11 @@ npx agentdom-cli pulse
 | `agentdom tx <hash>` | A transaction in plain words: who sent what to whom, token transfers, burns, fee, status, explorer link |
 | `agentdom wallet <address>` | ETH balance, transaction count and known token balances |
 | `agentdom check <address>` | Red-flag check of a token contract: flags and why they matter, owner, proxy, liquidity, holders, honeypot |
-| `agentdom stocks` | Stock tokens on Robinhood Chain vs their Wall Street price |
+| `agentdom stocks [TICKERS]` | Stock tokens four ways: Wall Street (Robinhood quote x multiplier), Robinhood token price, Chainlink oracle, DEX |
+| `agentdom stock <TICKER>` | One of the 200+ official stock tokens in depth: quotes, oracle, DEX, supply, multiplier, dividends |
+| `agentdom actions [TICKER]` | Dividends and splits Robinhood is processing for stock tokens |
+| `agentdom oracles [stock]` | Chainlink prices read onchain (crypto by default, or 24/7 stock feeds) |
+| `agentdom markets` | Trending and newly launched pools on Robinhood Chain (GeckoTerminal) |
 | `agentdom token` | The $AGENTDOM ledger: price, liquidity, holders, supply, burned |
 | `agentdom status` | Realm status: agents, agents working, decrees issued and approved |
 | `agentdom help` | Help (also `--help`, or no arguments) |
@@ -40,7 +44,11 @@ agentdom pulse
 agentdom tx 0xb832760f469e68b4e0500d3c3c66ebde7d0cd24fa7be30f7e91f133173edfecc
 agentdom wallet 0x8C1A87C0Bc4D3545D4475916C42A60D3c51a68B3
 agentdom check 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
-agentdom stocks
+agentdom stocks NVDA TSLA
+agentdom stock AAPL
+agentdom actions
+agentdom oracles
+agentdom markets
 agentdom token
 agentdom status
 ```

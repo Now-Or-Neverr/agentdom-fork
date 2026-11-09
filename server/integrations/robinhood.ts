@@ -3,9 +3,9 @@
 // Official stock tokens are recognised onchain: they implement uiMultiplier() (ERC-8056).
 import { decodeAbiParameters, formatUnits, getAddress, hexToBigInt, isAddress, isHash, toFunctionSelector, type Hex } from 'viem';
 import { fetchJson, qs, UpstreamError, type CallContext } from './http';
-import { stockQuote } from './finnhub';
 
-export const CHAIN = { id: 4663, name: 'Robinhood Chain', rpc: 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robin.etherscan.io' };
+// ROBINHOOD_RPC_URL can point at a keyed provider (e.g. Alchemy) when the public RPC rate-limits.
+export const CHAIN = { id: 4663, name: 'Robinhood Chain', rpc: process.env.ROBINHOOD_RPC_URL || 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robin.etherscan.io' };
 export const AGENTDOM_CA = '0x688d8c004af3c292330fea8af8a594adc8c3b0c8';
 const WETH = '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73';
 const USDG = '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168';
@@ -41,7 +41,7 @@ async function rpc<T = any>(method: string, params: unknown[], ctx: CallContext,
     headers: { 'content-type': 'application/json' },
     ttlMs,
     timeoutMs: 15_000,
-    logEndpoint: `robinhood-rpc:${method}`,
+    logEndpoint: `robinhood-rpc:${method}`, // never log a keyed RPC url
   });
   if (r.data?.error) throw new UpstreamError(RPC, 200, `Robinhood Chain RPC: ${r.data.error.message ?? 'error'}`);
   return { data: r.data?.result as T, fetchedAt: r.fetchedAt };
@@ -232,42 +232,184 @@ export async function explainTx(hash: string, ctx: CallContext): Promise<TxExpla
   };
 }
 
-// ---------------- stock tokens ----------------
-// Tickers to look for. Each candidate is checked onchain (uiMultiplier) before it is trusted.
+// ---------------- stock tokens: Robinhood Stock Token API + Chainlink ----------------
+// The official list, multipliers, quotes and corporate actions come from Robinhood's read-only
+// Stock Token API (api.robinhood.com/rhj). Onchain prices come from Chainlink data feeds,
+// read through the chain's RPC. DEX prices come from DexScreener.
+const RH = 'robinhoodapi';
+const CL = 'chainlink';
+const RH_API = 'https://api.robinhood.com/rhj';
 export const STOCK_TICKERS = ['TSLA', 'NVDA', 'AAPL', 'AMZN', 'MSFT', 'GOOGL', 'META', 'COIN', 'HOOD', 'NFLX', 'AMD', 'PLTR', 'SPY', 'QQQ'];
-const ROBINHOOD_SUFFIX = '• Robinhood Token';
 
 export interface StockToken {
   ticker: string;
   name: string;
   address: string;
   multiplier: number;
+  pendingMultiplier: number | null;
+  pendingAt: string | null;
+  logo: string | null;
+  tradable: boolean;
   url: string;
 }
-let stockList: { at: number; list: StockToken[] } | null = null;
-async function dexSearch(q: string, ctx: CallContext) {
-  const r = await fetchJson<any>('https://api.dexscreener.com/latest/dex/search' + qs({ q }), { provider: DEX, ctx, ttlMs: 6 * 60 * 60_000 });
-  return ((r.data?.pairs ?? []) as any[]).filter((p) => p.chainId === 'robinhood');
-}
-/** Official Robinhood stock tokens found on DexScreener and confirmed onchain. Refreshed every 6 hours. */
+/** Every active Robinhood stock token on Robinhood Chain, from the official API (cached 1 hour). */
 export async function stockTokenList(ctx: CallContext): Promise<StockToken[]> {
-  if (stockList && Date.now() - stockList.at < 6 * 60 * 60_000) return stockList.list;
+  const r = await fetchJson<any>(`${RH_API}/assets`, { provider: RH, ctx, ttlMs: 60 * 60_000, timeoutMs: 20_000 });
   const out: StockToken[] = [];
-  for (const tk of STOCK_TICKERS) {
-    // fakes often crowd out the real token in one query, so try a second, plainer one
-    const pairs = [...(await dexSearch(`${tk} Robinhood Token`, ctx).catch(() => [])), ...(await dexSearch(`${tk} Robinhood`, ctx).catch(() => [])), ...(await dexSearch(tk, ctx).catch(() => []))];
-    const cands = [...new Map(pairs.filter((p) => p.baseToken?.symbol === tk && String(p.baseToken?.name ?? '').includes(ROBINHOOD_SUFFIX)).map((p) => [p.baseToken.address.toLowerCase(), p])).values()];
-    for (const p of cands) {
-      const mult = await uiMultiplier(p.baseToken.address, ctx);
-      if (mult !== null && mult > 0) {
-        const a = getAddress(p.baseToken.address);
-        out.push({ ticker: tk, name: String(p.baseToken.name).replace(ROBINHOOD_SUFFIX, '').trim(), address: a, multiplier: mult, url: tokenUrl(a) });
-        break;
-      }
-    }
+  for (const a of (r.data?.assets ?? []) as any[]) {
+    const dep = (a.deployments ?? []).find((d: any) => d.chainId === CHAIN.id);
+    if (!dep || a.status !== 'ASSET_STATUS_ACTIVE') continue;
+    const addr = getAddress(dep.contractAddress);
+    out.push({
+      ticker: String(a.tokenSymbol),
+      name: String(a.tokenName ?? a.tokenSymbol).replace(/\s*•\s*Robinhood Token\s*$/, ''),
+      address: addr,
+      multiplier: Number(a.currentMultiplier) || 1,
+      pendingMultiplier: a.pendingMultiplier ? Number(a.pendingMultiplier) : null,
+      pendingAt: a.pendingMultiplierEffectiveTime ?? null,
+      logo: a.logoUrl ?? null,
+      tradable: a.tradingCapabilities?.market?.whole === 'TRADING_STATUS_TRADABLE',
+      url: tokenUrl(addr),
+    });
   }
-  if (out.length) stockList = { at: Date.now(), list: out };
   return out;
+}
+async function findStock(symbolOrAddress: string, ctx: CallContext): Promise<StockToken | null> {
+  const s = symbolOrAddress.trim();
+  const list = await stockTokenList(ctx);
+  if (isAddress(s, { strict: false })) return list.find((t) => t.address.toLowerCase() === s.toLowerCase()) ?? null;
+  return list.find((t) => t.ticker.toUpperCase() === s.toUpperCase()) ?? null;
+}
+
+export interface StockQuoteRh {
+  bid: number;
+  ask: number;
+  mid: number;
+  tokenBid: number | null;
+  tokenAsk: number | null;
+  volume: number | null;
+  high: number | null;
+  low: number | null;
+  halted: boolean;
+  mintBurnUsd: number | null;
+  generatedAt: string;
+}
+const n = (x: unknown) => (x === undefined || x === null || x === '' ? null : Number.isFinite(Number(x)) ? Number(x) : null);
+/** Live underlying bid/ask (not multiplier-adjusted) and token bid/ask, cached 15 s by Robinhood. */
+async function rhQuote(symbol: string, ctx: CallContext): Promise<StockQuoteRh | null> {
+  const r = await fetchJson<any>(`${RH_API}/prices/${encodeURIComponent(symbol)}`, { provider: RH, ctx, ttlMs: 15_000 });
+  const q = (r.data?.quotes ?? [])[0];
+  if (!q || !q.bid) return null;
+  const bid = Number(q.bid), ask = Number(q.ask);
+  return {
+    bid,
+    ask,
+    mid: (bid + ask) / 2,
+    tokenBid: n(q.tokenBid),
+    tokenAsk: n(q.tokenAsk),
+    volume: n(q.dailyTradingVolume) || null,
+    high: n(q.dailyHigh),
+    low: n(q.dailyLow),
+    halted: !!q.isTradingHalt,
+    mintBurnUsd: n(q.mintBurnUsdVolume),
+    generatedAt: String(q.generatedAt ?? r.fetchedAt),
+  };
+}
+
+// ---- RPC batch (one HTTP request for many eth_calls) ----
+async function rpcBatch(calls: { to: string; data: string }[], ctx: CallContext, ttlMs = 30_000): Promise<(Hex | null)[]> {
+  const out: (Hex | null)[] = [];
+  for (let i = 0; i < calls.length; i += 30) {
+    const chunk = calls.slice(i, i + 30);
+    const r = await fetchJson<any[]>(CHAIN.rpc, {
+      provider: RPC,
+      ctx,
+      method: 'POST',
+      body: JSON.stringify(chunk.map((c, k) => ({ jsonrpc: '2.0', id: k, method: 'eth_call', params: [{ to: c.to, data: c.data }, 'latest'] }))),
+      headers: { 'content-type': 'application/json' },
+      ttlMs,
+      timeoutMs: 20_000,
+      logEndpoint: `robinhood-rpc:eth_call x${chunk.length}`,
+    });
+    const byId = new Map(((Array.isArray(r.data) ? r.data : []) as any[]).map((x) => [x.id, x.result && x.result !== '0x' ? (x.result as Hex) : null]));
+    chunk.forEach((_, k) => out.push(byId.get(k) ?? null));
+  }
+  return out;
+}
+
+// ---- Chainlink ----
+interface Feed {
+  name: string;
+  proxy: string;
+  decimals: number;
+  heartbeat: number;
+  kind: 'stock' | 'crypto' | 'other';
+  symbol: string | null;
+}
+async function clFeeds(ctx: CallContext): Promise<Feed[]> {
+  const r = await fetchJson<any[]>('https://reference-data-directory.vercel.app/feeds-robinhood-mainnet.json', { provider: CL, ctx, ttlMs: 6 * 60 * 60_000, timeoutMs: 20_000 });
+  return ((Array.isArray(r.data) ? r.data : []) as any[])
+    .filter((f) => f.proxyAddress && f.name)
+    .map((f) => {
+      const name = String(f.name);
+      const stock = /^Robinhood\s+([A-Z.]+)/.exec(name);
+      const crypto = !stock ? /^([A-Z0-9.]+)\s*\/\s*USD/.exec(name) : null;
+      return {
+        name,
+        proxy: getAddress(f.proxyAddress),
+        decimals: Number(f.decimals ?? 8),
+        heartbeat: Number(f.heartbeat ?? 86400),
+        kind: stock ? 'stock' : crypto ? 'crypto' : 'other',
+        symbol: stock?.[1] ?? crypto?.[1] ?? null,
+      } as Feed;
+    });
+}
+/** The Chainlink feed for a stock symbol, preferring the 24/7 feed. */
+function feedFor(feeds: Feed[], symbol: string): Feed | null {
+  const s = symbol.toUpperCase();
+  const mine = feeds.filter((f) => f.kind === 'stock' && f.symbol === s);
+  return mine.find((f) => /24\/7/.test(f.name)) ?? mine[0] ?? null;
+}
+function decodeRound(h: Hex | null, decimals: number): { price: number; updatedAt: string } | null {
+  if (!h || h.length < 2 + 64 * 4) return null;
+  const word = (i: number) => ('0x' + h.slice(2 + 64 * i, 2 + 64 * (i + 1))) as Hex;
+  const answer = hexToBigInt(word(1));
+  const updated = Number(hexToBigInt(word(3)));
+  if (answer <= 0n || !updated) return null;
+  return { price: Number(formatUnits(answer, decimals)), updatedAt: new Date(updated * 1000).toISOString() };
+}
+const LATEST_ROUND = '0xfeaf968c';
+
+export interface OracleRow {
+  name: string;
+  kind: 'stock' | 'crypto' | 'other';
+  symbol: string | null;
+  price: number | null;
+  updatedAt: string | null;
+  url: string;
+}
+export interface OracleBoard {
+  feeds: OracleRow[];
+  total: number;
+  note: string;
+  sourceUrl: string;
+  fetchedAt: string;
+}
+/** Chainlink prices on Robinhood Chain, read onchain (latestRoundData). */
+export async function oraclePrices(ctx: CallContext, kind: 'crypto' | 'stock' | 'all' = 'all', limit = 40): Promise<OracleBoard> {
+  const all = await clFeeds(ctx);
+  const feeds = all.filter((f) => kind === 'all' || f.kind === kind).slice(0, limit);
+  const res = await rpcBatch(feeds.map((f) => ({ to: f.proxy, data: LATEST_ROUND })), ctx);
+  return {
+    feeds: feeds.map((f, i) => {
+      const d = decodeRound(res[i], f.decimals);
+      return { name: f.name, kind: f.kind, symbol: f.symbol, price: d?.price ?? null, updatedAt: d?.updatedAt ?? null, url: addrUrl(f.proxy) };
+    }),
+    total: all.length,
+    note: 'Read onchain from Chainlink data feed proxies on Robinhood Chain. Stock feeds marked 24/7 keep updating outside market hours.',
+    sourceUrl: 'https://docs.chain.link/data-feeds/price-feeds/addresses?network=robinhood',
+    fetchedAt: new Date().toISOString(),
+  };
 }
 
 export interface Market {
@@ -303,56 +445,238 @@ async function dexToken(address: string, ctx: CallContext, ttlMs = 60_000): Prom
   const r = await fetchJson<any>(`https://api.dexscreener.com/tokens/v1/robinhood/${address}`, { provider: DEX, ctx, ttlMs });
   return Array.isArray(r.data) ? r.data : [];
 }
+async function dexTokens(addresses: string[], ctx: CallContext): Promise<any[]> {
+  const out: any[] = [];
+  for (let i = 0; i < addresses.length; i += 30) {
+    const r = await fetchJson<any>(`https://api.dexscreener.com/tokens/v1/robinhood/${addresses.slice(i, i + 30).join(',')}`, { provider: DEX, ctx, ttlMs: 60_000 }).catch(() => null);
+    if (Array.isArray(r?.data)) out.push(...r.data);
+  }
+  return out;
+}
 
 export interface StockGap {
   ticker: string;
   name: string;
   address: string;
   url: string;
+  logo: string | null;
   multiplier: number;
+  wallStreetBid: number | null;
+  wallStreetAsk: number | null;
+  fairTokenPrice: number | null;
+  robinhoodTokenBid: number | null;
+  robinhoodTokenAsk: number | null;
+  oraclePrice: number | null;
+  oracleUpdatedAt: string | null;
   tokenPriceUsd: number | null;
   liquidityUsd: number | null;
+  gapPct: number | null;
+  halted: boolean;
+  quotedAt: string | null;
+  // kept for older clients
   stockPrice: number | null;
   stockAsOf: string | null;
-  fairTokenPrice: number | null;
-  gapPct: number | null;
 }
 export interface StockBoard {
   tokens: StockGap[];
+  listed: number;
   note: string;
   sourceUrl: string;
   fetchedAt: string;
 }
-/** Each stock token's onchain price next to the real share price (Finnhub) times its multiplier. */
-export async function stockBoard(ctx: CallContext, limit = 14): Promise<StockBoard> {
-  const list = (await stockTokenList(ctx)).slice(0, limit);
-  if (!list.length) throw new Error('No Robinhood stock tokens could be confirmed right now.');
-  const r = await fetchJson<any>(`https://api.dexscreener.com/tokens/v1/robinhood/${list.map((t) => t.address).join(',')}`, { provider: DEX, ctx, ttlMs: 60_000 });
-  const pairs: any[] = Array.isArray(r.data) ? r.data : [];
-  const tokens: StockGap[] = [];
-  for (const t of list) {
+const pct = (a: number | null, b: number | null) => (a !== null && b ? Math.round(((a - b) / b) * 10000) / 100 : null);
+
+async function gapsFor(list: StockToken[], ctx: CallContext): Promise<StockGap[]> {
+  const [feeds, pairs, quotes] = await Promise.all([
+    clFeeds(ctx).catch(() => [] as Feed[]),
+    dexTokens(list.map((t) => t.address), ctx),
+    Promise.all(list.map((t) => rhQuote(t.ticker, ctx).catch(() => null))),
+  ]);
+  const myFeeds = list.map((t) => feedFor(feeds, t.ticker));
+  const rounds = await rpcBatch(myFeeds.map((f) => ({ to: f?.proxy ?? CHAIN.explorer, data: LATEST_ROUND })).filter((_, i) => myFeeds[i]), ctx).catch(() => []);
+  let k = 0;
+  return list.map((t, i) => {
+    const q = quotes[i];
+    const f = myFeeds[i];
+    const o = f ? decodeRound(rounds[k++] ?? null, f.decimals) : null;
     const m = bestMarket(pairs.filter((p) => p.baseToken?.address?.toLowerCase() === t.address.toLowerCase()));
-    const q = await stockQuote(t.ticker, ctx).catch(() => null);
-    const fair = q?.price ? q.price * t.multiplier : null;
-    tokens.push({
+    const fair = q ? q.mid * t.multiplier : null;
+    return {
       ticker: t.ticker,
       name: t.name,
       address: t.address,
       url: t.url,
+      logo: t.logo,
       multiplier: t.multiplier,
+      wallStreetBid: q?.bid ?? null,
+      wallStreetAsk: q?.ask ?? null,
+      fairTokenPrice: fair,
+      robinhoodTokenBid: q?.tokenBid ?? null,
+      robinhoodTokenAsk: q?.tokenAsk ?? null,
+      oraclePrice: o?.price ?? null,
+      oracleUpdatedAt: o?.updatedAt ?? null,
       tokenPriceUsd: m.priceUsd,
       liquidityUsd: m.liquidityUsd,
-      stockPrice: q?.price ?? null,
-      stockAsOf: q?.asOf ?? null,
-      fairTokenPrice: fair,
-      gapPct: fair && m.priceUsd ? Math.round(((m.priceUsd - fair) / fair) * 10000) / 100 : null,
-    });
-  }
+      gapPct: pct(m.priceUsd, fair),
+      halted: q?.halted ?? false,
+      quotedAt: q?.generatedAt ?? null,
+      stockPrice: q?.mid ?? null,
+      stockAsOf: q?.generatedAt ?? null,
+    };
+  });
+}
+
+/** Stock tokens next to Wall Street (Robinhood quote × multiplier), the Chainlink oracle and the DEX price. */
+export async function stockBoard(ctx: CallContext, symbols: string[] = STOCK_TICKERS): Promise<StockBoard> {
+  const all = await stockTokenList(ctx);
+  const want = symbols.map((s) => s.toUpperCase());
+  const list = want.map((s) => all.find((t) => t.ticker === s)).filter(Boolean) as StockToken[];
+  if (!list.length) throw new Error('None of those symbols is a Robinhood stock token.');
   return {
-    tokens,
-    note: 'Token prices come from the most liquid DexScreener pair; share prices from Finnhub (may be delayed or from the last close when the market is shut). Gap = token price vs share price × multiplier. Not financial advice.',
-    sourceUrl: 'https://dexscreener.com/robinhood',
-    fetchedAt: r.fetchedAt,
+    tokens: await gapsFor(list, ctx),
+    listed: all.length,
+    note: 'Wall Street = Robinhood’s live underlying bid/ask; fair token price = mid × the token’s multiplier. Oracle = Chainlink feed onchain. DEX = most liquid DexScreener pair. Gap = DEX vs fair. Not financial advice.',
+    sourceUrl: 'https://docs.robinhood.com/chain/stock-token-apis',
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+export interface CorporateAction {
+  symbol: string;
+  type: string;
+  status: 'in progress' | 'completed' | string;
+  date: string;
+  detail: string;
+  address: string | null;
+  url: string | null;
+}
+const ACTION_NAMES: Record<string, string> = {
+  CORPORATE_ACTION_TYPE_CASH_DIVIDEND: 'Cash dividend',
+  CORPORATE_ACTION_TYPE_FORWARD_SPLIT: 'Stock split',
+  CORPORATE_ACTION_TYPE_REVERSE_SPLIT: 'Reverse split',
+  CORPORATE_ACTION_TYPE_STOCK_DIVIDEND: 'Stock dividend',
+};
+function actionDetail(d: any): string {
+  if (!d || typeof d !== 'object') return '';
+  const [k, v] = Object.entries(d)[0] ?? [];
+  const x = v as any;
+  if (k === 'cashDividend') return `$${x.rate} per share`;
+  if (k === 'forwardSplit' || k === 'reverseSplit') return `${x.newRate}-for-${x.oldRate}`;
+  if (k === 'stockDividend') return `${x.rate ?? ''} shares per share`.trim();
+  return k ? k.replace(/([A-Z])/g, ' $1').toLowerCase() : '';
+}
+/** Dividends and splits that Robinhood processed for its stock tokens, newest first (cached 1 hour). */
+export async function corporateActions(ctx: CallContext, symbol?: string, limit = 30): Promise<{ actions: CorporateAction[]; sourceUrl: string; fetchedAt: string }> {
+  const r = await fetchJson<any>(`${RH_API}/corporate-actions`, { provider: RH, ctx, ttlMs: 60 * 60_000, timeoutMs: 20_000 });
+  const s = symbol?.toUpperCase();
+  const actions = ((r.data?.corpActions ?? []) as any[])
+    .filter((a) => !s || a.tokenSymbol === s)
+    .map((a) => {
+      const dep = (a.deployments ?? []).find((d: any) => d.chainId === CHAIN.id);
+      const p = a.processDate ?? {};
+      return {
+        symbol: String(a.tokenSymbol),
+        type: ACTION_NAMES[a.type] ?? String(a.type).replace('CORPORATE_ACTION_TYPE_', '').replace(/_/g, ' ').toLowerCase(),
+        status: a.status === 'CORPORATE_ACTION_STATUS_COMPLETED' ? 'completed' : a.status === 'CORPORATE_ACTION_STATUS_IN_PROGRESS' ? 'in progress' : String(a.status),
+        date: p.year ? `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}` : '',
+        detail: actionDetail(a.details),
+        address: dep ? getAddress(dep.contractAddress) : null,
+        url: dep ? tokenUrl(dep.contractAddress) : null,
+      };
+    })
+    .slice(0, limit);
+  return { actions, sourceUrl: 'https://docs.robinhood.com/chain/stock-token-apis', fetchedAt: r.fetchedAt };
+}
+
+export interface StockDetail extends StockGap {
+  pendingMultiplier: number | null;
+  pendingAt: string | null;
+  tradable: boolean;
+  dailyHigh: number | null;
+  dailyLow: number | null;
+  volume: number | null;
+  mintBurnUsd: number | null;
+  supply: string | null;
+  actions: CorporateAction[];
+  sourceUrl: string;
+  fetchedAt: string;
+}
+/** Everything about one stock token: quote, oracle, DEX, supply onchain, pending multiplier, dividends and splits. */
+export async function stockDetail(symbolOrAddress: string, ctx: CallContext): Promise<StockDetail> {
+  const t = await findStock(symbolOrAddress, ctx);
+  if (!t) throw new Error(`“${symbolOrAddress}” is not a Robinhood stock token on Robinhood Chain.`);
+  const [[g], q, supply, acts] = await Promise.all([
+    gapsFor([t], ctx),
+    rhQuote(t.ticker, ctx).catch(() => null),
+    readUint(t.address, 'totalSupply()', ctx),
+    corporateActions(ctx, t.ticker, 10).catch(() => ({ actions: [] as CorporateAction[] })),
+  ]);
+  return {
+    ...g,
+    pendingMultiplier: t.pendingMultiplier,
+    pendingAt: t.pendingAt,
+    tradable: t.tradable,
+    dailyHigh: q?.high ?? null,
+    dailyLow: q?.low ?? null,
+    volume: q?.volume ?? null,
+    mintBurnUsd: q?.mintBurnUsd ?? null,
+    supply: supply === null ? null : formatUnits(supply, 18),
+    actions: acts.actions,
+    sourceUrl: t.url,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+// ---- GeckoTerminal: what is trading on Robinhood Chain ----
+export interface PoolRow {
+  name: string;
+  dex: string;
+  token: string | null;
+  priceUsd: number | null;
+  liquidityUsd: number | null;
+  volume24h: number | null;
+  change24h: number | null;
+  txns24h: number | null;
+  createdAt: string | null;
+  url: string;
+}
+function pools(data: any[]): PoolRow[] {
+  return data.map((p) => {
+    const a = p.attributes ?? {};
+    const base = String(p.relationships?.base_token?.data?.id ?? '').replace(/^robinhood_/, '');
+    const tx = a.transactions?.h24;
+    return {
+      name: String(a.name ?? ''),
+      dex: String(p.relationships?.dex?.data?.id ?? '').replace(/-robinhood$/, '').replace(/[-_]/g, ' '),
+      token: base && isAddress(base, { strict: false }) ? getAddress(base) : null,
+      priceUsd: n(a.base_token_price_usd),
+      liquidityUsd: n(a.reserve_in_usd),
+      volume24h: n(a.volume_usd?.h24),
+      change24h: n(a.price_change_percentage?.h24),
+      txns24h: tx ? (tx.buys ?? 0) + (tx.sells ?? 0) : null,
+      createdAt: a.pool_created_at ?? null,
+      url: `https://www.geckoterminal.com/robinhood/pools/${a.address}`,
+    };
+  });
+}
+export interface MarketPulse {
+  trending: PoolRow[];
+  newest: PoolRow[];
+  dexCount: number | null;
+  note: string;
+  sourceUrl: string;
+  fetchedAt: string;
+}
+export async function marketPulse(ctx: CallContext, limit = 10): Promise<MarketPulse> {
+  const g = (path: string, ttlMs: number) => fetchJson<any>(`https://api.geckoterminal.com/api/v2/networks/robinhood/${path}`, { provider: GECKO, ctx, ttlMs });
+  const [t, nw, dx] = await Promise.all([g('trending_pools?page=1', 5 * 60_000), g('new_pools?page=1', 2 * 60_000), g('dexes?page=1', 6 * 60 * 60_000).catch(() => null)]);
+  return {
+    trending: pools(t.data?.data ?? []).slice(0, limit),
+    newest: pools(nw.data?.data ?? []).slice(0, limit),
+    dexCount: Array.isArray(dx?.data?.data) ? dx!.data.data.length : null,
+    note: 'What is trading on Robinhood Chain right now, from GeckoTerminal. Listing here is not an endorsement: check a token’s contract before you touch it. Not financial advice.',
+    sourceUrl: 'https://www.geckoterminal.com/robinhood/pools',
+    fetchedAt: t.fetchedAt,
   };
 }
 
@@ -362,13 +686,13 @@ export interface AddressReport {
   kind: 'wallet' | 'contract';
   ethBalance: string;
   txCount: number;
-  tokens: { symbol: string; name: string; address: string; balance: string; url: string }[];
+  tokens: { symbol: string; name: string; address: string; balance: string; valueUsd: number | null; url: string }[];
   checkedTokens: number;
   note: string;
   sourceUrl: string;
   fetchedAt: string;
 }
-/** ETH balance, sent-transaction count, and balances of known tokens (no indexer: only these are checked). */
+/** ETH balance, sent-transaction count, and balances of every official stock token plus AGENTDOM, WETH and USDG. */
 export async function inspectAddress(address: string, ctx: CallContext): Promise<AddressReport> {
   const a = checkAddress(address);
   const [bal, nonce, code, stocks] = await Promise.all([
@@ -378,20 +702,26 @@ export async function inspectAddress(address: string, ctx: CallContext): Promise
     stockTokenList(ctx).catch(() => [] as StockToken[]),
   ]);
   const known = [
-    { symbol: 'AGENTDOM', name: 'Agentdom', address: getAddress(AGENTDOM_CA) },
-    { symbol: 'WETH', name: 'Wrapped Ether', address: WETH },
-    { symbol: 'USDG', name: 'Global Dollar', address: USDG },
-    ...stocks.map((s) => ({ symbol: s.ticker, name: s.name, address: s.address })),
+    { symbol: 'AGENTDOM', name: 'Agentdom', address: getAddress(AGENTDOM_CA), decimals: 18, stock: false },
+    { symbol: 'WETH', name: 'Wrapped Ether', address: WETH, decimals: 18, stock: false },
+    { symbol: 'USDG', name: 'Global Dollar', address: USDG, decimals: 6, stock: false },
+    ...stocks.map((s) => ({ symbol: s.ticker, name: s.name, address: s.address, decimals: 18, stock: true })),
   ];
-  const tokens = (
-    await Promise.all(
-      known.map(async (k) => {
-        const [raw, meta] = await Promise.all([readUint(k.address, 'balanceOf(address)', ctx, encAddr(a), 30_000), tokenMeta(k.address, ctx).catch(() => null)]);
-        if (!raw) return null;
-        return { symbol: meta?.symbol ?? k.symbol, name: meta?.name ?? k.name, address: k.address, balance: formatUnits(raw, meta?.decimals ?? 18), url: tokenUrl(k.address) };
-      }),
-    )
-  ).filter(Boolean) as AddressReport['tokens'];
+  const usdg = await tokenMeta(USDG, ctx).catch(() => null);
+  if (usdg) known[2].decimals = usdg.decimals;
+  const raws = await rpcBatch(known.map((k) => ({ to: k.address, data: sel('balanceOf(address)') + encAddr(a) })), ctx);
+  const held = known.map((k, i) => ({ k, raw: raws[i] ? hexToBigInt(raws[i]!.slice(0, 66) as Hex) : 0n })).filter((x) => x.raw > 0n);
+  const tokens = await Promise.all(
+    held.map(async ({ k, raw }) => {
+      const balance = formatUnits(raw, k.decimals);
+      let valueUsd: number | null = null;
+      if (k.stock) {
+        const q = await rhQuote(k.symbol, ctx).catch(() => null);
+        if (q?.tokenBid) valueUsd = Math.round(Number(balance) * q.tokenBid * 100) / 100;
+      } else if (k.symbol === 'USDG') valueUsd = Math.round(Number(balance) * 100) / 100;
+      return { symbol: k.symbol, name: k.name, address: k.address, balance, valueUsd, url: tokenUrl(k.address) };
+    }),
+  );
   return {
     address: a,
     kind: code.data && code.data !== '0x' ? 'contract' : 'wallet',
@@ -399,7 +729,7 @@ export async function inspectAddress(address: string, ctx: CallContext): Promise
     txCount: Number(hexToBigInt(nonce.data)),
     tokens,
     checkedTokens: known.length,
-    note: 'Read straight from the chain. Only ETH and the listed tokens (AGENTDOM, WETH, USDG and confirmed stock tokens) are checked; other tokens are not shown.',
+    note: `Read straight from the chain. ETH, AGENTDOM, WETH, USDG and all ${stocks.length} official stock tokens are checked; other tokens are not shown. Stock values use Robinhood’s live token bid.`,
     sourceUrl: addrUrl(a),
     fetchedAt: bal.fetchedAt,
   };
@@ -427,7 +757,7 @@ export interface ContractReport {
   owner: string | null;
   ownerRenounced: boolean | null;
   proxy: { implementation: string } | null;
-  stockToken: { multiplier: number } | null;
+  stockToken: { multiplier: number; symbol: string | null; listedByRobinhood: boolean } | null;
   flags: { label: string; why: string; found: string[] }[];
   market: Market | null;
   holders: { count: number; top10Pct: number | null } | null;
@@ -462,6 +792,7 @@ export async function scanContract(address: string, ctx: CallContext): Promise<C
     dexToken(a, ctx).catch(() => []),
     fetchJson<any>(`https://api.geckoterminal.com/api/v2/networks/robinhood/tokens/${a}/info`, { provider: GECKO, ctx, ttlMs: 10 * 60_000, okStatuses: [404] }).catch(() => null),
   ]);
+  const official = (await stockTokenList(ctx).catch(() => [] as StockToken[])).find((t) => t.address.toLowerCase() === a.toLowerCase());
   const dec = meta?.decimals ?? 18;
   const flags = FLAGS.map((f) => ({ label: f.label, why: f.why, found: f.sigs.filter((s) => bytecode.includes(sel(s).slice(2))).map((s) => s.split('(')[0]) })).filter((f) => f.found.length);
   const g = gecko?.data?.data?.attributes;
@@ -475,7 +806,7 @@ export async function scanContract(address: string, ctx: CallContext): Promise<C
     owner,
     ownerRenounced: renounced,
     proxy,
-    stockToken: mult !== null && mult > 0 ? { multiplier: mult } : null,
+    stockToken: official ? { multiplier: official.multiplier, symbol: official.ticker, listedByRobinhood: true } : mult !== null && mult > 0 ? { multiplier: mult, symbol: null, listedByRobinhood: false } : null,
     flags,
     market: dex.length ? bestMarket(dex) : null,
     holders: g?.holders?.count ? { count: g.holders.count, top10Pct: g.holders.distribution_percentage?.top_10 ? Number(g.holders.distribution_percentage.top_10) : null } : null,

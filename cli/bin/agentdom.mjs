@@ -341,31 +341,101 @@ const commands = {
     notAdvice();
   },
 
-  async stocks(api) {
-    const d = await get(api, '/tools/chain/stocks');
+  async stocks(api, symbols) {
+    const want = symbols.map((s) => s.toUpperCase()).filter((s) => /^[A-Z.]{1,8}$/.test(s));
+    const d = await get(api, '/tools/chain/stocks' + (want.length ? `?symbols=${encodeURIComponent(want.join(','))}` : ''));
     if (this.json) return d;
     title('Stock tokens vs Wall Street');
     const list = d.tokens || [];
     if (list.length) {
       table(
-        ['Ticker', 'Name', 'Token', 'Fair', 'Stock', 'Gap', 'Liquidity', 'Stock as of'],
+        ['Ticker', 'Wall St x mult', 'Robinhood', 'Chainlink', 'DEX', 'DEX gap', 'DEX liquidity'],
         list.map((t) => [
-          c.bold(t.ticker || NA),
-          t.name || '',
-          usd(t.tokenPriceUsd),
+          c.bold(t.ticker || NA) + (t.halted ? c.yellow(' halted') : ''),
           usd(t.fairTokenPrice),
-          usd(t.stockPrice),
+          usd(t.robinhoodTokenBid),
+          usd(t.oraclePrice),
+          usd(t.tokenPriceUsd),
           pct(t.gapPct, true),
           usd(t.liquidityUsd),
-          when(t.stockAsOf),
         ]),
-        [2, 3, 4, 5, 6],
+        [1, 2, 3, 4, 5, 6],
       );
       console.log('');
-      console.log(c.dim('  Fair = share price x token multiplier.'));
+      console.log(c.dim(`  ${num(d.listed, 0)} official stock tokens listed. Pick any: agentdom stocks NVDA TSLA, or agentdom stock AAPL.`));
     } else {
       console.log('  No stock tokens found.');
     }
+    if (d.note) console.log(c.dim(`  ${d.note}`));
+    source(d);
+    notAdvice();
+  },
+
+  async stock(api, [symbol]) {
+    if (!symbol) throw new CliError('Missing ticker. Usage: agentdom stock <TICKER or address>');
+    const d = await get(api, `/tools/chain/stock?symbol=${encodeURIComponent(symbol)}`);
+    if (this.json) return d;
+    title(`${d.ticker} stock token: ${d.name}`);
+    rows([
+      ['Contract', d.address],
+      ['Wall Street', `${usd(d.wallStreetBid)} / ${usd(d.wallStreetAsk)}  ${c.dim(`day ${usd(d.dailyLow)} to ${usd(d.dailyHigh)}`)}`],
+      ['Multiplier', `${num(d.multiplier, 6)}${isNum(d.pendingMultiplier) ? `  ${c.yellow(`changing to ${num(d.pendingMultiplier, 6)}`)}` : ''}`],
+      ['Fair price', usd(d.fairTokenPrice)],
+      ['Robinhood', `${usd(d.robinhoodTokenBid)} / ${usd(d.robinhoodTokenAsk)}`],
+      ['Chainlink', `${usd(d.oraclePrice)}  ${c.dim(when(d.oracleUpdatedAt))}`],
+      ['DEX', `${usd(d.tokenPriceUsd)}  gap ${pct(d.gapPct, true)}  liquidity ${usd(d.liquidityUsd)}`],
+      ['Supply', amount(d.supply)],
+      ['Minted/burned', `${usd(d.mintBurnUsd)} today`],
+      d.halted ? ['Trading', c.yellow('halted')] : null,
+    ]);
+    const acts = d.actions || [];
+    if (acts.length) {
+      section('Dividends and splits');
+      table(['Type', 'Detail', 'Date', 'Status'], acts.map((a) => [a.type, a.detail, a.date, a.status]));
+    }
+    source(d);
+    notAdvice();
+  },
+
+  async actions(api, [symbol]) {
+    const d = await get(api, '/tools/chain/actions' + (symbol ? `?symbol=${encodeURIComponent(symbol)}` : ''));
+    if (this.json) return d;
+    title('Dividends and splits');
+    const acts = d.actions || [];
+    if (acts.length) table(['Ticker', 'Type', 'Detail', 'Date', 'Status'], acts.map((a) => [c.bold(a.symbol), a.type, a.detail, a.date, a.status]));
+    else console.log('  None found.');
+    source(d);
+  },
+
+  async oracles(api, [kind]) {
+    const k = kind === 'stock' || kind === 'stocks' ? 'stock' : 'crypto';
+    const d = await get(api, `/tools/chain/oracles?kind=${k}`);
+    if (this.json) return d;
+    title(`Chainlink prices onchain (${k})`);
+    table(
+      ['Feed', 'Price', 'Updated'],
+      (d.feeds || []).filter((f) => isNum(f.price)).map((f) => [f.name.replace(/^Robinhood\s+/, ''), usd(f.price), when(f.updatedAt)]),
+      [1],
+    );
+    if (d.note) console.log(c.dim(`\n  ${d.note}`));
+    source(d);
+  },
+
+  async markets(api) {
+    const d = await get(api, '/tools/chain/markets');
+    if (this.json) return d;
+    title('What is trading on Robinhood Chain');
+    const show = (rows, fresh) =>
+      table(
+        ['Pool', 'DEX', 'Price', fresh ? 'Created' : '24h', 'Liquidity', 'Volume 24h', 'Token'],
+        rows.map((p) => [p.name, p.dex, usd(p.priceUsd), fresh ? when(p.createdAt) : pct(p.change24h, true), usd(p.liquidityUsd), usd(p.volume24h), p.token ? short(p.token) : NA]),
+        [2, 4, 5],
+      );
+    section('Trending');
+    show(d.trending || [], false);
+    section('Just launched');
+    show(d.newest || [], true);
+    console.log(c.dim(`\n  ${d.dexCount ? `${d.dexCount} DEXes active. ` : ''}Check any token first: agentdom check <address>`));
     if (d.note) console.log(c.dim(`  ${d.note}`));
     source(d);
     notAdvice();
@@ -419,7 +489,11 @@ Commands
   tx <hash>           Explain a transaction in plain words
   wallet <address>    ETH and token balances of an address
   check <address>     Red-flag check of a token contract
-  stocks              Stock tokens vs Wall Street prices
+  stocks [TICKERS]    Stock tokens vs Wall Street, Chainlink and the DEX
+  stock <TICKER>      One stock token in depth (any of the 200+ official ones)
+  actions [TICKER]    Dividends and splits for stock tokens
+  oracles [stock]     Chainlink prices onchain (crypto by default)
+  markets             Trending and newly launched pools on Robinhood Chain
   token               $AGENTDOM ledger: price, holders, supply, burned
   status              Realm status: agents, work, decrees
   help                Show this help
@@ -434,6 +508,8 @@ Examples
   agentdom pulse
   agentdom tx 0xb832760f469e68b4e0500d3c3c66ebde7d0cd24fa7be30f7e91f133173edfecc
   agentdom check 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
+  agentdom stock NVDA
+  agentdom markets
   AGENTDOM_API=http://localhost:8790 agentdom status --json
 
 This tool is read-only. It never asks for keys and never signs anything.
