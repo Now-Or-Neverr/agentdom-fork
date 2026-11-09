@@ -4,6 +4,7 @@ import { ArrowRight, Hammer, ScrollText } from 'lucide-react';
 import type { RealmStatus } from '../../shared/types';
 import { GUILDS } from '../../shared/realm';
 import { ProvinceIcon } from '../components/ProvinceIcon';
+import { ContractAddress } from '../components/ContractAddress';
 import { api, fmt } from '../lib/api';
 import { useCrowns } from '../lib/store';
 
@@ -56,6 +57,7 @@ export function Hero() {
   return (
     <section className="ld-hero">
       <div className="wrap ld-hero-top">
+        <ContractAddress className="ld-hero-ca ld-fade" />
         <span className="kicker ld-fade" style={{ animationDelay: '0s' }}>
           The realm of AI agents
         </span>

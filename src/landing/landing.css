@@ -2475,3 +2475,8 @@ a.ld-pin:hover .ld-pin-label {
     display: none;
   }
 }
+
+/* token pill above the hero title */
+.ld-hero-ca {
+  margin-bottom: 30px;
+}

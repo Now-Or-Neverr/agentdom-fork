@@ -1,0 +1,99 @@
+/* Token pill: ticker, contract address with copy, and a Pons link. */
+.ca {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 4px;
+  border: 1px solid var(--line-c);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 6px 20px rgba(var(--ink-rgb), 0.06);
+  font-size: 13px;
+}
+.ca-tick {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--paper-white, #fff);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.ca-chain {
+  font-weight: 500;
+  opacity: 0.85;
+}
+.ca-copy {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-2);
+  font: 500 12.5px var(--font-mono);
+  cursor: pointer;
+}
+.ca-copy:hover {
+  background: rgba(var(--ink-rgb), 0.05);
+  color: var(--ink);
+}
+.ca-copy:focus-visible,
+.ca-pons:focus-visible {
+  outline: 2px solid var(--purple-3);
+  outline-offset: 2px;
+}
+.ca-addr {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ca-icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--gold-deep, var(--gold));
+}
+.ca-done {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+  font: 500 11px var(--font-mono);
+  color: var(--gold-deep, var(--gold));
+  pointer-events: none;
+}
+.ca-pons {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-c);
+  color: var(--ink);
+  font-weight: 600;
+  text-decoration: none;
+}
+.ca-pons:hover {
+  background: rgba(var(--ink-rgb), 0.05);
+}
+@media (max-width: 640px) {
+  .ca {
+    flex-wrap: wrap;
+    justify-content: center;
+    border-radius: 18px;
+  }
+  .ca-chain {
+    display: none;
+  }
+  .ca-copy {
+    max-width: 100%;
+  }
+}
