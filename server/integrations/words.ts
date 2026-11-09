@@ -1,5 +1,5 @@
 // Free Dictionary API (dictionaryapi.dev), Wiktionary as its backup, and Datamuse.
-import { clip, fetchJson, qs, stripHtml, type CallContext } from './http';
+import { clip, fetchJson, qs, stripHtml, UpstreamError, type CallContext } from './http';
 
 export interface Definition {
   word: string;
@@ -12,13 +12,22 @@ export interface Definition {
 }
 
 /** English definitions. Falls back to Wiktionary when dictionaryapi.dev is down or has no entry. */
+// The Free Dictionary API often answers 5xx for a while. After one server error we go straight
+// to Wiktionary for 30 minutes instead of failing against it again.
+let dictDownUntil = 0;
+
 export async function define(word: string, ctx: CallContext): Promise<Definition> {
   const w = word.trim().toLowerCase();
+  if (Date.now() < dictDownUntil) {
+    const wk = await wiktionary(w, ctx).catch(() => null);
+    if (wk) return wk;
+  }
   const url = 'https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(w);
   let r: Awaited<ReturnType<typeof fetchJson<any>>>;
   try {
-    r = await fetchJson<any>(url, { provider: 'dictionary', ctx, ttlMs: 24 * 60 * 60_000, okStatuses: [404] });
+    r = await fetchJson<any>(url, { provider: 'dictionary', ctx, ttlMs: 24 * 60 * 60_000, okStatuses: [404], retries: 0 });
   } catch (e) {
+    if (!(e instanceof UpstreamError) || e.status === 0 || e.status >= 500) dictDownUntil = Date.now() + 30 * 60_000;
     const wk = await wiktionary(w, ctx).catch(() => null);
     if (wk) return wk;
     throw e;

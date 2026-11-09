@@ -179,6 +179,20 @@ export interface RequestOpts {
 
 type Kind = 'json' | 'text' | 'buffer';
 
+// After an HTTP 429 a provider is left alone until its Retry-After (or 5 minutes) has passed,
+// so the realm stops knocking on a door that already said "too many requests".
+const coolUntil = new Map<string, number>();
+function coolDown(provider: string, retryAfter: string | null) {
+  const s = Number(retryAfter);
+  const ms = Number.isFinite(s) && s > 0 ? Math.min(s * 1000, 60 * 60_000) : 5 * 60_000;
+  coolUntil.set(provider, Date.now() + ms);
+}
+/** Seconds left before a rate-limited provider may be called again (0 = free to call). */
+export function coolingFor(provider: string): number {
+  const t = coolUntil.get(provider) ?? 0;
+  return t > Date.now() ? Math.ceil((t - Date.now()) / 1000) : 0;
+}
+
 async function request<T>(url: string, kind: Kind, o: RequestOpts): Promise<Fetched<T>> {
   const method = o.method ?? 'GET';
   const textBody = o.body === undefined || typeof o.body === 'string' || o.body instanceof URLSearchParams;
@@ -191,6 +205,8 @@ async function request<T>(url: string, kind: Kind, o: RequestOpts): Promise<Fetc
     const fly = inflight.get(key);
     if (fly) return (await fly) as Fetched<T>;
   }
+  const wait = coolingFor(o.provider);
+  if (wait) throw new UpstreamError(o.provider, 429, `${label(o.provider)} asked us to slow down. Try again in about ${Math.ceil(wait / 60)} min.`);
   const run = (async () => {
     const retries = o.retries ?? 1;
     let lastErr: UpstreamError | null = null;
@@ -214,6 +230,7 @@ async function request<T>(url: string, kind: Kind, o: RequestOpts): Promise<Fetc
           },
         });
         status = res.status;
+        if (status === 429) coolDown(o.provider, res.headers.get('retry-after'));
         const accepted = res.ok || (o.okStatuses ?? []).includes(res.status);
         let data: unknown;
         if (kind === 'buffer') data = { buf: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get('content-type') ?? '', headers: Object.fromEntries(res.headers.entries()) };

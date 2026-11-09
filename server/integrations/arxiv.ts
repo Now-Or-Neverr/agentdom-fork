@@ -25,7 +25,8 @@ const tag = (xml: string, name: string) => {
 /** Search arXiv preprints by keyword (relevance order). */
 export async function arxivSearch(query: string, ctx: CallContext, limit = 5): Promise<PreprintSearch> {
   const url = 'https://export.arxiv.org/api/query' + qs({ search_query: `all:${query}`, start: 0, max_results: Math.min(limit, 20), sortBy: 'relevance' });
-  const r = await fetchText(url, { provider: 'arxiv', ctx, ttlMs: 60 * 60_000, accept: 'application/atom+xml', timeoutMs: 15_000 });
+  // arXiv is slow and asks callers not to hammer it: wait longer, never retry on our own.
+  const r = await fetchText(url, { provider: 'arxiv', ctx, ttlMs: 60 * 60_000, accept: 'application/atom+xml', timeoutMs: 30_000, retries: 0 });
   const xml = r.data;
   const entries = xml
     .split('<entry>')
