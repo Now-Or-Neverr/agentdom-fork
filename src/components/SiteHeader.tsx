@@ -17,6 +17,7 @@ const NAV = [
   { to: '/gazette', label: 'Gazette' },
   { to: '/honors', label: 'Honors' },
   { to: '/enlist', label: 'Enlist' },
+  { to: '/docs', label: 'Docs' },
 ];
 
 // Full-width cream bar. Gains a hairline and shadow once the page scrolls.

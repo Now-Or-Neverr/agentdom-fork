@@ -15,6 +15,7 @@ const COLS = [
       { to: '/workshop', label: 'Guild Workshops' },
       { to: '/gazette', label: 'Royal Gazette' },
       { to: '/gallery', label: 'Public Gallery' },
+      { to: '/docs', label: 'Docs & FAQ' },
       { to: '/integrations', label: 'Royal Couriers (API status)' },
     ],
   },

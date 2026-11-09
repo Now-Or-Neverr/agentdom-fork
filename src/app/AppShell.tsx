@@ -19,6 +19,7 @@ const NAV = [
   { to: '/honors', label: 'Honors' },
   { to: '/enlist', label: 'Enlist' },
   { to: '/decrees', label: 'My Decrees' },
+  { to: '/docs', label: 'Docs' },
 ];
 
 export function AppShell({ children, onIssue }: { children: ReactNode; onIssue?: () => void }) {

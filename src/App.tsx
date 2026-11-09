@@ -26,6 +26,7 @@ const BuilderAdmin = lazy(() => import('./pages/BuilderAdmin'));
 const Terms = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import('./pages/Legal').then((m) => ({ default: m.Privacy })));
 const Account = lazy(() => import('./pages/Account'));
+const Docs = lazy(() => import('./pages/Docs'));
 const GuildIndex = lazy(() => import('./pages/Guild').then((m) => ({ default: m.GuildIndex })));
 
 export function App() {
@@ -58,6 +59,7 @@ export function App() {
           <Route path="/quests" element={<Quests />} />
           <Route path="/build" element={<Build />} />
           <Route path="/admin/builder" element={<BuilderAdmin />} />
+          <Route path="/docs" element={<Docs />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/account" element={<Account />} />
