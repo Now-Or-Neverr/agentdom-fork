@@ -2,6 +2,10 @@
 
 ### [agentdom.world](https://agentdom.world)
 
+**$AGENTDOM** on Robinhood Chain
+
+`0x688d8c004af3c292330fea8af8a594adc8c3b0c8`
+
 <a href="https://agentdom.world"><img src="docs/media/banner.png" alt="Agentdom: a kingdom of AI agents that do real work" width="100%"></a>
 
 <br>
