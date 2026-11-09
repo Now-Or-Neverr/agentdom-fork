@@ -4,7 +4,7 @@
 import * as THREE from 'three';
 import { PROVINCE, type ProvinceId } from '../../shared/realm';
 import { C, Frame, G, Kit, mix } from './kit';
-import { cwall, gatehouse, hall, pagoda, paifang } from './arch';
+import { chimney, cwall, gatehouse, hall, pagoda, paifang } from './arch';
 import { balustrade, carpet, ding, drum, flag, goods, house, kiln, palisade, roundTemple, spouts, stage, stall, stoneLion, stoneTower, stoneWall, vault, woodTower } from './buildings';
 import type { Act, Station } from './people';
 import type { Role } from '../../shared/realm';
@@ -525,6 +525,90 @@ export function buildSettlement(k: Kit, s: SettlementSite, r: () => number, grou
       spot(0, -2.2, 0, 'watch', 'herald', 0.08);
       pair(-3.0, RZ + 3.6, 0.3);
       spot(3.0, RZ + 3.4, Math.PI, 'vendor');
+      break;
+    }
+    case 'mint': {
+      // royal mint: gold-trimmed counting house, strongroom with a round vault door,
+      // a smelting furnace with a tall chimney, a coin press and a glowing ledger stone
+      const gold = '#d4a93a';
+      top = tagged(() => {
+        const t = hall(k, f, 0, -2.0, { w: 5.0, d: 2.8, acc, tiers: 2, plat: 0.45, ch: 1.35, band: '#b8923a', ends: C.goldD, roof: '#4a4643', lit: 0.9 }, r).top;
+        kiln(k, f, 3.9, -0.9, 0.8);
+        return t;
+      });
+      // brick chimney behind the furnace
+      k.smoke.push(chimney(k, f, 4.7, -2.9, 0.32, 4.2));
+      // strongroom: squat stone block with a round steel vault door
+      {
+        const vf = f.sub(-4.5, 0, -1.2, 0.35);
+        k.box(vf, 0, 0, 0, 2.3, 0.3, 2.1, '#8a8276');
+        k.box(vf, 0, 0.3, 0, 2.0, 1.6, 1.8, '#9c9488');
+        k.box(vf, 0, 1.2, 0, 2.04, 0.05, 1.84, '#8a8276');
+        k.box(vf, 0, 1.84, 0, 2.12, 0.07, 1.92, gold);
+        k.box(vf, 0, 1.91, 0, 2.3, 0.16, 2.1, '#4a4643');
+        k.box(vf, 0, 2.07, 0, 1.5, 0.2, 1.3, '#55504c');
+        k.ball(vf, 0, 2.36, 0, 0.13, gold);
+        k.s.add(G.cyl16, '#5d5f66', vf.mat(0, 1.0, 0.92, 0, 0.62, 0.1, 0.62, Math.PI / 2));
+        k.s.add(G.cyl16, gold, vf.mat(0, 1.0, 0.98, 0, 0.16, 0.06, 0.16, Math.PI / 2));
+        for (let i = 0; i < 3; i++) k.box(vf, 0, 1.0 - 0.025, 0.99, 0.62, 0.05, 0.03, '#3a3b40', 0, k.s, 0, (i * Math.PI) / 3);
+      }
+      // coin press: two posts, a crossbeam, the screw and a bar with weights
+      {
+        const pf = f.sub(2.7, 0, 1.3, -0.3);
+        k.box(pf, 0, 0, 0, 1.2, 0.35, 0.7, '#6b5a48');
+        for (const sx of [-1, 1]) k.box(pf, sx * 0.45, 0.35, 0, 0.16, 1.4, 0.16, C.woodD);
+        k.box(pf, 0, 1.75, 0, 1.2, 0.22, 0.24, C.woodD);
+        k.cyl(pf, 0, 0.75, 0, 0.07, 1.4, '#3a3a3e', 8);
+        k.box(pf, 0, 2.05, 0, 1.6, 0.06, 0.06, '#3a3a3e');
+        for (const sx of [-1, 1]) k.ball(pf, sx * 0.82, 2.08, 0, 0.11, '#2c2c30');
+        k.cyl(pf, 0, 0.35, 0, 0.22, 0.08, gold, 12);
+      }
+      // crates of fresh coin and stacks of coins
+      for (const [cx, cz, cr] of [
+        [4.5, 1.4, 0.2],
+        [4.9, 2.2, -0.3],
+        [4.0, 2.4, 0.5],
+      ]) {
+        k.box(f, cx, 0, cz, 0.6, 0.42, 0.5, '#8c6a46', cr);
+        k.box(f, cx, 0.42, cz, 0.5, 0.04, 0.4, gold, cr);
+      }
+      k.box(f, 4.5, 0.46, 1.4, 0.5, 0.36, 0.42, '#7a5a3c', 0.2);
+      for (let i = 0; i < 5; i++) k.cyl(f, 1.4 + (i % 3) * 0.26, 0, 2.2 + Math.floor(i / 3) * 0.28, 0.1, 0.12 + ((i * 7) % 5) * 0.06, gold, 8);
+      // ledger stone: dark obelisk with glowing blocks chained up its face and neon rings
+      {
+        const lx = -2.5;
+        const lz = 1.7;
+        k.box(f, lx, 0, lz, 1.2, 0.25, 1.2, C.marble2);
+        k.box(f, lx, 0.25, lz, 0.9, 0.2, 0.9, C.marble);
+        k.box(f, lx, 0.45, lz, 0.5, 2.5, 0.5, '#33354a');
+        k.cone(f, lx, 2.95, lz, 0.36, 0.45, gold, 4);
+        for (let i = 0; i < 4; i++) {
+          const y = 0.85 + i * 0.5;
+          k.neonBar(f, lx, y, lz + 0.26, 0.22, 0.22, 0.02, acc, 0, 0.5);
+          if (i < 3) k.neonBar(f, lx, y + 0.25, lz + 0.26, 0.04, 0.28, 0.02, acc, 0, 0.3);
+        }
+        k.neonRing(f, lx, 0.5, lz, 0.75, acc, 0.04);
+        k.neonRing(f, lx, 2.0, lz, 0.5, acc, 0.03);
+        k.lights.push(f.pt(lx, 1.6, lz + 0.4));
+      }
+      paifang(k, f, 0, 6.0, 3.2, 2.6, acc, 'mint', 0, '#4a4643');
+      house(k, f, -4.6, 3.1, 2.0, 1.6, 0.35, r, { acc, wall: '#b8ab95' });
+      house(k, f, 4.6, 4.2, 1.8, 1.5, -0.35, r, { wall: '#b8ab95' });
+      stoneWall(k, arc(s.r - 0.3, Math.PI * 0.6, Math.PI * 1.4, 10), ground, 1.2, 0.6);
+      k.pine(f, -5.4, -3.6, 1.0, r);
+      k.blossom(f, 1.8, -4.4, 0.8, r);
+      flag(k, f, -2.4, 4.6, 3.4, acc, 0, true);
+      flag(k, f, 2.4, 4.6, 3.4, acc, 0, true);
+      k.lamp(f, -1.0, 3.4, 0, 1.4);
+      k.lamp(f, 1.0, 3.4, 0, 1.4);
+      labelL = new THREE.Vector3(0, top + 0.6, -2.0);
+      walkL.push([0, 2.6], [-1.6, 3.6], [1.8, 3.4], [0, 6.6], [-2.6, 6.2], [-0.6, 1.0]);
+      // the master of the mint at the ledger stone, a coiner at the press, a guard at the vault
+      spot(-1.6, 1.4, -Math.PI * 0.6, 'watch', 'steward');
+      spot(2.75, 2.05, Math.PI - 0.3, 'hammer', 'steward');
+      spot(3.6, 0.5, Math.PI * 0.8, 'vendor');
+      spot(-3.9, 0.2, 0.35, 'guard');
+      pair(0.6, 4.4, 0.5);
       break;
     }
   }

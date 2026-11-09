@@ -2,6 +2,7 @@
 // Planning is free (no crowns) but rate-limited per user and realm-wide. Confirming a plan creates a
 // real quest through the existing quest engine (server/quests.ts createQuestRows).
 import Anthropic from '@anthropic-ai/sdk';
+import { decreeLimit } from './holders';
 import { db, now, uid, type Row } from './db';
 import { HttpError, allAgents, count, crownsEnabled, startOfDay, text } from './core';
 import { createQuestRows } from './quests';
@@ -183,8 +184,9 @@ export function confirmPlan(user: Row, ip: string, b: Row): string {
 
   const today = startOfDay();
   const userUsed = count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', user.id, today) + reserved(' AND q.user_id = ?', user.id);
-  if (userUsed + n > LIMIT_USER)
-    throw new HttpError(429, `This quest needs ${n} of your ${LIMIT_USER} daily decrees and you have ${Math.max(0, LIMIT_USER - userUsed)} left today.`);
+  const limitUser = decreeLimit(user.id as string);
+  if (userUsed + n > limitUser)
+    throw new HttpError(429, `This quest needs ${n} of your ${limitUser} daily decrees and you have ${Math.max(0, limitUser - userUsed)} left today.`);
   if (ip) {
     const ipUsed = count('SELECT COUNT(*) AS n FROM decrees WHERE ip = ? AND created_at >= ?', ip, today) + reserved(' AND q.ip = ?', ip);
     if (ipUsed + n > LIMIT_IP) throw new HttpError(429, 'Not enough decrees left today on this network for a quest this long.');

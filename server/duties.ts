@@ -802,6 +802,69 @@ const KINDS: DutyKind[] = [
       };
     },
   },
+  // ---------- The Royal Mint (Robinhood Chain, read-only) ----------
+  {
+    kind: 'chain_pulse',
+    province: 'mint',
+    providers: ['robinhoodrpc'],
+    task: 'Reading the latest blocks on Robinhood Chain…',
+    repeatHours: 8,
+    async run(ctx, seen) {
+      const r = await I.chainPulse(ctx);
+      const key = `pulse:${Math.floor(r.latestBlock / 100_000)}`;
+      if (seen.has(key)) return null;
+      return {
+        key,
+        title: `Robinhood Chain passes block ${r.latestBlock.toLocaleString('en')}`,
+        summary: `The latest block is ${r.latestBlock.toLocaleString('en')}. Over the last ${r.blocks.length} blocks the chain averaged ${r.avgTxPerBlock} transactions per block${r.avgBlockSeconds ? `, a new block every ${r.avgBlockSeconds} s` : ''}, with gas at ${r.gasPriceGwei} gwei.`,
+        data: { latestBlock: r.latestBlock, avgTxPerBlock: r.avgTxPerBlock, avgBlockSeconds: r.avgBlockSeconds, gasPriceGwei: r.gasPriceGwei },
+        sourceName: 'Robinhood Chain RPC',
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
+  {
+    kind: 'stock_token_gap',
+    province: 'mint',
+    providers: ['dexscreener', 'finnhub'],
+    task: 'Comparing stock tokens with Wall Street…',
+    repeatHours: 24,
+    async run(ctx, seen) {
+      const r = await I.stockBoard(ctx);
+      const day = new Date().toISOString().slice(0, 10);
+      const ranked = r.tokens.filter((t) => t.gapPct !== null).sort((a, b) => Math.abs(b.gapPct!) - Math.abs(a.gapPct!));
+      const t = ranked.find((x) => !seen.has(`${day}:${x.ticker}`));
+      if (!t || t.tokenPriceUsd === null || t.fairTokenPrice === null) return null;
+      return {
+        key: `${day}:${t.ticker}`,
+        title: `${t.ticker} token ${t.gapPct! >= 0 ? 'above' : 'below'} its share price by ${Math.abs(t.gapPct!)}%`,
+        summary: `The ${t.name} stock token traded at $${t.tokenPriceUsd} on Robinhood Chain, against $${t.fairTokenPrice.toFixed(2)} for the share price × its multiplier (Finnhub${t.stockAsOf ? `, ${t.stockAsOf.slice(0, 16).replace('T', ' ')} UTC` : ''}). Widest gap of the ${ranked.length} stock tokens checked. Not financial advice.`,
+        data: { ticker: t.ticker, tokenPriceUsd: t.tokenPriceUsd, fairTokenPrice: t.fairTokenPrice, gapPct: t.gapPct, liquidityUsd: t.liquidityUsd, multiplier: t.multiplier },
+        sourceName: 'DexScreener + Finnhub',
+        sourceUrl: t.url,
+      };
+    },
+  },
+  {
+    kind: 'agentdom_ledger',
+    province: 'mint',
+    providers: ['dexscreener', 'geckoterminal', 'robinhoodrpc'],
+    task: 'Counting the $AGENTDOM holders…',
+    repeatHours: 24,
+    async run(ctx, seen) {
+      const r = await I.agentdomStats(ctx);
+      const day = new Date().toISOString().slice(0, 10);
+      if (seen.has(day) || r.holders === null) return null;
+      return {
+        key: day,
+        title: `$AGENTDOM: ${r.holders.toLocaleString('en')} holders`,
+        summary: `$AGENTDOM has ${r.holders.toLocaleString('en')} holders on Robinhood Chain${r.burned ? `, and ${Math.round(Number(r.burned)).toLocaleString('en')} tokens (${r.burnedPct}% of supply) sit in burn addresses` : ''}. Read from the chain and GeckoTerminal. Not financial advice.`,
+        data: { holders: r.holders, top10Pct: r.top10Pct, burned: r.burned, burnedPct: r.burnedPct, totalSupply: r.totalSupply },
+        sourceName: 'Robinhood Chain + GeckoTerminal',
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
 ];
 
 export const DUTY_KINDS = KINDS.map((k) => ({ kind: k.kind, province: k.province, providers: k.providers }));

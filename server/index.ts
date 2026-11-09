@@ -16,6 +16,7 @@ import { router as cleanupRoutes } from './routes/adminCleanup';
 import { turnstileGuard, turnstileOn, turnstileSiteKey } from './turnstile';
 import { router as decreeExtraRoutes } from './decreeExtras';
 import { router as accountRoutes } from './routes/account';
+import { decreeLimit, router as holderRoutes } from './holders';
 import { startDuties } from './duties';
 import { startXAutopost } from './herald';
 import { bus, decreeChanged, logActivity } from './events';
@@ -129,7 +130,7 @@ app.get(
       queued: count("SELECT COUNT(*) AS n FROM decrees WHERE status = 'queued'"),
       issued: count("SELECT COUNT(*) AS n FROM decrees WHERE status != 'cancelled'"),
       crownsInVault: count("SELECT COALESCE(SUM(price), 0) AS n FROM decrees WHERE status IN ('queued','working','delivered')"),
-      dailyLimitPerUser: LIMIT_USER,
+      dailyLimitPerUser: u ? decreeLimit(u.id as string) : LIMIT_USER,
       usedToday: u ? count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', u.id, startOfDay()) : null,
     };
     res.json(s);
@@ -353,8 +354,9 @@ app.post(
     const brief = text(b.brief, 6000, 'Decree details');
     const ip = req.ip ?? '';
     const today = startOfDay();
-    if (count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', u.id, today) >= LIMIT_USER)
-      throw new HttpError(429, `You can issue ${LIMIT_USER} decrees per day. Come back tomorrow.`);
+    const limitUser = decreeLimit(u.id as string);
+    if (count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', u.id, today) >= limitUser)
+      throw new HttpError(429, `You can issue ${limitUser} decrees per day. Come back tomorrow.`);
     if (ip && count('SELECT COUNT(*) AS n FROM decrees WHERE ip = ? AND created_at >= ?', ip, today) >= LIMIT_IP)
       throw new HttpError(429, 'Daily decree limit reached for this network.');
     if (count('SELECT COUNT(*) AS n FROM decrees WHERE created_at >= ?', today) >= LIMIT_GLOBAL)
@@ -567,6 +569,7 @@ app.use('/api', mediaRoutes);
 app.use('/api', court2Routes);
 app.use('/api', decreeExtraRoutes);
 app.use('/api', accountRoutes);
+app.use('/api', holderRoutes);
 app.use(builderRoutes);
 app.use('/api', cleanupRoutes);
 

@@ -1,7 +1,7 @@
-import { Clapperboard, Crown, Feather, FlaskConical, Hammer, Landmark, Library, Megaphone, Palette, Scale, Store, Telescope, Trophy, type LucideIcon } from 'lucide-react';
+import { Clapperboard, Coins, Crown, Feather, FlaskConical, Hammer, Landmark, Library, Megaphone, Palette, Scale, Store, Telescope, Trophy, type LucideIcon } from 'lucide-react';
 import { PROVINCE, type ProvinceId } from '../../shared/realm';
 
-const MAP: Record<string, LucideIcon> = { Crown, Hammer, Feather, Palette, Clapperboard, Library, Megaphone, Store, Landmark, Scale, Telescope, FlaskConical, Trophy };
+const MAP: Record<string, LucideIcon> = { Crown, Hammer, Feather, Palette, Clapperboard, Library, Megaphone, Store, Landmark, Scale, Telescope, FlaskConical, Trophy, Coins };
 
 export function provinceIcon(id: ProvinceId): LucideIcon {
   return MAP[PROVINCE[id].icon] ?? Crown;

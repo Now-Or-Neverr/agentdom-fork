@@ -101,6 +101,16 @@ export const realmTools = {
   games: (title?: string) => req<{ title: string | null; deals: Section<I.GameDeals>; free: Section<I.FreeGames> | null }>('/tools/games' + qs({ title })),
 };
 
+// ---- Royal Mint (Robinhood Chain, read-only) ----
+export const chainTools = {
+  pulse: () => req<Named<I.ChainPulse>>('/tools/chain/pulse'),
+  tx: (hash: string) => req<Named<I.TxExplained>>('/tools/chain/tx' + qs({ hash })),
+  address: (address: string) => req<Named<I.AddressReport>>('/tools/chain/address' + qs({ address })),
+  contract: (address: string) => req<Named<I.ContractReport>>('/tools/chain/contract' + qs({ address })),
+  stocks: () => req<Named<I.StockBoard>>('/tools/chain/stocks'),
+  agentdom: () => req<Named<I.AgentdomStats>>('/tools/chain/agentdom'),
+};
+
 /** "12:04:31" local time, for "fetched at" labels. */
 export const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 export const num = (n: number, d = 2) => new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(n);

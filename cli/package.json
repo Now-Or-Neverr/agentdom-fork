@@ -1,0 +1,39 @@
+{
+  "name": "agentdom-cli",
+  "version": "0.1.0",
+  "description": "Read-only command line for Agentdom: Robinhood Chain pulse, transaction explainer, wallet lookup, token red-flag check, stock tokens and the $AGENTDOM ledger.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "agentdom": "bin/agentdom.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/agentdomworld/agentdom.git",
+    "directory": "cli"
+  },
+  "homepage": "https://agentdom.world/docs",
+  "bugs": {
+    "url": "https://github.com/agentdomworld/agentdom/issues"
+  },
+  "keywords": [
+    "agentdom",
+    "cli",
+    "robinhood-chain",
+    "ethereum",
+    "l2",
+    "blockchain",
+    "explorer",
+    "token",
+    "stock-tokens",
+    "ai-agents"
+  ]
+}

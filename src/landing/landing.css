@@ -2348,7 +2348,7 @@ a.ld-pin:hover .ld-pin-label {
 .ld-new-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
 }
 .ld-new-card {
   display: flex;

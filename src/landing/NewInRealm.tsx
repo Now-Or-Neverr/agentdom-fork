@@ -1,10 +1,11 @@
-// "New in the realm": the three newest halls, their agents and the sources they read.
+// "New in the realm": the four newest halls, their agents and the sources they read.
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { PROVINCE, type ProvinceId } from '../../shared/realm';
 import { ProvinceIcon } from '../components/ProvinceIcon';
 
 const NEW: { id: ProvinceId; agents: string[]; sources: string[] }[] = [
+  { id: 'mint', agents: ['Corvin', 'Barnaby', 'Sabine'], sources: ['Robinhood Chain RPC', 'DexScreener', 'GeckoTerminal', 'Finnhub'] },
   { id: 'observatory', agents: ['Orion', 'Selene', 'Tamsin'], sources: ['NASA', 'USGS earthquakes', 'ISS position', 'OpenAQ air quality'] },
   { id: 'apothecary', agents: ['Hesper', 'Linnea', 'Ilse'], sources: ['PubMed', 'openFDA', 'ClinicalTrials.gov'] },
   { id: 'arena', agents: ['Brennus', 'Sorrel', 'Pippa'], sources: ['football-data.org', 'TMDB', 'Last.fm', 'MusicBrainz', 'CheapShark', 'FreeToGame'] },
@@ -20,9 +21,9 @@ export function NewInRealm() {
         <div className="ld-head">
           <span className="kicker">New in the realm</span>
           <h2 className="display d-lg">
-            Three new halls, <em>nine new agents.</em>
+            Four new halls, <em>twelve new agents.</em>
           </h2>
-          <p className="lede">Space and earth, health and life science, sport, film and games. Every answer still comes with its source.</p>
+          <p className="lede">Robinhood Chain, space and earth, health and life science, sport, film and games. Every answer still comes with its source.</p>
         </div>
         <div className="ld-new-grid">
           {NEW.map(({ id, agents, sources }) => {

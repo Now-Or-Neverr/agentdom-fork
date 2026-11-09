@@ -60,6 +60,7 @@ export interface ToolUsage {
   unsplash: number;
   unsplashUsed: number;
   vulns: number;
+  chain: number;
   recipes: number;
 }
 export const newUsage = (): ToolUsage => ({
@@ -102,6 +103,7 @@ export const newUsage = (): ToolUsage => ({
   press: 0,
   unsplash: 0,
   unsplashUsed: 0,
+  chain: 0,
   vulns: 0,
   recipes: 0,
 });
@@ -284,6 +286,82 @@ function cap(c: ToolCtx, k: keyof ToolUsage, max: number, what: string) {
 
 function NEW_GUILD_TOOLS(): ToolDef[] {
   return [
+    // ---- Royal Mint (Robinhood Chain, read-only) ----
+    {
+      name: 'chain_pulse',
+      label: 'Robinhood Chain pulse',
+      description: 'Live Robinhood Chain state from its public RPC: latest block, block time, transactions per block, gas price and the last 8 blocks with explorer links. Max 10 chain calls per decree (shared by all chain tools).',
+      schema: obj({}, []),
+      doing: () => 'Reading the latest blocks on Robinhood Chain',
+      run: async (_i, c) => {
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.chainPulse(ctxOf(c));
+        return { data: r, summary: `Block ${r.latestBlock.toLocaleString('en')} · ${r.avgTxPerBlock} tx/block · gas ${r.gasPriceGwei} gwei`, sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'chain_tx',
+      label: 'Explain a transaction',
+      description: 'Read one Robinhood Chain transaction by hash: status, time, from, to, method, ETH value, fee, contract created and every ERC-20 token transfer (with symbol, amount and whether it went to a burn address). Explain it in plain words from this data only.',
+      schema: obj({ hash: { type: 'string', description: 'Transaction hash, 0x + 64 hex characters.' } }, ['hash']),
+      doing: (i) => `Reading transaction ${String(i.hash ?? '').slice(0, 10)}…`,
+      run: async (i, c) => {
+        const hash = str(i, 'hash', 80);
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.explainTx(hash, ctxOf(c));
+        return { data: r, summary: `${r.status} · ${r.method ?? 'call'} · ${r.tokenTransfers.length} token transfer(s)`, sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'chain_address',
+      label: 'Inspect an address',
+      description: 'Inspect a Robinhood Chain address: wallet or contract, ETH balance, number of sent transactions, and balances of known tokens only (AGENTDOM, WETH, USDG and confirmed Robinhood stock tokens). Other tokens are not checked: say so.',
+      schema: obj({ address: { type: 'string', description: 'Address, 0x + 40 hex characters.' } }, ['address']),
+      doing: (i) => `Looking up ${String(i.address ?? '').slice(0, 10)}…`,
+      run: async (i, c) => {
+        const address = str(i, 'address', 60);
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.inspectAddress(address, ctxOf(c));
+        return { data: r, summary: `${r.kind} · ${r.ethBalance} ETH · ${r.tokens.length} known token(s)`, sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'contract_check',
+      label: 'Token contract check',
+      description: 'Read-only safety check of a token contract on Robinhood Chain: name, supply, burned amount, owner and whether it is renounced, upgradeable proxy, whether it is an official Robinhood stock token, functions the controller could use (mint, pause, blacklist, fee changes, trading switch, limits), DEX market (price, liquidity, volume), holder count and top-10 share, and GeckoTerminal honeypot flag. A function being present is not proof of abuse.',
+      schema: obj({ address: { type: 'string', description: 'Contract address, 0x + 40 hex characters.' } }, ['address']),
+      doing: (i) => `Checking contract ${String(i.address ?? '').slice(0, 10)}…`,
+      run: async (i, c) => {
+        const address = str(i, 'address', 60);
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.scanContract(address, ctxOf(c));
+        return { data: r, summary: r.isContract ? `${r.token?.symbol ?? 'contract'} · ${r.flags.length} flag(s)${r.stockToken ? ' · official stock token' : ''}` : 'not a contract', sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'stock_tokens',
+      label: 'Stock tokens vs Wall Street',
+      description: 'Official Robinhood stock tokens on Robinhood Chain (confirmed onchain by their uiMultiplier), each with its DEX price, liquidity, the real share price from Finnhub, the multiplier, the fair token price (share price x multiplier) and the gap in percent. Share prices may be delayed or the last close. Not financial advice.',
+      schema: obj({}, []),
+      doing: () => 'Comparing stock tokens with Wall Street prices',
+      run: async (_i, c) => {
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.stockBoard(ctxOf(c));
+        return { data: r, summary: `${r.tokens.length} stock tokens compared`, sourceName: name('dexscreener'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'agentdom_token',
+      label: '$AGENTDOM stats',
+      description: 'Live $AGENTDOM stats on Robinhood Chain: price, 24h change, liquidity, volume, FDV, buys and sells, holder count, top-10 share, total supply and amount burned. Never predict the price or give investment advice.',
+      schema: obj({}, []),
+      doing: () => 'Reading the $AGENTDOM ledger',
+      run: async (_i, c) => {
+        cap(c, 'chain', 10, 'Chain');
+        const r = await I.agentdomStats(ctxOf(c));
+        return { data: r, summary: `$AGENTDOM · ${r.holders ?? '?'} holders · ${r.burnedPct ?? '?'}% burned`, sourceName: name('dexscreener'), sourceUrl: r.sourceUrl };
+      },
+    },
     // ---- Observatory (space & earth) ----
     {
       name: 'nasa_apod',
@@ -2228,6 +2306,7 @@ const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   observatory: ['nasa_apod', 'near_earth_asteroids', 'nasa_images', 'earthquakes', 'iss_position', 'air_quality', 'current_weather', 'web_search', 'search_arxiv'],
   apothecary: ['drug_label', 'fda_recalls', 'pubmed_search', 'clinical_trials', 'nutrition_lookup', 'web_search', 'read_url'],
   arena: ['football_table', 'football_matches', 'film_search', 'film_trending', 'music_charts', 'music_artist', 'game_deals', 'free_games', 'youtube_search', 'web_search', 'design_image'],
+  mint: ['chain_pulse', 'chain_tx', 'chain_address', 'contract_check', 'stock_tokens', 'agentdom_token', 'stock_quote', 'web_search', 'read_url'],
 };
 
 export const toolNamesFor = (p: ProvinceId) => [...(GUILD_TOOLS[p] ?? []), ...COMMON];
@@ -2313,6 +2392,12 @@ export function toolGuidance(p: ProvinceId): string {
       return [
         '- Use football_table / football_matches (football-data.org, major competitions only), film_search / film_trending (TMDB), music_charts / music_artist (Last.fm + MusicBrainz), game_deals (CheapShark) and free_games (FreeToGame). Never guess scores, tables or prices.',
         '- Credit sources in the result: "Data: TMDB" (link themoviedb.org) for film/TV, "Data from FreeToGame.com" for free games, Last.fm for charts. Prices change fast: give the time they were fetched.',
+      ].join('\n');
+    case 'mint':
+      return [
+        '- Use chain_pulse, chain_tx, chain_address and contract_check (Robinhood Chain public RPC), stock_tokens (DexScreener + Finnhub) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
+        '- Read-only: you cannot send, sign or trade anything. Never tell anyone to buy or sell, never predict prices, and end any token or market answer with: "Not financial advice."',
+        '- contract_check shows what a contract could do (mint, pause, blacklist, fees). Explain each flag in plain words and say that a present function is not proof of abuse; a renounced owner cannot use owner-only functions.',
       ].join('\n');
   }
 }

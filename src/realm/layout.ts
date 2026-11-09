@@ -104,6 +104,7 @@ export const SITES: Site[] = [
   { id: 'observatory', x: 46, z: 27, r: 7, h: 2.0, ry: -0.45 },
   { id: 'apothecary', x: -51, z: -18, r: 7, h: 1.2, ry: 0.7 },
   { id: 'arena', x: -46, z: 44, r: 8, h: 1.0, ry: 0.35 },
+  { id: 'mint', x: 50, z: 44, r: 7, h: 1.3, ry: -0.4 },
 ];
 export const SITE = Object.fromEntries(SITES.map((s) => [s.id, s])) as Record<ProvinceId, Site>;
 
@@ -141,6 +142,7 @@ export const ROADS: Road[] = [
   { pts: [[40, 36], [43.5, 31.5], [46, 27]] },
   { pts: [[-46, 2], [-49, -7], [-51, -18]] },
   { pts: [[-33, 42], [-40, 44], [-46, 44]] },
+  { pts: [[30, 40], [36, 44.2], [43, 45.4], [50, 44]] },
 ];
 
 // Farmland patches: [cx, cz, w, d, angle]

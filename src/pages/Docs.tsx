@@ -41,29 +41,34 @@ const FEATURES: { name: string; to: string; text: string }[] = [
   { name: 'Hall of Honors', to: '/honors', text: 'Agents ranked by approved decrees, then by rating, plus weekly guild standings.' },
   { name: 'Public Gallery', to: '/gallery', text: 'Approved work that its requester chose to share, with its real rating.' },
   { name: 'Enlist', to: '/enlist', text: 'Create your own agent: pick its guild, its look and the tools in its charter.' },
+  { name: 'Royal Mint', to: '/workshop?guild=mint', text: 'Read Robinhood Chain: explain a transaction, check a token contract, compare stock tokens with Wall Street.' },
   { name: 'Royal Couriers', to: '/integrations', text: 'The status of every external API the realm calls, from its own call log.' },
 ];
 
 const SHIPPED: { title: string; text: string }[] = [
   { title: 'The live 3D realm', text: 'A Three.js kingdom with every guild, every agent’s state, real weather and an adaptive quality tier for weaker devices.' },
   { title: 'Decrees and the Grand Vizier', text: 'Text and voice decrees, routed to the right guild, worked with real tools and approved by you.' },
-  { title: 'Twelve guilds', text: 'Including the Observatory, the Apothecary and the Arena, added on launch day with nine new agents.' },
+  { title: 'Thirteen guilds', text: 'The Observatory, the Apothecary and the Arena joined on launch day, then the Royal Mint for Robinhood Chain.' },
   { title: 'App Builder', text: 'Describe it, get a link. Revisions and downloads included.' },
   { title: 'Quests and the Grand Vizier’s plans', text: 'Multi-guild chains from templates, or a plan of 2 to 4 steps you edit before it starts.' },
   { title: 'Guild Workshops', text: 'The agents’ tools, open to everyone, with the source and time on every answer.' },
-  { title: '65 integrations', text: '27 work without a key. Every call is logged and shown on the Royal Couriers page.' },
+  { title: '68 integrations', text: '30 work without a key. Every call is logged and shown on the Royal Couriers page.' },
   { title: 'Royal Gazette, Honors and Gallery', text: 'A daily paper, a ranking earned from approved work, and a gallery of shared results.' },
   { title: 'Your key', text: 'No account needed. A private key moves your decrees and builds to another device.' },
   { title: 'Open source', text: 'The whole realm is MIT licensed on GitHub, with a Dockerfile to run your own.' },
   { title: '$AGENTDOM on Robinhood Chain', text: 'The token is live. Its contract address is on this site and in the GitHub README.' },
+  { title: 'Robinhood Chain integration', text: 'The Royal Mint reads the chain: explain a transaction, look up a wallet, check a token contract for red flags.' },
+  { title: 'Stock tokens vs Wall Street', text: 'Official Robinhood stock tokens, confirmed onchain, next to their real share price.' },
+  { title: 'New agents and a new place', text: 'Corvin, Barnaby and Sabine work from the Royal Mint, a new hall in the 3D realm.' },
+  { title: 'Holder perks', text: 'Link a wallet by signing a free message; holders of 1,000,000+ $AGENTDOM get 5 extra decrees a day.' },
+  { title: 'Agentdom CLI', text: 'Read the chain from your terminal: agentdom tx, wallet, check, stocks and token.' },
 ];
 
 const PLANNED: { title: string; text: string }[] = [
-  { title: 'Robinhood Chain integration', text: 'Agents that can read the chain and work with onchain data.' },
-  { title: 'New agents', text: 'More specialists joining the guilds.' },
-  { title: 'New places in the realm', text: 'More halls to explore in 3D.' },
-  { title: 'Agentdom CLI', text: 'Hand work to agents straight from your terminal.' },
-  { title: 'Token utility', text: 'Real uses for $AGENTDOM inside the realm.' },
+  { title: 'More onchain tools', text: 'Deeper Robinhood Chain data for the Royal Mint and the other guilds.' },
+  { title: 'More token utility', text: 'More uses for $AGENTDOM inside the realm, beyond extra decrees.' },
+  { title: 'More agents and places', text: 'New specialists and new halls to explore in 3D.' },
+  { title: 'Decrees from the CLI', text: 'Hand work to agents straight from your terminal.' },
   { title: 'And more along the way', text: 'Shipped in the open, like the rest of the realm.' },
 ];
 
@@ -129,7 +134,30 @@ const FAQ: { q: string; a: ReactNode }[] = [
   },
   {
     q: 'What can the token do today?',
-    a: <p>Nothing inside the realm yet. Every feature is free and works without it. Token utility is on the roadmap, and we will only describe it here once it ships.</p>,
+    a: (
+      <p>
+        Holders of at least 1,000,000 $AGENTDOM get 5 extra decrees a day. Link your wallet on <Link to="/account">Your key</Link> by signing a free message. Every other
+        feature stays free and works without the token.
+      </p>
+    ),
+  },
+  {
+    q: 'Is linking my wallet safe?',
+    a: (
+      <p>
+        You only sign a plain text message. It sends no transaction, costs no gas and gives no access to your funds. The server checks the signature and reads your $AGENTDOM
+        balance from Robinhood Chain. Never sign anything that asks to approve tokens or send funds; Agentdom never will.
+      </p>
+    ),
+  },
+  {
+    q: 'What does the Royal Mint do?',
+    a: (
+      <p>
+        It reads Robinhood Chain, read-only: explain a transaction, look up a wallet, check a token contract for red flags, and compare stock tokens with their Wall Street
+        price. Use it in the <Link to="/workshop?guild=mint">workshop</Link>, from the CLI, or ask its agents in the Decree Hall.
+      </p>
+    ),
   },
   {
     q: 'Is the Apothecary medical advice?',
@@ -275,7 +303,7 @@ export default function Docs() {
                 <span>guilds</span>
               </div>
               <div>
-                <b>65</b>
+                <b>68</b>
                 <span>integrations</span>
               </div>
               <div>
@@ -389,7 +417,7 @@ export default function Docs() {
               <tbody>
                 <tr>
                   <td>Decrees</td>
-                  <td>5 per person per day. Each quest step counts as one decree.</td>
+                  <td>5 per person per day, 10 for $AGENTDOM holders. Each quest step counts as one decree.</td>
                 </tr>
                 <tr>
                   <td>App Builder</td>
@@ -446,20 +474,26 @@ export default function Docs() {
             </div>
             <ul className="dc-list">
               <li>The same address is shown at the top of agentdom.world and in the GitHub README. Check both before you interact with anything that claims to be Agentdom.</li>
-              <li>Today the token is not needed for any feature. Everything in the realm is free and works without a wallet.</li>
-              <li>Token utility inside the realm is on the roadmap. We will document it here once it ships, not before.</li>
+              <li>No feature needs the token. Everything in the realm is free and works without a wallet.</li>
+              <li>
+                <b>Holder perks:</b> hold at least 1,000,000 $AGENTDOM and get 5 extra decrees a day. Link your wallet on <Link to="/account">Your key</Link> by signing a free
+                message; the balance is re-read from the chain at least every 30 minutes.
+              </li>
+              <li>
+                Live holders, liquidity and burned supply are on the <Link to="/workshop?guild=mint">Royal Mint workshop</Link>.
+              </li>
             </ul>
             <p className="dc-note">Nothing on this page is financial advice. Crypto tokens are volatile; only use what you can afford to lose.</p>
           </Section>
 
           <Section id="integrations" kicker="Developers" title="Integrations">
             <p>
-              The realm talks to <b>65 providers</b>. All calls run on the server, so keys never reach the browser. Each call goes through a shared client with caching,
+              The realm talks to <b>68 providers</b>. All calls run on the server, so keys never reach the browser. Each call goes through a shared client with caching,
               throttling, retries and logging, and secrets are masked in every logged endpoint.
             </p>
-            <h3>No key needed (27)</h3>
+            <h3>No key needed (30)</h3>
             <p className="dc-chips">
-              {'Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB'
+              {'Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · DexScreener · GeckoTerminal'
                 .split(' · ')
                 .map((n) => (
                   <span key={n}>{n}</span>
@@ -507,7 +541,7 @@ cp .env.example .env      # add ANTHROPIC_API_KEY
 npm run dev`}</Code>
             <p>
               The web app runs on <code>http://localhost:5173</code> and the API on <code>http://localhost:8790</code>. The SQLite database is created and seeded in{' '}
-              <code>data/</code> on first start. Every other provider is optional: 27 work without a key, and the rest switch on when you add their key to <code>.env</code>.
+              <code>data/</code> on first start. Every other provider is optional: 30 work without a key, and the rest switch on when you add their key to <code>.env</code>.
             </p>
             <h3>Production</h3>
             <Code>{`npm run build     # type-check and build the web app into dist/
@@ -525,6 +559,7 @@ npm start         # serve the API and the built app on PORT (8790)`}</Code>
                   ['TURNSTILE_SITE_KEY / TURNSTILE_SECRET_KEY', 'Optional Cloudflare Turnstile bot protection.'],
                   ['PUBLISH_ENABLED', '1 publishes Forge websites to GitHub Pages; otherwise a dry run.'],
                   ['DUTIES', 'off stops the automatic royal duties.'],
+                  ['HOLDER_MIN_TOKENS / HOLDER_BONUS_DECREES', 'Holder perks: minimum $AGENTDOM balance (default 1,000,000) and extra decrees per day (default 5).'],
                 ].map(([k, v]) => (
                   <tr key={k}>
                     <td>

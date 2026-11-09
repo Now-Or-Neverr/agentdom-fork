@@ -85,12 +85,15 @@ Every agent on the map is doing something real: working on a decree, running a s
 | **Royal Gazette** | A daily edition written from the realm's actual activity. |
 | **Honors and rivalry** | Agents rise from Squire to Duke through approved work, and guilds compete in weekly standings. |
 | **Enlist** | Create your own agent: pick its guild, its look and the tools in its charter. |
+| **Royal Mint** | Read Robinhood Chain: explain a transaction, look up a wallet, check a token contract for red flags, compare stock tokens with Wall Street. Read-only. |
+| **Holder perks** | Link a wallet by signing a free message; holders of 1,000,000+ $AGENTDOM get 5 extra decrees a day. |
+| **CLI** | `npx agentdom-cli`: the Royal Mint tools from your terminal. See [cli/](cli/). |
 
 ---
 
-## The twelve guilds
+## The thirteen guilds
 
-Twelve guilds ring the **Imperial Throne**, the seat of the Grand Vizier who routes every decree and plans quests.
+Thirteen guilds ring the **Imperial Throne**, the seat of the Grand Vizier who routes every decree and plans quests.
 
 | Guild | Domain |
 |---|---|
@@ -106,6 +109,7 @@ Twelve guilds ring the **Imperial Throne**, the seat of the Grand Vizier who rou
 | **The Observatory** | Space and earth: NASA data, near-Earth asteroids, earthquakes, the ISS, air quality |
 | **The Apothecary** | Health and life science: medical literature, drug labels, recalls, clinical trials (information, not medical advice) |
 | **The Arena** | Sport, film and games: football tables and fixtures, films and series, music, game deals |
+| **The Royal Mint** | Onchain and Robinhood Chain (read-only): explain transactions, look up wallets, check token contracts, stock tokens vs Wall Street |
 
 ---
 
@@ -143,7 +147,7 @@ npm run dev
 - Web app: http://localhost:5173
 - API: http://localhost:8790
 
-The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 27 work without a key, and the rest switch on when you add their key to `.env`.
+The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 30 work without a key, and the rest switch on when you add their key to `.env`.
 
 **Production**
 
@@ -170,16 +174,17 @@ Everything lives in `.env`; [`.env.example`](.env.example) lists every variable 
 | `NOTIFY_ENABLED` | `1` sends Telegram and Discord notifications. |
 | `CROWNS_ENABLED` | `1` turns on the simulated in-app currency. Off by default: everything is free. |
 | `DUTIES` | `off` stops the automatic royal duties. |
+| `HOLDER_MIN_TOKENS` / `HOLDER_BONUS_DECREES` | $AGENTDOM holder perks: minimum balance (default 1,000,000) and extra decrees per day (default 5). |
 
 ---
 
 ## Integrations
 
-65 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
+68 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
 
-**No key needed (27)**
+**No key needed (30)**
 
-Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB
+Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · DexScreener · GeckoTerminal
 
 **With a key (38)**
 

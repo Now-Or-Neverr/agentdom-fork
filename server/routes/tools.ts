@@ -690,3 +690,50 @@ router.get(
     res.json({ title: title ?? null, deals, free });
   }),
 );
+
+// ---- Royal Mint (Robinhood Chain, read-only) ----
+router.get(
+  '/tools/chain/pulse',
+  h(async (req, res) => {
+    ws(req, 'chain', 30);
+    res.json(single('robinhoodrpc', await run(I.chainPulse(WS('chain-pulse')))));
+  }),
+);
+router.get(
+  '/tools/chain/tx',
+  h(async (req, res) => {
+    const hash = text(req.query.hash, 80, 'hash');
+    ws(req, 'chain', 30);
+    res.json(single('robinhoodrpc', await run(I.explainTx(hash, WS('chain-tx')))));
+  }),
+);
+router.get(
+  '/tools/chain/address',
+  h(async (req, res) => {
+    const address = text(req.query.address, 60, 'address');
+    ws(req, 'chain', 20);
+    res.json(single('robinhoodrpc', await run(I.inspectAddress(address, WS('chain-address')))));
+  }),
+);
+router.get(
+  '/tools/chain/contract',
+  h(async (req, res) => {
+    const address = text(req.query.address, 60, 'address');
+    ws(req, 'chain', 20);
+    res.json(single('robinhoodrpc', await run(I.scanContract(address, WS('chain-contract')))));
+  }),
+);
+router.get(
+  '/tools/chain/stocks',
+  h(async (req, res) => {
+    ws(req, 'chain', 15);
+    res.json(single('dexscreener', await run(I.stockBoard(WS('chain-stocks')))));
+  }),
+);
+router.get(
+  '/tools/chain/agentdom',
+  h(async (req, res) => {
+    ws(req, 'chain', 30);
+    res.json(single('dexscreener', await run(I.agentdomStats(WS('chain-agentdom')))));
+  }),
+);

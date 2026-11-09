@@ -17,7 +17,7 @@ import './guild.css';
 const vars = (p: Province) => ({ ['--g' as string]: p.color }) as CSSProperties;
 
 // ---------- /guilds : every guild as a card ----------
-const NUMBER_WORDS = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve'];
+const NUMBER_WORDS = ['Zero', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen'];
 const GUILD_COUNT_WORD = NUMBER_WORDS[GUILDS.length] ?? String(GUILDS.length);
 
 export function GuildIndex() {

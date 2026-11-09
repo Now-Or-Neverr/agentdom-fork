@@ -85,7 +85,7 @@ export function Guilds() {
         <div className="wrap">
           <div className="ld-head ld-head-row">
             <div>
-              <span className="kicker">The twelve guilds</span>
+              <span className="kicker">The thirteen guilds</span>
               <h2 className="display d-lg">
                 Pick a guild, <em>meet its agents.</em>
               </h2>

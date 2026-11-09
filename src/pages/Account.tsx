@@ -7,6 +7,7 @@ import { useApp } from '../lib/store';
 import { accountApi } from '../lib/accountApi';
 import { pokeWorkWatcher } from '../lib/workWatch';
 import { NotifyButton } from '../components/NotifyButton';
+import { HolderPerks } from '../components/HolderPerks';
 import './account.css';
 
 export default function Account() {
@@ -160,6 +161,8 @@ export default function Account() {
             )}
             <p className="muted acct-small">Work you made here as the current guest stays with the current guest. Make a key for it first if you want to keep it.</p>
           </form>
+
+          <HolderPerks />
 
           <div className="card acct-card">
             <div className="acct-head">

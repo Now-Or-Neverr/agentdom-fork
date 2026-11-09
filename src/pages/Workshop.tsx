@@ -16,6 +16,7 @@ import { Err, Ext, Loading, Panel, SectionView, Source, Status, useRun } from '.
 import * as Data from './workshop/DataTools';
 import { AtelierMediaTools, TheatreMediaTools, TranslateTool, SiteStatusTool } from './workshop/MediaTools';
 import * as Realm from './workshop/RealmTools';
+import * as Mint from './workshop/MintTools';
 
 // ---------------- Throne: weather ----------------
 function ThroneTool() {
@@ -791,6 +792,19 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
         <Realm.ScreenTool />
         <Realm.MusicTool />
         <Realm.GamesTool />
+      </>
+    ),
+  },
+  mint: {
+    label: 'Robinhood Chain',
+    render: () => (
+      <>
+        <Mint.AgentdomVaultTool />
+        <Mint.StockBoardTool />
+        <Mint.ContractTool />
+        <Mint.TxTool />
+        <Mint.AddressTool />
+        <Mint.ChainPulseTool />
       </>
     ),
   },

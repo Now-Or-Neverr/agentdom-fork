@@ -2,6 +2,7 @@
 // Every run creates a real decree exactly like POST /api/decrees (crowns locked in the vault,
 // ledger 'vault_lock', same daily limits). A run that cannot be issued is skipped and recorded.
 import { db, now, tx, uid, type Row } from './db';
+import { decreeLimit } from './holders';
 import { bus, logActivity } from './events';
 import { HttpError, agentById, count, crownsEnabled, ledger, lite, startOfDay } from './core';
 import type { ProvinceId } from '../shared/realm';
@@ -164,8 +165,9 @@ function blocker(s: Row, agent: Row | undefined): string | null {
   if (!agent || !agent.active || agent.province === 'throne') return 'The agent is no longer taking decrees.';
   if (count("SELECT COUNT(*) AS n FROM schedule_runs WHERE status = 'issued' AND at >= ?", today) >= SCHEDULED_CAP())
     return 'The realm reached today’s limit for standing decrees.';
-  if (count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', s.user_id, today) >= LIMIT_USER)
-    return `You already used your ${LIMIT_USER} decrees for today.`;
+  const limitUser = decreeLimit(s.user_id as string);
+  if (count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', s.user_id, today) >= limitUser)
+    return `You already used your ${limitUser} decrees for today.`;
   if (s.ip && count('SELECT COUNT(*) AS n FROM decrees WHERE ip = ? AND created_at >= ?', s.ip, today) >= LIMIT_IP) return 'Daily decree limit reached for your network.';
   if (count('SELECT COUNT(*) AS n FROM decrees WHERE created_at >= ?', today) >= LIMIT_GLOBAL) return 'The realm reached today’s decree limit.';
   const u = db.prepare('SELECT crowns FROM users WHERE id = ?').get(s.user_id) as Row | undefined;

@@ -1,6 +1,7 @@
 // Routes for the quests feature. Mounted under /api by server/index.ts.
 // Privacy: a quest (like a decree) is visible only to its requester; other users get 404.
 import { Router, type Request } from 'express';
+import { decreeLimit } from '../holders';
 import { db, type Row } from '../db';
 import { bus } from '../events';
 import { HttpError, allAgents, count, crownsEnabled, currentUser, h, optionalUser, startOfDay, text } from '../core';
@@ -132,8 +133,9 @@ router.post(
     const ip = req.ip ?? '';
     const today = startOfDay();
     const userUsed = count('SELECT COUNT(*) AS n FROM decrees WHERE user_id = ? AND created_at >= ?', u.id, today) + reserved(' AND q.user_id = ?', u.id);
-    if (userUsed + n > LIMIT_USER)
-      throw new HttpError(429, `This quest needs ${n} of your ${LIMIT_USER} daily decrees and you have ${Math.max(0, LIMIT_USER - userUsed)} left today.`);
+    const limitUser = decreeLimit(u.id as string);
+    if (userUsed + n > limitUser)
+      throw new HttpError(429, `This quest needs ${n} of your ${limitUser} daily decrees and you have ${Math.max(0, limitUser - userUsed)} left today.`);
     if (ip) {
       const ipUsed = count('SELECT COUNT(*) AS n FROM decrees WHERE ip = ? AND created_at >= ?', ip, today) + reserved(' AND q.ip = ?', ip);
       if (ipUsed + n > LIMIT_IP) throw new HttpError(429, 'Not enough decrees left today on this network for a quest this long.');
