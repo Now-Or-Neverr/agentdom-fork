@@ -15,6 +15,7 @@ import { Err, Ext, Loading, Panel, SectionView, Source, Status, useRun } from '.
 // Credentialed data & research tools live in their own file.
 import * as Data from './workshop/DataTools';
 import { AtelierMediaTools, TheatreMediaTools, TranslateTool, SiteStatusTool } from './workshop/MediaTools';
+import * as Realm from './workshop/RealmTools';
 
 // ---------------- Throne: weather ----------------
 function ThroneTool() {
@@ -758,6 +759,38 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
       <>
         <Data.CasesTool />
         <RegulationsTool />
+      </>
+    ),
+  },
+  observatory: {
+    label: 'Space & Earth now',
+    render: () => (
+      <>
+        <Realm.SpaceNowTool />
+        <Realm.ApodTool />
+        <Realm.AirTool />
+      </>
+    ),
+  },
+  apothecary: {
+    label: 'Drugs, recalls & research',
+    render: () => (
+      <>
+        <Realm.NotAdvice />
+        <Realm.DrugTool />
+        <Realm.RecallsTool />
+        <Realm.MedResearchTool />
+      </>
+    ),
+  },
+  arena: {
+    label: 'Sport, film, music & games',
+    render: () => (
+      <>
+        <Realm.FootballTool />
+        <Realm.ScreenTool />
+        <Realm.MusicTool />
+        <Realm.GamesTool />
       </>
     ),
   },

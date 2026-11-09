@@ -47,3 +47,12 @@ export { ukCompanySearch, ukCompanyProfile, isCompanyNumber, type UkCompanySearc
 export { nutritionLookup, type FoodSearch, type FoodHit, type FoodNutrient } from './usda';
 // Atelier / Bazaar (brand assets, permanent cache)
 export { brandLookup, normalizeDomain, brandCallsUsed, brandMaxCalls, type Brand, type BrandLogo } from './brandfetch';
+// Observatory
+export { nasaApod, nasaAsteroids, type Apod, type Asteroid, type AsteroidFeed } from './nasa';
+export { airQuality, type AirQuality, type AirReading } from './openaq';
+// Arena
+export { footballStandings, footballMatches, isCompetition, FOOTBALL_COMPETITIONS, tmdbSearch, tmdbTrending, TMDB_ATTRIBUTION, musicChart, artistInfo, type Standings, type TableRow, type Match, type Matches, type Title, type TitleList, type ChartEntry, type MusicChart, type ArtistInfo } from './arena';
+// Atelier (Unsplash photos)
+export { unsplashSearch, unsplashTrackDownload, type UnsplashPhoto, type UnsplashSearch } from './unsplash';
+// Heralds / Archive (newspapers: headline + summary + link only)
+export { guardianSearch, nytTopStories, nytSearch, nytMostPopular, nytBestsellers, NYT_SECTIONS, type NytSection, type PressArticle, type PressList, type Bestseller, type Bestsellers } from './press';

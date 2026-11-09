@@ -86,6 +86,21 @@ export const dataTools = {
   cases: (q: string, order?: 'newest') => req<Named<I.CaseSearch>>('/tools/cases' + qs({ q, order })),
 };
 
+// ---- Observatory, Apothecary, Arena ----
+export const realmTools = {
+  space: () => req<{ quakes: Section<I.QuakeFeed>; iss: Section<I.IssPosition>; asteroids: Section<I.AsteroidFeed> }>('/tools/space'),
+  apod: (date?: string) => req<Named<I.Apod>>('/tools/apod' + qs({ date })),
+  air: (city: string) => req<Named<I.AirQuality & { place: I.Place }>>('/tools/air' + qs({ city })),
+  drug: (name: string) => req<{ name: string; note: string; label: Section<I.DrugLabels>; recalls: Section<I.Recalls> }>('/tools/drug' + qs({ name })),
+  recalls: (kind: string, q?: string) => req<Named<I.Recalls>>('/tools/recalls' + qs({ kind, q })),
+  medResearch: (q: string, recruiting = false) =>
+    req<{ query: string; note: string; papers: Section<I.PubmedSearch>; trials: Section<I.TrialSearch> }>('/tools/medresearch' + qs({ q, recruiting: recruiting ? 1 : undefined })),
+  football: (competition: string) => req<{ code: string; competitions: Record<string, string>; table: Section<I.Standings>; matches: Section<I.Matches> }>('/tools/football' + qs({ competition })),
+  screen: (o: { q?: string; type?: 'movie' | 'tv' }) => req<Named<I.TitleList>>('/tools/screen' + qs(o)),
+  music: (o: { artist?: string; country?: string }) => req<{ kind: 'artist' | 'chart'; artist?: Section<I.ArtistInfo>; chart?: Section<I.MusicChart> }>('/tools/music' + qs(o)),
+  games: (title?: string) => req<{ title: string | null; deals: Section<I.GameDeals>; free: Section<I.FreeGames> | null }>('/tools/games' + qs({ title })),
+};
+
 /** "12:04:31" local time, for "fetched at" labels. */
 export const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 export const num = (n: number, d = 2) => new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(n);

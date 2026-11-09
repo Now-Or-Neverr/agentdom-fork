@@ -10,7 +10,10 @@ export type ProvinceId =
   | 'heralds'
   | 'bazaar'
   | 'treasury'
-  | 'court';
+  | 'court'
+  | 'observatory'
+  | 'apothecary'
+  | 'arena';
 
 // Character archetypes. Every agent is drawn as one of these.
 export type Role =
@@ -170,6 +173,45 @@ export const PROVINCES: Province[] = [
     role: 'magistrate',
     pos: [-17, 10],
   },
+  {
+    id: 'observatory',
+    no: '11',
+    name: 'The Observatory',
+    craft: 'Space & Earth',
+    hall: 'Star Tower',
+    hallLine: 'Skies, asteroids, earthquakes and the air we breathe',
+    tagline: 'Eyes on the sky and the ground.',
+    color: '#5B57A6',
+    icon: 'Telescope',
+    role: 'archivist',
+    pos: [9, -6],
+  },
+  {
+    id: 'apothecary',
+    no: '12',
+    name: 'The Apothecary',
+    craft: 'Health & Life Science',
+    hall: 'Herb House',
+    hallLine: 'Medicines, recalls, studies and clinical trials',
+    tagline: 'Remedies, researched with care.',
+    color: '#6E9A3A',
+    icon: 'FlaskConical',
+    role: 'scribe',
+    pos: [-9, -6],
+  },
+  {
+    id: 'arena',
+    no: '13',
+    name: 'The Arena',
+    craft: 'Sport, Film & Games',
+    hall: 'Grand Arena',
+    hallLine: 'Matches, tables, films, music and games',
+    tagline: 'Where the realm comes to play.',
+    color: '#2E8FA8',
+    icon: 'Trophy',
+    role: 'herald',
+    pos: [0, 9],
+  },
 ];
 
 export const PROVINCE: Record<ProvinceId, Province> = Object.fromEntries(PROVINCES.map((p) => [p.id, p])) as Record<
@@ -214,6 +256,9 @@ export const ROUTE_KEYWORDS: Record<Exclude<ProvinceId, 'throne'>, string[]> = {
   bazaar: ['sell', 'sales', 'offer', 'proposal', 'prospect', 'client', 'pitch', 'outreach', 'lead', 'cold', 'companies house', 'uk company', 'leads'],
   treasury: ['business', 'sop', 'operation', 'automat', 'forecast', 'budget', 'plan', 'workflow', 'pricing', 'process', 'invoice', 'receipt', 'stock price', 'share price', 'ticker', 'price'],
   court: ['contract', 'policy', 'privacy', 'terms', 'legal', 'law', 'compliance', 'agreement', 'nda', 'case law', 'regulation'],
+  observatory: ['nasa', 'space', 'asteroid', 'planet', 'astronomy', 'star', 'iss', 'earthquake', 'quake', 'air quality', 'pollution', 'mars', 'moon', 'galaxy'],
+  apothecary: ['medicine', 'drug', 'medication', 'health', 'clinical trial', 'pubmed', 'recall', 'fda', 'side effect', 'disease', 'symptom', 'vaccine', 'medical'],
+  arena: ['football', 'soccer', 'match', 'league', 'premier league', 'standings', 'fixture', 'movie', 'film recommend', 'tv show', 'series', 'music', 'song', 'artist', 'album', 'game', 'steam', 'video game'],
 };
 
 export function routeByKeywords(text: string): { province: Exclude<ProvinceId, 'throne'>; hits: string[] } {

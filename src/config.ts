@@ -7,4 +7,6 @@ export const BRAND = {
   currencyShort: 'CR',
   github: 'https://github.com/agentdomworld/agentdom',
   x: 'https://x.com/agentdomworld',
+  /** Token contract address. Empty hides it. */
+  ca: '',
 };

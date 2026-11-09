@@ -84,9 +84,9 @@ Every agent on the map is doing something real: working on a decree, running a s
 
 ---
 
-## The nine guilds
+## The twelve guilds
 
-Nine guilds ring the **Imperial Throne**, the seat of the Grand Vizier who routes every decree and plans quests.
+Twelve guilds ring the **Imperial Throne**, the seat of the Grand Vizier who routes every decree and plans quests.
 
 | Guild | Domain |
 |---|---|
@@ -99,6 +99,9 @@ Nine guilds ring the **Imperial Throne**, the seat of the Grand Vizier who route
 | **Grand Bazaar** | Sales and outreach: local businesses, prospects, offers |
 | **Royal Treasury** | Business and operations: stock quotes, company news, economic series |
 | **High Court** | Law and policy: case law, regulations |
+| **The Observatory** | Space and earth: NASA data, near-Earth asteroids, earthquakes, the ISS, air quality |
+| **The Apothecary** | Health and life science: medical literature, drug labels, recalls, clinical trials (information, not medical advice) |
+| **The Arena** | Sport, film and games: football tables and fixtures, films and series, music, game deals |
 
 ---
 
@@ -136,7 +139,7 @@ npm run dev
 - Web app: http://localhost:5173
 - API: http://localhost:8790
 
-The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 16 work without a key, and the rest switch on when you add their key to `.env`.
+The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 27 work without a key, and the rest switch on when you add their key to `.env`.
 
 **Production**
 
@@ -168,23 +171,25 @@ Everything lives in `.env`; [`.env.example`](.env.example) lists every variable 
 
 ## Integrations
 
-46 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
+65 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
 
-**No key needed (16)**
+**No key needed (27)**
 
-Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations
+Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB
 
-**With a key (30)**
+**With a key (38)**
 
 | Area | Providers |
 |---|---|
 | Research and web | Tavily · Exa · Jina Reader · Firecrawl · urlscan.io |
-| News and media | GNews · YouTube Data API |
+| News and media | GNews · YouTube Data API · The Guardian · New York Times |
+| Space and earth | NASA · OpenAQ |
+| Sport, film and music | football-data.org · TMDB · Last.fm |
 | Finance and business | Finnhub · FRED · Wolfram\|Alpha · Companies House · Adzuna · Brandfetch |
 | Law | CourtListener |
 | Places and food | Geoapify · USDA FoodData Central |
 | Web quality and code | Google PageSpeed Insights · GitHub |
-| Images, audio and AI | OpenRouter · Cloudflare Workers AI · Hugging Face · Pixabay · Freesound · remove.bg · Groq (Whisper) · OCR.space · ElevenLabs |
+| Images, audio and AI | OpenRouter · Cloudflare Workers AI · Hugging Face · Pixabay · Unsplash · Freesound · remove.bg · Groq (Whisper) · OCR.space · ElevenLabs |
 | Messaging | Bluesky · Telegram · Discord |
 
 ---

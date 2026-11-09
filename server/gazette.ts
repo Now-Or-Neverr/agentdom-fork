@@ -35,6 +35,9 @@ const SECTIONS: { id: string; name: string; province: ProvinceId }[] = [
   { id: 'scriptorium', name: 'Word of the Day', province: 'scriptorium' },
   { id: 'theatre', name: 'Theatre', province: 'theatre' },
   { id: 'atelier', name: 'Atelier', province: 'atelier' },
+  { id: 'observatory', name: 'Observatory', province: 'observatory' },
+  { id: 'apothecary', name: 'Apothecary', province: 'apothecary' },
+  { id: 'arena', name: 'Arena', province: 'arena' },
 ];
 const PER_SECTION = 4;
 

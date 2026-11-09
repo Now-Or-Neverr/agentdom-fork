@@ -3,6 +3,7 @@ import { SiteHeader } from '../components/SiteHeader';
 import { SiteFooter } from '../components/SiteFooter';
 import { useReveal } from '../lib/useReveal';
 import { Hero } from '../landing/Hero';
+import { NewInRealm } from '../landing/NewInRealm';
 import { Zoom } from '../landing/Zoom';
 import { Guilds } from '../landing/Guilds';
 import { AtWork } from '../landing/AtWork';
@@ -20,6 +21,7 @@ export default function Landing() {
       <SiteHeader />
       <main>
         <Hero />
+        <NewInRealm />
         <Zoom />
         <Guilds />
         <AtWork />

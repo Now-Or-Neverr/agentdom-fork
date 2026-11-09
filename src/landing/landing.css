@@ -2340,3 +2340,138 @@ a.ld-pin:hover .ld-pin-label {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- new in the realm ---------- */
+.ld-new {
+  padding: clamp(56px, 8vw, 96px) 0 clamp(40px, 6vw, 72px);
+}
+.ld-new-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+}
+.ld-new-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 22px 20px;
+  border-radius: 22px;
+  border: 1px solid var(--line-c);
+  background: rgba(var(--surface-rgb), 0.75);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    transform 0.25s var(--ease),
+    border-color 0.25s,
+    background 0.25s;
+}
+.ld-new-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--gc) 45%, var(--line-c));
+  background: color-mix(in srgb, var(--gc) 6%, var(--surface));
+}
+.ld-new-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ld-new-no {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ld-new-card h3 {
+  margin: 6px 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+}
+.ld-new-craft {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gc);
+}
+.ld-new-line {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.ld-new-agents {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.ld-new-agents span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-right: 6px;
+}
+.ld-new-src {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ld-new-src li {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gc) 10%, transparent);
+  color: var(--ink-2);
+}
+.ld-new-go {
+  margin-top: auto;
+  padding-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink);
+}
+.ld-new-more {
+  margin: 22px 0 0;
+  max-width: 820px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+/* twelve guilds: keep the sticky list inside the viewport */
+.ld-guild-list {
+  gap: 1px;
+}
+.ld-guild-list button {
+  padding: 5px 12px;
+}
+.ld-gl-craft {
+  font-size: 10.5px;
+}
+@media (max-height: 820px) {
+  .ld-guild-list .ld-gl-craft {
+    display: none;
+  }
+}
+.ld-guilds.is-desktop .ld-guild-list {
+  gap: clamp(0px, 0.35vh, 4px);
+}
+.ld-guilds.is-desktop .ld-guild-list button {
+  padding-top: clamp(2px, 0.45vh, 6px);
+  padding-bottom: clamp(2px, 0.45vh, 6px);
+}
+.ld-guilds.is-desktop .ld-gl-name {
+  font-size: clamp(15px, 2vh, 19px) !important;
+}
+@media (max-height: 940px) {
+  .ld-guilds.is-desktop .ld-gl-craft {
+    display: none;
+  }
+}

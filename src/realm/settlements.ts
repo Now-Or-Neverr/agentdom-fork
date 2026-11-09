@@ -406,6 +406,127 @@ export function buildSettlement(k: Kit, s: SettlementSite, r: () => number, grou
       pair(2.3, 2.9, 0.9, 'magistrate');
       break;
     }
+    case 'observatory': {
+      // round stone star tower with a dome and a telescope pointing at the sky
+      const tx = 0;
+      const tz = -1.2;
+      top = tagged(() => {
+        k.cyl(f, tx, 0, tz, 2.0, 0.5, '#bdb3a2', 12);
+        k.cyl(f, tx, 0.5, tz, 1.6, 3.4, '#d6ccb8', 12);
+        k.cyl(f, tx, 3.9, tz, 1.75, 0.25, '#8a7e6c', 12);
+        k.ball(f, tx, 4.15, tz, 1.45, '#e9e4da', k.s, 0.8);
+        k.box(f, tx + 0.15, 5.1, tz + 0.35, 0.34, 0.34, 2.4, '#3d3f52', 0, k.s, -0.75);
+        k.cyl(f, tx + 0.15, 5.75, tz + 1.15, 0.24, 0.12, '#c9a14a', 8);
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          k.window(f, tx + Math.sin(a) * 1.61, 2.6, tz + Math.cos(a) * 1.61, 0.3, 0.55, a, i % 2 === 0);
+        }
+        return 5.8;
+      });
+      // a glowing ring band in the province colour
+      k.neonRing(f, tx, 3.95, tz, 1.78, acc, 0.05);
+      k.lights.push(f.pt(tx, 4.6, tz));
+      house(k, f, -4.4, 2.4, 2.2, 1.6, 0.3, r, { acc });
+      house(k, f, 4.2, 2.6, 2.0, 1.6, -0.35, r);
+      // small sundial and star charts on stands
+      k.cyl(f, 2.4, 0, 1.4, 0.5, 0.35, '#cfc6b4', 12);
+      k.box(f, 2.4, 0.35, 1.4, 0.06, 0.45, 0.5, '#6b5a48', 0.6);
+      k.box(f, -2.2, 0, 0.9, 0.9, 0.9, 0.08, acc, 0.2);
+      k.pine(f, -5.2, -2.6, 1.0, r);
+      k.pine(f, 5.0, -2.8, 0.9, r);
+      stoneWall(k, arc(s.r - 0.3, Math.PI * 0.62, Math.PI * 1.38, 10), ground, 1.1, 0.55);
+      flag(k, f, -1.8, 3.8, 3.4, acc, 0, true);
+      flag(k, f, 1.8, 3.8, 3.4, acc, 0, true);
+      k.lamp(f, 0, 3.0, 0, 1.4);
+      labelL = new THREE.Vector3(tx, top + 0.6, tz);
+      walkL.push([0, 2.4], [-2.4, 2.6], [2.6, 3.0], [0, 5.0], [-1.6, 5.4]);
+      spot(1.2, 0.6, Math.PI * 0.8, 'watch', 'archivist');
+      spot(-2.2, 1.5, Math.PI, 'watch', 'archivist');
+      pair(-1.0, 3.4, 0.4);
+      break;
+    }
+    case 'apothecary': {
+      // herb house with a walled physic garden: raised beds, drying racks and a brewing stove
+      top = tagged(() => {
+        const t = hall(k, f, 0, -2.0, { w: 4.4, d: 2.6, acc, plat: 0.3, ch: 1.25, band, lit: 0.8, roof: '#55604a' }, r).top;
+        kiln(k, f, 3.4, -2.2, 0.8);
+        return t;
+      });
+      const herbs = ['#5f8f3a', '#7aa04a', '#8c6fb0', '#5c8a52', '#b3a03c', '#6e9a3a'];
+      for (let i = 0; i < 6; i++) {
+        const bx = -3.3 + (i % 3) * 2.2;
+        const bz = 1.0 + Math.floor(i / 3) * 1.8;
+        k.box(f, bx, 0, bz, 1.7, 0.28, 1.0, '#7a5a3c');
+        k.box(f, bx, 0.28, bz, 1.5, 0.16, 0.8, herbs[i]);
+        for (let j = 0; j < 3; j++) k.ball(f, bx - 0.5 + j * 0.5, 0.5, bz, 0.2, herbs[(i + j) % herbs.length]);
+      }
+      // drying rack with hanging bundles
+      for (const sx of [-1, 1]) k.box(f, -5.0 + sx * 0.8, 0, -1.2, 0.08, 1.5, 0.08, '#6b4a30');
+      k.box(f, -5.0, 1.5, -1.2, 1.8, 0.07, 0.07, '#6b4a30');
+      for (let j = 0; j < 5; j++) k.box(f, -5.7 + j * 0.35, 1.2, -1.2, 0.14, 0.4, 0.14, herbs[j]);
+      k.smoke.push(f.pt(3.4, 1.8, -2.2));
+      k.lights.push(f.pt(0, 1.2, -1.0));
+      house(k, f, 4.6, 2.4, 2.0, 1.6, -0.3, r, { acc });
+      k.blossom(f, -4.8, 3.6, 0.9, r);
+      k.blossom(f, 2.0, 4.6, 0.8, r);
+      k.hedge(f, 0, 5.2, 7.2, 0.5);
+      cwall(k, f, -5.8, -3.8, 5.8, -3.8, 0.9, 0.26, '#d8c8a6');
+      flag(k, f, -2.4, 4.2, 3.2, acc, 0, true);
+      flag(k, f, 2.4, 4.2, 3.2, acc, 0, true);
+      k.lamp(f, -1.0, 3.6, 0, 1.4);
+      k.lamp(f, 1.0, 3.6, 0, 1.4);
+      labelL = new THREE.Vector3(0, top + 0.6, -2.0);
+      walkL.push([0, 3.8], [-2.2, 3.6], [2.2, 3.6], [0, 6.0], [-4, 0]);
+      spot(-1.1, 1.0, Math.PI, 'sweep', 'scribe');
+      spot(1.1, 2.8, 0, 'watch', 'scribe');
+      spot(3.0, -1.0, -0.6, 'hammer');
+      pair(4.0, 4.4, 0.5);
+      break;
+    }
+    case 'arena': {
+      // oval stadium: stepped stands around a green pitch, banners on the rim
+      const RX = 5.0;
+      const RZ = 3.8;
+      const N = 28;
+      top = tagged(() => {
+        k.box(f, 0, 0, 0, RX * 1.2, 0.08, RZ * 1.15, '#5f9a48');
+        k.mark(f, 0, 0.09, 0, 0.06, RZ * 1.1, '#e8efe0');
+        k.neonRing(f, 0, 0.1, 0, 0.6, '#e8efe0', 0.03);
+        for (let i = 0; i < N; i++) {
+          const a = (i / N) * Math.PI * 2;
+          // leave a gate open towards the viewer
+          if (Math.abs(Math.sin(a / 2 - Math.PI / 2)) > 0.985) continue;
+          const sx = Math.sin(a);
+          const cz = Math.cos(a);
+          for (let t = 0; t < 3; t++) {
+            const rx = RX + t * 0.62;
+            const rz = RZ + t * 0.62;
+            const col = t === 2 ? '#bfae90' : t === 1 ? '#d2c3a6' : '#e2d6be';
+            k.box(f, sx * rx, 0, cz * rz, 1.3, 0.55 + t * 0.55, 0.6, col, a);
+          }
+          if (i % 4 === 0) flag(k, f, sx * (RX + 2.0), cz * (RZ + 2.0), 2.4, acc, a);
+        }
+        return 2.2;
+      });
+      gatehouse(k, f, 0, RZ + 1.4, 2.2, acc, 0, 1.4);
+      for (const [x, z] of [
+        [-RX - 1.6, -RZ - 0.6],
+        [RX + 1.6, -RZ - 0.6],
+      ])
+        k.lamp(f, x, z, 0, 2.6);
+      k.lights.push(f.pt(0, 2.4, 0));
+      stall(k, f, -4.6, RZ + 3.0, 0, acc, r);
+      stall(k, f, 4.6, RZ + 3.0, 0, '#c9a14a', r);
+      labelL = new THREE.Vector3(0, top + 1.6, -RZ);
+      walkL.push([0, RZ + 3.2], [-2.6, RZ + 3.4], [2.6, RZ + 3.4], [-1.5, 0.5], [1.5, -0.5]);
+      // players on the pitch and fans by the gate
+      spot(-1.6, 0.4, 0.9, 'chat', 'herald', 0.08);
+      spot(1.4, -0.6, -2.2, 'chat', undefined, 0.08);
+      spot(0, -2.2, 0, 'watch', 'herald', 0.08);
+      pair(-3.0, RZ + 3.6, 0.3);
+      spot(3.0, RZ + 3.4, Math.PI, 'vendor');
+      break;
+    }
   }
   void full;
   const lw = f.pt(labelL.x, 0, labelL.z);

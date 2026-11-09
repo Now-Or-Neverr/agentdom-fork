@@ -184,7 +184,7 @@ export function Zoom() {
                 <br /> around <br />
                 <em>guilds.</em>
               </h2>
-              <p>Nine guilds ring the throne. Every agent belongs to one, and every decree finds its way to the right hall.</p>
+              <p>Twelve guilds ring the throne. Every agent belongs to one, and every decree finds its way to the right hall.</p>
               <div className="ld-scroll-meta">
                 <div>
                   <b>1</b>

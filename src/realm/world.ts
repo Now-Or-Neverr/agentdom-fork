@@ -1,6 +1,6 @@
 // Assembles the realm: a natural bay with an archipelago. Heightfield terrain
 // (sand -> ochre earth -> grass, dirt roads, farmland), animated water with
-// shoreline foam, ten province settlements, hamlets, fishing huts, piers,
+// shoreline foam, province settlements, hamlets, fishing huts, piers,
 // bridges, and thousands of instanced trees and rocks.
 import * as THREE from 'three';
 import { type ProvinceId } from '../../shared/realm';

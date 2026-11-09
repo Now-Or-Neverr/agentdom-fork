@@ -118,6 +118,7 @@ const COUNTRY: Record<string, string> = { ID: 'Indonesia', US: 'the United State
 const CURRENCY_NAME: Record<string, string> = { IDR: 'rupiah', EUR: 'euro', JPY: 'yen', CNY: 'yuan', GBP: 'pound', SGD: 'Singapore dollar', USD: 'US dollar', AUD: 'Australian dollar', INR: 'rupee', KRW: 'won', CHF: 'Swiss franc', CAD: 'Canadian dollar' };
 
 const RESEARCH_TOPICS = ['AI agents', 'large language models', 'climate change', 'renewable energy', 'quantum computing', 'protein folding', 'robotics', 'dark matter', 'battery chemistry', 'coral reefs', 'gene editing', 'exoplanets'];
+const MED_TOPICS = ['hypertension', 'type 2 diabetes', 'asthma', 'migraine', 'sleep', 'vaccines', 'antibiotic resistance', 'depression', 'Alzheimer disease', 'heart failure', 'obesity', 'malaria', 'dengue', 'gut microbiome'];
 const SE_TOPICS = ['software engineering', 'program synthesis', 'code generation', 'static analysis', 'software testing', 'type inference', 'compiler optimization'];
 const TECH_TOPICS = ['typescript', 'rust', 'sqlite', 'postgres', 'webassembly', 'react', 'node.js', 'linux', 'python', 'kubernetes', 'git', 'open source'];
 const WORDS = [
@@ -660,6 +661,144 @@ const KINDS: DutyKind[] = [
         sourceName: 'Pollinations',
         sourceUrl: img.sourceUrl,
         imageUrl: img.url,
+      };
+    },
+  },
+  // ---------- The Observatory ----------
+  {
+    kind: 'quake_watch',
+    province: 'observatory',
+    providers: ['usgs'],
+    task: 'Watching the USGS seismographs…',
+    repeatHours: 24 * 7,
+    async run(ctx, seen) {
+      const r = await I.earthquakes(ctx, '4.5', 'day', 30);
+      // Strongest new quake of the past day.
+      const q = fresh([...r.quakes].sort((a, b) => b.magnitude - a.magnitude), (x) => x.id, seen);
+      if (!q) return null;
+      const extra = [q.tsunami ? 'USGS flags a possible tsunami' : null, q.alert ? `PAGER alert ${q.alert}` : null, q.felt ? `${n0(q.felt)} felt reports` : null].filter(Boolean).join(', ');
+      return {
+        key: q.id,
+        title: `Earthquake: M${q.magnitude} ${clip(q.place, 80)}`,
+        summary: `A magnitude ${q.magnitude} earthquake struck ${q.place} at ${q.time.slice(11, 16)} UTC on ${q.time.slice(0, 10)}, ${q.depthKm} km deep${extra ? ` (${extra})` : ''}. ${r.count} quakes of M4.5+ in the past day.`,
+        data: { id: q.id, magnitude: q.magnitude, place: q.place, time: q.time, depthKm: q.depthKm, lat: q.lat, lon: q.lon, tsunami: q.tsunami, alert: q.alert, dayCount: r.count },
+        sourceName: 'USGS',
+        sourceUrl: q.url,
+      };
+    },
+  },
+  {
+    kind: 'asteroid_flyby',
+    province: 'observatory',
+    providers: ['nasa'],
+    task: 'Plotting today’s asteroid flybys with NASA…',
+    repeatHours: 24 * 3,
+    async run(ctx, seen) {
+      const r = await I.nasaAsteroids(ctx);
+      const a = fresh(r.asteroids, (x) => x.id, seen);
+      if (!a) return null;
+      return {
+        key: a.id,
+        title: `Asteroid flyby: ${a.name}`,
+        summary: `Asteroid ${a.name} (about ${n0(a.diameterM.min)}–${n0(a.diameterM.max)} m) passes Earth at ${n2(a.missLunar)} lunar distances (${n0(a.missKm)} km) at ${a.closeApproach.slice(11, 16)} UTC, moving ${n0(a.speedKmh)} km/h${a.hazardous ? '. NASA lists its orbit as potentially hazardous, which is a class, not an impact forecast' : ''}. ${r.count} asteroids pass Earth today.`,
+        data: { ...a, date: r.start, dayCount: r.count },
+        sourceName: 'NASA NeoWs',
+        sourceUrl: a.url,
+      };
+    },
+  },
+  // ---------- The Apothecary ----------
+  {
+    kind: 'fda_recall',
+    province: 'apothecary',
+    providers: ['openfda'],
+    task: 'Reading the newest FDA recall notices…',
+    repeatHours: 24 * 30,
+    async run(ctx, seen) {
+      const kind = (['food', 'drug', 'device'] as const)[Math.floor(Math.random() * 3)];
+      const r = await I.fdaRecalls(kind, ctx, undefined, 10);
+      // Most serious first among the newest reports.
+      const x = fresh([...r.results].sort((a, b) => a.classification.localeCompare(b.classification)), (y) => y.number, seen);
+      if (!x) return null;
+      return {
+        key: x.number,
+        title: `FDA ${kind} recall: ${clip(x.product, 70)}`,
+        summary: `${x.firm} recalled ${clip(x.product, 140)} (${x.classification}, reported ${x.reported ?? 'recently'}). Reason: ${clip(x.reason, 140).replace(/\.?$/, '.')} Information, not medical advice.`,
+        data: { recallKind: kind, ...x, note: 'Information, not medical advice.' },
+        sourceName: 'openFDA',
+        // openFDA has no page per recall: link the API record for this recall number.
+        sourceUrl: `https://api.fda.gov/${kind}/enforcement.json?search=recall_number:${encodeURIComponent(`"${x.number}"`)}`,
+      };
+    },
+  },
+  {
+    kind: 'pubmed_paper',
+    province: 'apothecary',
+    providers: ['pubmed'],
+    task: 'Reading new medical research on PubMed…',
+    repeatHours: 24 * 30,
+    async run(ctx, seen) {
+      const topic = MED_TOPICS[Math.floor(Math.random() * MED_TOPICS.length)];
+      const r = await I.pubmedSearch(`"${topic}"[Title] AND review[pt]`, ctx, 8, 'date');
+      const p = fresh(r.results, (x) => x.pmid, seen);
+      if (!p) return null;
+      return {
+        key: p.pmid,
+        title: `New review: ${topic}`,
+        summary: `“${clip(p.title, 200)}” in ${p.journal} (${p.published}). Information, not medical advice.`,
+        data: { topic, pmid: p.pmid, title: p.title, journal: p.journal, published: p.published, authors: p.authors, doi: p.doi, note: 'Information, not medical advice.' },
+        sourceName: 'PubMed',
+        sourceUrl: p.url,
+      };
+    },
+  },
+  // ---------- The Arena ----------
+  {
+    kind: 'league_leader',
+    province: 'arena',
+    providers: ['footballdata'],
+    task: 'Checking the league tables…',
+    repeatHours: 24 * 3,
+    async run(ctx, seen) {
+      for (const code of shuffled(['PL', 'PD', 'BL1', 'SA', 'FL1'])) {
+        const r = await I.footballStandings(code, ctx);
+        const [a, b] = r.table;
+        if (!a) continue;
+        const key = `${code}:${a.team}:${a.played}`;
+        if (seen.has(key)) continue;
+        const gap = b ? a.points - b.points : null;
+        return {
+          key,
+          title: `${r.competition}: ${a.team} on top`,
+          summary: `${a.team} lead the ${r.competition} with ${a.points} points from ${a.played} games${b ? `, ${gap === 0 ? 'level on points with' : `${gap} ahead of`} ${b.team}` : ''} (goal difference ${a.goalDiff > 0 ? '+' : ''}${a.goalDiff}).`,
+          data: { code, competition: r.competition, season: r.season, matchday: r.matchday, top: r.table.slice(0, 4).map(({ crest: _c, ...t }) => t) },
+          sourceName: 'football-data.org',
+          sourceUrl: r.sourceUrl,
+        };
+      }
+      return null;
+    },
+  },
+  {
+    kind: 'trending_film',
+    province: 'arena',
+    providers: ['tmdb'],
+    task: 'Seeing what the realm is watching (TMDB)…',
+    repeatHours: 24 * 14,
+    async run(ctx, seen) {
+      const type = Math.random() < 0.6 ? 'movie' : 'tv';
+      const r = await I.tmdbTrending(ctx, type, 'week', 20);
+      const t = fresh(r.results, (x) => `${x.type}:${x.id}`, seen);
+      if (!t) return null;
+      const rank = r.results.indexOf(t) + 1;
+      return {
+        key: `${t.type}:${t.id}`,
+        title: `Trending ${t.type === 'tv' ? 'show' : 'film'}: ${t.title}`,
+        summary: `${t.title}${t.date ? ` (${t.date.slice(0, 4)})` : ''} is #${rank} among trending ${t.type === 'tv' ? 'TV shows' : 'films'} on TMDB this week${t.rating != null ? `, user score ${t.rating}/10` : ''}. ${clip(firstSentence(t.overview), 160)} Data: TMDB.`,
+        data: { id: t.id, type: t.type, title: t.title, date: t.date, rating: t.rating, votes: t.votes, rank, attribution: r.attribution },
+        sourceName: 'TMDB',
+        sourceUrl: t.url,
+        imageUrl: t.poster,
       };
     },
   },

@@ -34,6 +34,16 @@ export { federalRegister, type FrSearch, type FrDocument } from './federalregist
 export { currentWeather, geocode, weatherKind, weatherText, weatherSourceUrl, realmLocation, round1, validLatLon, type Place } from './openmeteo';
 // Atelier
 export { generateImage, imageQueueWaitMs, ImageBusyError, IMAGE_PROMPT_MAX, type GeneratedImage, type ImageOpts } from './pollinations';
+// Observatory (no key)
+export { earthquakes, issPosition, QUAKE_LEVELS, QUAKE_PERIODS, type Quake, type QuakeFeed, type QuakeLevel, type QuakePeriod, type IssPosition } from './earth';
+export { nasaImages, type NasaImage, type NasaImageSearch } from './nasa';
+// Apothecary (no key)
+export { drugLabel, fdaRecalls, pubmedSearch, trialSearch, HEALTH_NOTE, RECALL_KINDS, type RecallKind, type DrugLabel, type DrugLabels, type Recall, type Recalls, type PubmedArticle, type PubmedSearch, type Trial, type TrialSearch } from './health';
+// Arena (no key)
+export { musicBrainzArtist, gameDeals, freeGames, FREE_GAME_PLATFORMS, type GameDeal, type GameDeals, type FreeGame, type FreeGames } from './arena';
+// Forge (vulnerabilities) / Bazaar (recipes)
+export { osvQuery, OSV_ECOSYSTEMS, type OsvEcosystem, type Vuln, type VulnReport } from './osv';
+export { mealSearch, type Meal, type MealSearch } from './mealdb';
 // Lantern Theatre (local ffmpeg, no external API)
 export { makeSlideshow, type SlideshowInput, type Slideshow } from './video';
 

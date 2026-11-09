@@ -50,6 +50,17 @@ export interface ToolUsage {
   nutrition: number;
   voiceovers: number;
   brands: number;
+  space: number;
+  health: number;
+  sport: number;
+  screen: number;
+  music: number;
+  games: number;
+  press: number;
+  unsplash: number;
+  unsplashUsed: number;
+  vulns: number;
+  recipes: number;
 }
 export const newUsage = (): ToolUsage => ({
   images: 0,
@@ -82,6 +93,17 @@ export const newUsage = (): ToolUsage => ({
   nutrition: 0,
   voiceovers: 0,
   brands: 0,
+  space: 0,
+  health: 0,
+  sport: 0,
+  screen: 0,
+  music: 0,
+  games: 0,
+  press: 0,
+  unsplash: 0,
+  unsplashUsed: 0,
+  vulns: 0,
+  recipes: 0,
 });
 
 export interface ToolCtx {
@@ -251,6 +273,418 @@ const HTML_MAX = 150_000;
 const ASPECT = { landscape: [1280, 720], square: [1024, 1024], portrait: [768, 1152] } as const;
 
 // ---------------- tools ----------------
+// ---------------- Observatory, Apothecary, Arena + newspaper/photo/vuln/recipe tools ----------------
+const HEALTH_NOTE = 'Information, not medical advice.';
+const health = <T extends object>(d: T) => ({ ...d, note: HEALTH_NOTE + ' Tell the requester to talk to a doctor or pharmacist before acting on it.' });
+const optStr = (o: O, k: string, max: number) => str(o, k, max, false) || undefined;
+function cap(c: ToolCtx, k: keyof ToolUsage, max: number, what: string) {
+  if (c.usage[k] >= max) throw new ToolInputError(`${what} limit reached (${max} per decree). Work with the results you have.`);
+  c.usage[k]++;
+}
+
+function NEW_GUILD_TOOLS(): ToolDef[] {
+  return [
+    // ---- Observatory (space & earth) ----
+    {
+      name: 'nasa_apod',
+      label: 'NASA picture of the day',
+      description: 'NASA Astronomy Picture of the Day (today or a YYYY-MM-DD date since 1995-06-16): title, explanation, image url, copyright and the apod.nasa.gov page. The APOD service is sometimes down; if this fails, say so and use nasa_images instead. Max 6 space calls per decree (shared with near_earth_asteroids and nasa_images).',
+      schema: obj({ date: { type: 'string', description: 'Optional YYYY-MM-DD.' } }, []),
+      doing: () => 'Opening NASA’s picture of the day',
+      run: async (i, c) => {
+        const date = optStr(i, 'date', 10);
+        cap(c, 'space', 6, 'Space data');
+        const r = await I.nasaApod(ctxOf(c), date);
+        return { data: r, summary: `APOD ${r.date}: “${clip(r.title, 60)}”`, sourceName: name('nasa'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'near_earth_asteroids',
+      label: 'Near-Earth asteroids',
+      description: 'Asteroids passing Earth on a date range (NASA NeoWs, max 7 days): name, closest approach time, miss distance (km and lunar distances), speed, estimated diameter, potentially-hazardous flag and JPL link. Closest first. "Potentially hazardous" is an orbit class, not a prediction of impact.',
+      schema: obj({ start: { type: 'string', description: 'YYYY-MM-DD, default today.' }, end: { type: 'string', description: 'YYYY-MM-DD, 0-7 days after start, default = start.' } }, []),
+      doing: () => 'Tracking near-Earth asteroids',
+      run: async (i, c) => {
+        cap(c, 'space', 6, 'Space data');
+        const r = await I.nasaAsteroids(ctxOf(c), optStr(i, 'start', 10), optStr(i, 'end', 10), 10);
+        return { data: r, summary: `${r.count} asteroids pass Earth ${r.start}${r.end !== r.start ? '..' + r.end : ''}`, sourceName: name('nasa'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'nasa_images',
+      label: 'NASA image search',
+      description: 'Search the NASA Image and Video Library (public NASA images): title, date, centre, credit, short description, thumbnail and the images.nasa.gov page.',
+      schema: obj({ query: { type: 'string', description: 'e.g. "Saturn rings", "Artemis launch".' } }, ['query']),
+      doing: (i) => `Searching NASA images for ${q(String(i.query))}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 120);
+        cap(c, 'space', 6, 'Space data');
+        const r = await I.nasaImages(query, ctxOf(c), 8);
+        return { data: r, summary: `${r.results.length} NASA images for ${q(query)}`, sourceName: name('nasaimages'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'earthquakes',
+      label: 'Recent earthquakes',
+      description: `Recent earthquakes from the USGS live feeds: magnitude, place, time (UTC), depth, coordinates, tsunami flag, PAGER alert and the USGS event page. level: ${I.QUAKE_LEVELS.join(', ')} (minimum magnitude, or "significant"); period: ${I.QUAKE_PERIODS.join(', ')}. Newest first.`,
+      schema: obj({ level: { type: 'string', enum: [...I.QUAKE_LEVELS], description: 'Default 4.5.' }, period: { type: 'string', enum: [...I.QUAKE_PERIODS], description: 'Default day.' } }, []),
+      doing: () => 'Reading the USGS earthquake feed',
+      run: async (i, c) => {
+        const level = oneOf(i, 'level', I.QUAKE_LEVELS, '4.5');
+        const period = oneOf(i, 'period', I.QUAKE_PERIODS, 'day');
+        cap(c, 'space', 6, 'Space data');
+        const r = await I.earthquakes(ctxOf(c), level, period, 12);
+        return { data: r, summary: `${r.count} earthquakes (${r.feed})${r.quakes[0] ? `, latest M${r.quakes[0].magnitude} ${clip(r.quakes[0].place, 50)}` : ''}`, sourceName: name('usgs'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'iss_position',
+      label: 'ISS position',
+      description: 'Where the International Space Station is right now: latitude, longitude, altitude, speed, whether it is in daylight, and an OpenStreetMap link.',
+      schema: obj({}, []),
+      doing: () => 'Locating the International Space Station',
+      run: async (_i, c) => {
+        cap(c, 'space', 6, 'Space data');
+        const r = await I.issPosition(ctxOf(c));
+        return { data: r, summary: `ISS at ${r.lat}, ${r.lon} · ${r.altitudeKm} km up`, sourceName: name('wheretheiss'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'air_quality',
+      label: 'Air quality',
+      description: 'Latest air-quality readings (PM2.5, PM10, O3, NO2… with units and time) from the nearest OpenAQ monitoring station that reported in the last 3 days, within 25 km of a named place. Say which station and how far away it is; low-cost sensors can be less accurate than official monitors. Shares the 6-call space budget.',
+      schema: obj({ place: { type: 'string', description: 'City or place, e.g. "Jakarta", "Delhi".' } }, ['place']),
+      doing: (i) => `Checking the air in ${q(String(i.place), 30)}`,
+      run: async (i, c) => {
+        const place = str(i, 'place', 100);
+        cap(c, 'space', 6, 'Space data');
+        const g = await I.geocode(place, ctxOf(c), 1);
+        const p = g.results[0];
+        if (!p) throw new ToolInputError(`Open-Meteo found no place called ${q(place, 60)}.`);
+        const r = await I.airQuality(p.lat, p.lon, ctxOf(c));
+        return {
+          data: { place: [p.name, p.admin, p.country].filter(Boolean).join(', '), ...r },
+          summary: `${r.station} (${r.distanceKm} km from ${p.name}): ${r.readings.map((x) => `${x.label} ${x.value} ${x.units}`).slice(0, 3).join(', ') || 'no fresh readings'}`,
+          sourceName: name('openaq'),
+          sourceUrl: r.sourceUrl,
+        };
+      },
+    },
+
+    // ---- Apothecary (health & life science). Every result carries "Information, not medical advice." ----
+    {
+      name: 'drug_label',
+      label: 'Drug label',
+      description: 'Official US FDA drug label (openFDA) by brand or generic name: purpose, indications, boxed warning, warnings, dosage (as printed on the label), manufacturer and the DailyMed page. Quote the label, do not invent doses. Information, not medical advice. Max 6 health lookups per decree.',
+      schema: obj({ name: { type: 'string', description: 'Brand or generic name, e.g. "ibuprofen", "Lipitor".' } }, ['name']),
+      doing: (i) => `Reading the FDA label for ${q(String(i.name), 30)}`,
+      run: async (i, c) => {
+        const n = str(i, 'name', 80);
+        cap(c, 'health', 6, 'Health lookup');
+        const r = await I.drugLabel(n, ctxOf(c), 3);
+        return { data: health(r), summary: `${r.results.length} FDA labels for ${q(n)} · ${HEALTH_NOTE}`, sourceName: name('openfda'), sourceUrl: r.results[0]?.url ?? r.sourceUrl };
+      },
+    },
+    {
+      name: 'fda_recalls',
+      label: 'FDA recalls',
+      description: `Newest FDA enforcement reports (recalls) for ${I.RECALL_KINDS.join(', ')}: product, reason, firm, class (I = most serious), status, distribution and dates. Optional words to match product, reason or firm. Information, not medical advice.`,
+      schema: obj({ kind: { type: 'string', enum: [...I.RECALL_KINDS], description: 'Default drug.' }, query: { type: 'string', description: 'Optional words, e.g. "peanut", "insulin pump".' } }, []),
+      doing: (i) => `Checking FDA ${String(i.kind ?? 'drug')} recalls`,
+      run: async (i, c) => {
+        const kind = oneOf(i, 'kind', I.RECALL_KINDS, 'drug');
+        const query = optStr(i, 'query', 80);
+        cap(c, 'health', 6, 'Health lookup');
+        const r = await I.fdaRecalls(kind, ctxOf(c), query, 8);
+        return { data: health(r), summary: `${r.results.length} ${kind} recalls${query ? ` for ${q(query)}` : ''} · ${HEALTH_NOTE}`, sourceName: name('openfda'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'pubmed_search',
+      label: 'PubMed search',
+      description: 'Search PubMed biomedical literature: title, journal, date, authors, DOI, publication type (Review, RCT…) and PubMed link. Prefer reviews and trials; one paper is not a consensus. Information, not medical advice.',
+      schema: obj({ query: { type: 'string', description: 'PubMed query, e.g. "intermittent fasting type 2 diabetes".' }, sort: { type: 'string', enum: ['relevance', 'date'], description: 'Default relevance.' } }, ['query']),
+      doing: (i) => `Searching PubMed for ${q(String(i.query))}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 200);
+        const sort = oneOf(i, 'sort', ['relevance', 'date'] as const, 'relevance');
+        cap(c, 'health', 6, 'Health lookup');
+        const r = await I.pubmedSearch(query, ctxOf(c), 8, sort);
+        return { data: health(r), summary: `${r.results.length} of ${r.total.toLocaleString('en')} PubMed papers for ${q(query)} · ${HEALTH_NOTE}`, sourceName: name('pubmed'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'clinical_trials',
+      label: 'Clinical trials',
+      description: 'Search ClinicalTrials.gov for registered studies on a condition, drug or keyword: NCT id, title, status, phase, conditions, sponsor, start date, enrollment and study page. recruiting=true shows only studies recruiting now. Information, not medical advice; eligibility is decided by the study team.',
+      schema: obj({ query: { type: 'string', description: 'e.g. "psoriasis", "semaglutide".' }, recruiting: { type: 'boolean', description: 'Only recruiting studies. Default false.' } }, ['query']),
+      doing: (i) => `Searching clinical trials for ${q(String(i.query))}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 200);
+        if (i.recruiting !== undefined && typeof i.recruiting !== 'boolean') throw new ToolInputError('"recruiting" must be true or false.');
+        cap(c, 'health', 6, 'Health lookup');
+        const r = await I.trialSearch(query, ctxOf(c), { recruiting: i.recruiting === true, limit: 8 });
+        return { data: health(r), summary: `${r.results.length} of ${r.total.toLocaleString('en')} trials for ${q(query)} · ${HEALTH_NOTE}`, sourceName: name('clinicaltrials'), sourceUrl: r.sourceUrl };
+      },
+    },
+
+    // ---- Arena (sport, film, music, games) ----
+    {
+      name: 'football_table',
+      label: 'Football table',
+      description: 'Current league table from football-data.org for one competition code: ' + Object.entries(I.FOOTBALL_COMPETITIONS).map(([k, v]) => `${k} = ${v}`).join('; ') + '. Max 4 football calls per decree.',
+      schema: obj({ competition: { type: 'string', enum: Object.keys(I.FOOTBALL_COMPETITIONS), description: 'Competition code, default PL.' } }, []),
+      doing: (i) => `Reading the ${String(i.competition ?? 'PL')} table`,
+      run: async (i, c) => {
+        const code = oneOf(i, 'competition', Object.keys(I.FOOTBALL_COMPETITIONS), 'PL');
+        cap(c, 'sport', 4, 'Football');
+        const r = await I.footballStandings(code, ctxOf(c));
+        const { table, ...rest } = r;
+        return { data: { ...rest, table: table.map(({ crest: _c, ...t }) => t) }, summary: `${r.competition}${r.table[0] ? `: ${r.table[0].team} lead on ${r.table[0].points} pts` : ''}`, sourceName: name('footballdata'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'football_matches',
+      label: 'Football fixtures',
+      description: 'Results and fixtures of one competition (same codes as football_table) from 3 days ago to 4 days ahead: date (UTC), status, teams and full-time score.',
+      schema: obj({ competition: { type: 'string', enum: Object.keys(I.FOOTBALL_COMPETITIONS), description: 'Competition code, default PL.' } }, []),
+      doing: (i) => `Checking ${String(i.competition ?? 'PL')} fixtures`,
+      run: async (i, c) => {
+        const code = oneOf(i, 'competition', Object.keys(I.FOOTBALL_COMPETITIONS), 'PL');
+        cap(c, 'sport', 4, 'Football');
+        const r = await I.footballMatches(code, ctxOf(c));
+        return { data: r, summary: `${r.matches.length} ${r.competition} matches ${r.from}..${r.to}`, sourceName: name('footballdata'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'film_search',
+      label: 'Film & TV search',
+      description: 'Search films and TV shows on TMDB: title, type, release date, short overview, TMDB user score, votes and themoviedb.org link. Credit "Data: TMDB" in the result. Max 4 film calls per decree.',
+      schema: obj({ query: { type: 'string', description: 'Title, e.g. "Dune", "The Bear".' } }, ['query']),
+      doing: (i) => `Looking up ${q(String(i.query))} on TMDB`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 100);
+        cap(c, 'screen', 4, 'Film');
+        const r = await I.tmdbSearch(query, ctxOf(c), 8);
+        return { data: { ...r, results: r.results.map(({ poster: _p, ...t }) => t) }, summary: `${r.results.length} TMDB titles for ${q(query)}`, sourceName: name('tmdb'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'film_trending',
+      label: 'Trending films & TV',
+      description: 'What is trending on TMDB this week (or today): films or TV shows with date, overview, score and link. Credit "Data: TMDB" in the result.',
+      schema: obj({ type: { type: 'string', enum: ['movie', 'tv'], description: 'Default movie.' }, window: { type: 'string', enum: ['day', 'week'], description: 'Default week.' } }, []),
+      doing: (i) => `Checking trending ${i.type === 'tv' ? 'TV' : 'films'} on TMDB`,
+      run: async (i, c) => {
+        const type = oneOf(i, 'type', ['movie', 'tv'] as const, 'movie');
+        const window = oneOf(i, 'window', ['day', 'week'] as const, 'week');
+        cap(c, 'screen', 4, 'Film');
+        const r = await I.tmdbTrending(ctxOf(c), type, window, 10);
+        return { data: { ...r, results: r.results.map(({ poster: _p, ...t }) => t) }, summary: `${r.results.length} trending ${type === 'tv' ? 'shows' : 'films'} (${window})`, sourceName: name('tmdb'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'music_charts',
+      label: 'Music charts',
+      description: 'Last.fm top tracks or artists, worldwide or for one country (English country name, e.g. "Indonesia", "Brazil"), with listener counts and Last.fm links. Last.fm charts reflect its own users’ scrobbles, not sales. Max 4 music calls per decree.',
+      schema: obj({ kind: { type: 'string', enum: ['tracks', 'artists'], description: 'Default tracks.' }, country: { type: 'string', description: 'Optional country name.' } }, []),
+      doing: (i) => `Reading the Last.fm ${String(i.kind ?? 'tracks')} chart`,
+      run: async (i, c) => {
+        const kind = oneOf(i, 'kind', ['tracks', 'artists'] as const, 'tracks');
+        const country = optStr(i, 'country', 60);
+        cap(c, 'music', 4, 'Music');
+        const r = await I.musicChart(ctxOf(c), kind, country, 10);
+        return { data: r, summary: `Last.fm top ${kind}${country ? ` in ${country}` : ''}: ${r.results[0]?.name ?? 'none'}`, sourceName: name('lastfm'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'music_artist',
+      label: 'Music artist',
+      description: 'One artist: Last.fm listeners, plays, tags, similar artists and short bio, plus MusicBrainz identity (type, country, active years) when found.',
+      schema: obj({ artist: { type: 'string', description: 'Artist name, e.g. "Radiohead".' } }, ['artist']),
+      doing: (i) => `Looking up ${q(String(i.artist))}`,
+      run: async (i, c) => {
+        const artist = str(i, 'artist', 100);
+        cap(c, 'music', 4, 'Music');
+        const r = await I.artistInfo(artist, ctxOf(c));
+        return { data: r, summary: `${r.name}: ${r.listeners.toLocaleString('en')} Last.fm listeners`, sourceName: name('lastfm'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'game_deals',
+      label: 'Game deals',
+      description: 'PC game prices from CheapShark (USD). Without a title: the best-rated current deals (store, sale and normal price, savings, Metacritic). With a title: the cheapest current price per matching game. Deals can end at any time. Max 4 game calls per decree.',
+      schema: obj({ title: { type: 'string', description: 'Optional game title.' } }, []),
+      doing: (i) => (i.title ? `Pricing ${q(String(i.title))}` : 'Hunting for game deals'),
+      run: async (i, c) => {
+        const title = optStr(i, 'title', 100);
+        cap(c, 'games', 4, 'Games');
+        const r = await I.gameDeals(ctxOf(c), title, 8);
+        return { data: r, summary: `${r.results.length} game prices${title ? ` for ${q(title)}` : ''}`, sourceName: name('cheapshark'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'free_games',
+      label: 'Free-to-play games',
+      description: 'Free-to-play games from FreeToGame: title, genre, platform, publisher, release date, short description and link. Optional platform (all, pc, browser), genre tag (e.g. shooter, mmorpg, strategy, moba, racing, card) and sort (popularity or release-date). Credit "Data from FreeToGame.com".',
+      schema: obj(
+        { platform: { type: 'string', enum: [...I.FREE_GAME_PLATFORMS], description: 'Default all.' }, category: { type: 'string', description: 'Optional genre tag.' }, sort: { type: 'string', enum: ['popularity', 'release-date'], description: 'Default popularity.' } },
+        [],
+      ),
+      doing: () => 'Browsing free-to-play games',
+      run: async (i, c) => {
+        const platform = oneOf(i, 'platform', I.FREE_GAME_PLATFORMS, 'all');
+        const sort = oneOf(i, 'sort', ['popularity', 'release-date'] as const, 'popularity');
+        cap(c, 'games', 4, 'Games');
+        const r = await I.freeGames(ctxOf(c), { platform, category: optStr(i, 'category', 30), sort, limit: 10 });
+        return { data: { ...r, results: r.results.map(({ thumb: _t, ...g }) => g) }, summary: `${r.results.length} free games (${r.total} matching)`, sourceName: name('freetogame'), sourceUrl: r.sourceUrl };
+      },
+    },
+
+    // ---- newspapers (Heralds, Archive): headline + short summary + link only ----
+    {
+      name: 'guardian_news',
+      label: 'The Guardian',
+      description: 'Guardian articles: with a query, newest matches; without, the latest in a section (e.g. world, technology, business, sport, environment). Returns headline, short trail, section, byline, date and link ONLY. Never reproduce article text beyond that; link back. Max 4 newspaper calls per decree.',
+      schema: obj({ query: { type: 'string', description: 'Optional search words.' }, section: { type: 'string', description: 'Optional Guardian section id.' } }, []),
+      doing: (i) => (i.query ? `Searching the Guardian for ${q(String(i.query))}` : 'Reading the Guardian'),
+      run: async (i, c) => {
+        const query = optStr(i, 'query', 200);
+        const section = optStr(i, 'section', 40);
+        cap(c, 'press', 4, 'Newspaper');
+        const r = await I.guardianSearch(ctxOf(c), { query, section, limit: 8 });
+        return { data: r, summary: `${r.results.length} Guardian headlines${query ? ` for ${q(query)}` : ''}`, sourceName: name('guardian'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'nyt_news',
+      label: 'The New York Times',
+      description: `New York Times articles. mode "top" = top stories of a section (${I.NYT_SECTIONS.join(', ')}); "search" = newest articles matching a query; "popular" = most viewed in the last day. Returns headline, abstract, byline, date and link ONLY; link back for the full story. The NYT allows few calls, so max 4 newspaper calls per decree.`,
+      schema: obj({ mode: { type: 'string', enum: ['top', 'search', 'popular'], description: 'Default top.' }, section: { type: 'string', enum: [...I.NYT_SECTIONS], description: 'For top. Default home.' }, query: { type: 'string', description: 'For search.' } }, []),
+      doing: (i) => (i.query ? `Searching the NYT for ${q(String(i.query))}` : 'Reading the New York Times'),
+      run: async (i, c) => {
+        const mode = oneOf(i, 'mode', ['top', 'search', 'popular'] as const, i.query ? 'search' : 'top');
+        const section = oneOf(i, 'section', I.NYT_SECTIONS, 'home');
+        const query = optStr(i, 'query', 200);
+        if (mode === 'search' && !query) throw new ToolInputError('"query" is required for mode "search".');
+        cap(c, 'press', 4, 'Newspaper');
+        const r = mode === 'search' ? await I.nytSearch(query!, ctxOf(c), 8) : mode === 'popular' ? await I.nytMostPopular(ctxOf(c), 1, 8) : await I.nytTopStories(ctxOf(c), section, 8);
+        return { data: r, summary: `${r.results.length} NYT ${mode === 'top' ? `${section} top stories` : mode === 'popular' ? 'most viewed' : `articles for ${q(query!)}`}`, sourceName: name('nyt'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'nyt_bestsellers',
+      label: 'NYT bestsellers',
+      description: 'Current New York Times bestseller list: rank, weeks on list, title, author, publisher and short description. list e.g. hardcover-fiction, hardcover-nonfiction, trade-fiction-paperback, young-adult-hardcover, advice-how-to-and-miscellaneous.',
+      schema: obj({ list: { type: 'string', description: 'Default hardcover-fiction.' } }, []),
+      doing: () => 'Reading the NYT bestseller list',
+      run: async (i, c) => {
+        const list = optStr(i, 'list', 60) ?? 'hardcover-fiction';
+        cap(c, 'press', 4, 'Newspaper');
+        const r = await I.nytBestsellers(ctxOf(c), list, 10);
+        return { data: r, summary: `${r.listName} (${r.published ?? '?'}): #1 ${r.books[0]?.title ?? 'none'}`, sourceName: name('nyt'), sourceUrl: r.sourceUrl };
+      },
+    },
+
+    // ---- Atelier: Unsplash ----
+    {
+      name: 'unsplash_photos',
+      label: 'Unsplash search',
+      description: 'Search free Unsplash photos: id, description, size, colour, photographer and photo page. Then call use_unsplash_photo with an id to put it in the decree. The realm has a small hourly Unsplash allowance, so search at most twice per decree.',
+      schema: obj({ query: { type: 'string', description: 'Search words in English.' }, orientation: { type: 'string', enum: ['landscape', 'portrait', 'squarish'], description: 'Optional.' } }, ['query']),
+      doing: (i) => `Searching Unsplash for ${q(String(i.query))}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 100);
+        const orientation = i.orientation === undefined || i.orientation === null || i.orientation === '' ? undefined : oneOf(i, 'orientation', ['landscape', 'portrait', 'squarish'] as const);
+        cap(c, 'unsplash', 2, 'Unsplash search');
+        let r: I.UnsplashSearch;
+        try {
+          r = await I.unsplashSearch(query, ctxOf(c), { perPage: 8, orientation });
+        } catch (e) {
+          if (e instanceof I.QuotaError) throw new ToolInputError(e.message);
+          throw e;
+        }
+        unsplashSeen.set(c.decreeId, [...(unsplashSeen.get(c.decreeId) ?? []), ...r.results].slice(-40));
+        if (unsplashSeen.size > 200) unsplashSeen.delete(unsplashSeen.keys().next().value as string);
+        return {
+          data: { total: r.total, results: r.results.map((p) => ({ id: p.id, description: p.description, width: p.width, height: p.height, color: p.color, photographer: p.photographer, pageUrl: p.pageUrl })) },
+          summary: `${r.results.length} Unsplash photos for ${q(query)}`,
+          sourceName: name('unsplash'),
+          sourceUrl: r.sourceUrl,
+        };
+      },
+    },
+    {
+      name: 'use_unsplash_photo',
+      label: 'Unsplash photo',
+      description: 'Put one Unsplash photo (id from unsplash_photos in this decree) into the decree gallery with alt text and the required credit "Photo by <name> on Unsplash" (with links). Up to 3 per decree. Always show that credit with the photo in your result.',
+      schema: obj({ id: { type: 'string', description: 'Unsplash photo id.' }, title: { type: 'string', description: 'Short caption for the gallery.' } }, ['id', 'title']),
+      doing: () => 'Fetching an Unsplash photo',
+      run: async (i, c) => {
+        const id = str(i, 'id', 40);
+        const title = str(i, 'title', 100);
+        const p = (unsplashSeen.get(c.decreeId) ?? []).find((x) => x.id === id);
+        if (!p) throw new ToolInputError('Unknown Unsplash id. Use an id returned by unsplash_photos in this decree.');
+        cap(c, 'unsplashUsed', 3, 'Unsplash photo');
+        try {
+          await I.unsplashTrackDownload(p.downloadLocation, ctxOf(c));
+        } catch (e) {
+          if (e instanceof I.QuotaError) throw new ToolInputError(e.message);
+          throw e;
+        }
+        const alt = (await altText(p.regular, c)) ?? (p.description || null);
+        const n = imageCount(c.decreeId) + 1;
+        const credit = { author: p.photographer, authorUrl: p.photographerUrl, pageUrl: p.pageUrl, license: 'Unsplash License', licenseUrl: 'https://unsplash.com/license' };
+        addArtifact(c.decreeId, c.revision, { kind: 'image', url: p.regular, title, meta: { provider: 'Unsplash', width: p.width, height: p.height, sourceUrl: p.pageUrl, alt, credit } });
+        return {
+          data: { image_number: n, url: p.regular, alt, credit, note: `Saved as Image ${n}. Credit: ${p.credit} (${p.photographerUrl}, ${p.pageUrl}).` },
+          summary: `Saved Unsplash photo by ${p.photographer} as Image ${n}`,
+          sourceName: name('unsplash'),
+          sourceUrl: p.pageUrl,
+          produced: 'image',
+        };
+      },
+    },
+
+    // ---- Forge: OSV ----
+    {
+      name: 'check_vulnerabilities',
+      label: 'Vulnerability check',
+      description: `Known security vulnerabilities for one open-source package version from OSV.dev (ecosystems: ${I.OSV_ECOSYSTEMS.join(', ')}): id, CVE aliases, summary, severity, fixed versions and osv.dev link. No version = every known vuln for the package. Max 8 per decree. "No known vulnerabilities" is not proof the code is safe.`,
+      schema: obj(
+        { package: { type: 'string', description: 'Package name, e.g. "lodash", "requests".' }, ecosystem: { type: 'string', enum: [...I.OSV_ECOSYSTEMS], description: 'Default npm.' }, version: { type: 'string', description: 'Exact version, e.g. "4.17.15".' } },
+        ['package'],
+      ),
+      doing: (i) => `Checking ${String(i.package ?? '').slice(0, 40)}${i.version ? '@' + String(i.version).slice(0, 20) : ''} for vulnerabilities`,
+      run: async (i, c) => {
+        const pkg = str(i, 'package', 200);
+        const eco = oneOf(i, 'ecosystem', I.OSV_ECOSYSTEMS, 'npm');
+        const version = optStr(i, 'version', 60);
+        cap(c, 'vulns', 8, 'Vulnerability check');
+        const r = await I.osvQuery(pkg, eco, ctxOf(c), version);
+        return { data: r, summary: `${pkg}${version ? '@' + version : ''} (${eco}): ${r.count} known vulnerabilities`, sourceName: name('osv'), sourceUrl: r.sourceUrl };
+      },
+    },
+
+    // ---- Bazaar: TheMealDB ----
+    {
+      name: 'recipe_search',
+      label: 'Recipe search',
+      description: 'Recipes from TheMealDB by dish name: category, cuisine, ingredients with measures, method, photo, video and page link. Coverage is limited (a few hundred dishes); say when nothing is found. Max 3 per decree.',
+      schema: obj({ dish: { type: 'string', description: 'Dish name, e.g. "rendang", "lasagne".' } }, ['dish']),
+      doing: (i) => `Looking up recipes for ${q(String(i.dish))}`,
+      run: async (i, c) => {
+        const dish = str(i, 'dish', 80);
+        cap(c, 'recipes', 3, 'Recipe');
+        const r = await I.mealSearch(dish, ctxOf(c), 3);
+        return { data: r, summary: `${r.results.length} recipes for ${q(dish)}`, sourceName: name('themealdb'), sourceUrl: r.sourceUrl };
+      },
+    },
+  ];
+}
+// Unsplash results seen per decree, so use_unsplash_photo needs no extra search call.
+const unsplashSeen = new Map<string, I.UnsplashPhoto[]>();
+
 const TOOLS: ToolDef[] = [
   {
     name: 'wiki_search',
@@ -1774,6 +2208,7 @@ const TOOLS: ToolDef[] = [
       };
     },
   },
+  ...NEW_GUILD_TOOLS(),
 ];
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
@@ -1781,15 +2216,18 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 const COMMON = ['wiki_search', 'wiki_summary'];
 const GUILD_TOOLS: Record<ProvinceId, string[]> = {
   throne: ['current_weather', 'web_search'],
-  forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file', 'scan_url'],
+  forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file', 'scan_url', 'check_vulnerabilities'],
   scriptorium: ['check_grammar', 'define_word', 'related_words', 'translate', 'job_search'],
-  atelier: ['design_image', 'generate_image', 'stock_photos', 'use_stock_photo', 'remove_background', 'brand_lookup'],
+  atelier: ['design_image', 'generate_image', 'stock_photos', 'use_stock_photo', 'unsplash_photos', 'use_unsplash_photo', 'remove_background', 'brand_lookup'],
   theatre: ['design_image', 'stock_videos', 'find_music', 'make_film', 'generate_image', 'make_video', 'transcribe_audio', 'record_voiceover'],
-  archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram', 'nutrition_lookup', 'read_image_text'],
-  heralds: ['news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'design_image', 'generate_image', 'draft_bluesky_post'],
-  bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup'],
+  archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram', 'nutrition_lookup', 'read_image_text', 'guardian_news', 'nyt_news', 'nyt_bestsellers'],
+  heralds: ['news', 'guardian_news', 'nyt_news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'design_image', 'generate_image', 'draft_bluesky_post'],
+  bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup', 'recipe_search'],
   treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'read_image_text', 'uk_company_search', 'uk_company_profile'],
   court: ['case_law', 'federal_register', 'web_search', 'read_url', 'read_image_text', 'scan_url'],
+  observatory: ['nasa_apod', 'near_earth_asteroids', 'nasa_images', 'earthquakes', 'iss_position', 'air_quality', 'current_weather', 'web_search', 'search_arxiv'],
+  apothecary: ['drug_label', 'fda_recalls', 'pubmed_search', 'clinical_trials', 'nutrition_lookup', 'web_search', 'read_url'],
+  arena: ['football_table', 'football_matches', 'film_search', 'film_trending', 'music_charts', 'music_artist', 'game_deals', 'free_games', 'youtube_search', 'web_search', 'design_image'],
 };
 
 export const toolNamesFor = (p: ProvinceId) => [...(GUILD_TOOLS[p] ?? []), ...COMMON];
@@ -1814,6 +2252,7 @@ export function toolGuidance(p: ProvinceId): string {
         `- You can paint real images with generate_image (Cloudflare FLUX, 1 to ${lim} per decree) or use real Pixabay photos (stock_photos, then use_stock_photo) when real photography fits better. Every image gets alt text automatically; include it in your notes.`,
         '- remove_background makes one transparent cutout per decree (tiny free quota): only when the decree needs it.',
         '- Credit every Pixabay photo (photographer + link) in your result.',
+        '- unsplash_photos / use_unsplash_photo give high-quality Unsplash photos (small hourly allowance). Credit each one exactly as "Photo by <name> on Unsplash" with the photographer and photo links.',
         '- For a brand teardown or a "make it look like X" brief, brand_lookup the company domain first and use its real logos, hex colours and fonts; say when Brandfetch had no data.',
       ].join('\n');
     case 'theatre':
@@ -1828,6 +2267,7 @@ export function toolGuidance(p: ProvinceId): string {
       return [
         `- Ground campaigns in what is happening now: news (GNews), youtube_trending / youtube_search, web_search, hn_stories, mastodon_trends. You may paint up to ${lim} visuals with generate_image.`,
         '- draft_bluesky_post only QUEUES one draft for the Herald (a human) to approve. Never say it was posted or give a post link; say it is waiting for approval.',
+        '- guardian_news and nyt_news give headline, short summary and link only: never reproduce or paraphrase whole articles; quote the headline and link back.',
       ].join('\n');
     case 'forge':
       return [
@@ -1835,6 +2275,7 @@ export function toolGuidance(p: ProvinceId): string {
         '- If the requester wants it online, call publish_site after publish_web_page and report its exact status: "prepared for publishing, not live yet" (dry run), "building" or "live". Give a site url only when the status is live. audit_site runs Lighthouse on a live url.',
         '- For a redesign brief, scrape_site the current site first (1-3 pages). For a speed/SEO review, audit_site the url.',
         '- Royal Inspection of a GitHub repository: repo_info → repo_tree → repo_file on the few files that matter (use the ref from repo_info). Link every finding to its line as [path#L12](https://github.com/owner/repo/blob/<ref>/<path>#L12). State plainly in the report that the code was read, not executed, built or tested.',
+        '- check_vulnerabilities looks up known vulnerabilities for a package version on OSV.dev (e.g. dependencies from package.json). Report ids, severity and fixed versions; no result is not proof of safety.',
         '- For "is this link safe?", run scan_url and report urlscan.io’s verdict, final URL, hosting and certificate exactly. A clean verdict is not proof of safety; list the warning signs you can see yourself (look-alike domain, very new certificate, login form on an unrelated domain).',
       ].join('\n');
     case 'scriptorium':
@@ -1844,12 +2285,13 @@ export function toolGuidance(p: ProvinceId): string {
         '- For job hunting, use job_search (live Adzuna ads) and list only real ads it returned, with title, company, location, salary as given and the link. Say that ads can close at any time.',
       ].join('\n');
     case 'archive':
-      return '- For research, look up real sources (web_search + read_url for the current web, exa_search for companies/papers/projects, search_openalex, search_arxiv, search_openlibrary, world_bank_indicator, fred_series, ask_wolfram for calculations, Wikipedia) and cite them with the urls the tools return.\n- For nutrition, use nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the real amounts and show the arithmetic; mark anything estimated. read_image_text reads text from a public image or PDF link.';
+      return '- For research, look up real sources (web_search + read_url for the current web, exa_search for companies/papers/projects, search_openalex, search_arxiv, search_openlibrary, world_bank_indicator, fred_series, ask_wolfram for calculations, Wikipedia) and cite them with the urls the tools return.\n- For nutrition, use nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the real amounts and show the arithmetic; mark anything estimated. read_image_text reads text from a public image or PDF link.\n- guardian_news, nyt_news and nyt_bestsellers give headlines, short summaries and links only (never full articles): cite and link them.';
     case 'bazaar':
       return [
         '- For local markets, use local_businesses (real OpenStreetMap businesses worldwide) and list the actual names and addresses it returns; note that coverage varies. Use find_similar_companies to map competitors from a company url, web_search / read_url for current details.',
         '- Use fx_convert / fx_rates / fx_history for exchange rates, world_bank_indicator for macro figures and public_holidays for calendars. Never guess these numbers.',
         '- To check a UK company, use uk_company_search then uk_company_profile (official Companies House register) and report status, age, officers, overdue filings and other red flags with the register link. brand_lookup gives a company’s real logos, colours and fonts.',
+        '- recipe_search (TheMealDB) gives real recipes with ingredients for food businesses and menus; say when it has no match.',
       ].join('\n');
     case 'treasury':
       return '- Use stock_quote / company_profile / company_news (Finnhub) for listed companies, fred_series for official US rates and series, ask_wolfram for calculations, fx tools for exchange rates and world_bank_indicator for macro figures. Never guess these numbers, and note that this is not financial advice.\n- read_image_text reads a receipt, invoice or statement from a public image/PDF link (use table=true); rebuild it as a clean table and flag any digit the OCR may have misread. uk_company_search / uk_company_profile check UK companies on the official register.';
@@ -1857,6 +2299,21 @@ export function toolGuidance(p: ProvinceId): string {
       return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.\n- When a scam or phishing link is part of the facts, scan_url records what it really loads (unlisted urlscan.io scan with screenshot) as evidence; report the verdict exactly.\n- When the requester gives a public link to a contract, policy or terms page, read it with read_url; for a public image or PDF scan of a document, use read_image_text. Say how much of the document you could read.';
     case 'throne':
       return '- Use current_weather when the decree depends on the weather somewhere right now, and web_search for current facts.';
+    case 'observatory':
+      return [
+        '- Use earthquakes (USGS), near_earth_asteroids and nasa_apod / nasa_images (NASA), iss_position, air_quality (OpenAQ) and current_weather for live space and earth facts; cite the event, asteroid or station links they return. search_arxiv finds astronomy and earth-science preprints.',
+        '- Report numbers exactly with units and times (UTC). "Potentially hazardous" asteroids are an orbit class, not an impact forecast. For air quality, name the station and its distance. If NASA APOD is down, say so and use nasa_images.',
+      ].join('\n');
+    case 'apothecary':
+      return [
+        '- Use drug_label (FDA labels), fda_recalls, pubmed_search, clinical_trials and nutrition_lookup, and cite every label, paper or trial link.',
+        '- Start or end every result with the line "Information, not medical advice." Never diagnose, never give personal dosing beyond quoting the label, and tell the requester to ask a doctor or pharmacist. For emergencies, tell them to contact local emergency services.',
+      ].join('\n');
+    case 'arena':
+      return [
+        '- Use football_table / football_matches (football-data.org, major competitions only), film_search / film_trending (TMDB), music_charts / music_artist (Last.fm + MusicBrainz), game_deals (CheapShark) and free_games (FreeToGame). Never guess scores, tables or prices.',
+        '- Credit sources in the result: "Data: TMDB" (link themoviedb.org) for film/TV, "Data from FreeToGame.com" for free games, Last.fm for charts. Prices change fast: give the time they were fetched.',
+      ].join('\n');
   }
 }
 

@@ -66,13 +66,38 @@ const TOOL_LABEL: Record<string, string> = {
   nutrition_lookup: 'Nutrition lookup',
   record_voiceover: 'Voice-over recording',
   brand_lookup: 'Brand lookup',
+  nasa_apod: 'NASA picture of the day',
+  near_earth_asteroids: 'Near-Earth asteroids',
+  nasa_images: 'NASA image search',
+  earthquakes: 'Recent earthquakes',
+  iss_position: 'ISS position',
+  air_quality: 'Air quality',
+  drug_label: 'Drug label',
+  fda_recalls: 'FDA recalls',
+  pubmed_search: 'PubMed search',
+  clinical_trials: 'Clinical trials',
+  football_table: 'Football table',
+  football_matches: 'Football fixtures',
+  film_search: 'Film & TV search',
+  film_trending: 'Trending films & TV',
+  music_charts: 'Music charts',
+  music_artist: 'Music artist',
+  game_deals: 'Game deals',
+  free_games: 'Free-to-play games',
+  guardian_news: 'The Guardian',
+  nyt_news: 'The New York Times',
+  nyt_bestsellers: 'NYT bestsellers',
+  unsplash_photos: 'Unsplash search',
+  use_unsplash_photo: 'Unsplash photo',
+  check_vulnerabilities: 'Vulnerability check',
+  recipe_search: 'Recipe search',
 };
 
 /** The most telling input of a step, e.g. the search query. */
 function inputLine(s: DecreeStep): string {
   const i = s.input;
   const repo = i.repo ? String(i.repo) + (i.path ? ' · ' + String(i.path) : '') : null;
-  const pick = i.query ?? i.food ?? i.domain ?? i.company_number ?? repo ?? i.url ?? i.slug ?? i.series ?? i.symbol ?? i.input ?? (i.place && i.category ? `${i.category} · ${i.place}` : null) ?? i.title ?? i.word ?? i.place ?? i.prompt ?? (i.from && i.to ? `${i.amount ?? ''} ${i.from} → ${i.to}` : null) ?? (i.country ? `${i.country}${i.indicator ? ' · ' + i.indicator : ''}` : null) ?? i.base ?? i.kind ?? null;
+  const pick = i.query ?? i.name ?? i.artist ?? i.dish ?? i.package ?? i.competition ?? i.food ?? i.domain ?? i.company_number ?? repo ?? i.url ?? i.slug ?? i.series ?? i.symbol ?? i.input ?? (i.place && i.category ? `${i.category} · ${i.place}` : null) ?? i.title ?? i.word ?? i.place ?? i.prompt ?? (i.from && i.to ? `${i.amount ?? ''} ${i.from} → ${i.to}` : null) ?? (i.country ? `${i.country}${i.indicator ? ' · ' + i.indicator : ''}` : null) ?? i.base ?? i.kind ?? null;
   return pick == null ? '' : String(pick).slice(0, 140);
 }
 

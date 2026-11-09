@@ -108,6 +108,7 @@ function buildIndex(): Map<string, ToolMeta> {
     }
     const limits: string[] = [];
     for (const x of block.matchAll(/c\.usage\.(\w+)\s*>=\s*(\d+)/g)) limits.push(x[2] === '1' ? `One ${x[1].replace(/s$/, '')} per decree run` : `Up to ${x[2]} ${x[1]} per decree run`);
+    for (const x of block.matchAll(/\bcap\(\s*c\s*,\s*'(\w+)'\s*,\s*(\d+)\s*,\s*'([^']+)'/g)) limits.push(x[2] === '1' ? `One ${x[3].toLowerCase()} call per decree run` : `Up to ${x[2]} ${x[3].toLowerCase()} calls per decree run`);
     for (const x of block.matchAll(/num\(\s*i\s*,\s*'limit'\s*,\s*\d+\s*,\s*(\d+)/g)) limits.push(`Up to ${x[1]} results per call`);
     const local = /makeSlideshow/.test(block) ? 'Agentdom (local ffmpeg render)' : /addArtifact\([^)]*kind:\s*'html'/.test(block) ? 'Agentdom (artifact store)' : null;
     idx.set(m[1], { providers: [...provs], limits, local });

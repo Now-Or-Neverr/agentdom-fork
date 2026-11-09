@@ -6,7 +6,7 @@ import type { ProvinceId } from '../../shared/realm';
 
 export const MAP_X = 82; // half extent of the terrain mesh
 export const MAP_Z = 68;
-export const VIEW_X = 58; // camera target clamp
+export const VIEW_X = 64; // camera target clamp
 export const VIEW_Z = 46;
 
 // ---------- noise ----------
@@ -101,6 +101,9 @@ export const SITES: Site[] = [
   { id: 'archive', x: -31, z: -29, r: 8, h: 1.1, ry: 0.25 },
   { id: 'scriptorium', x: -46, z: 2, r: 7.5, h: 1.2, ry: 0.55 },
   { id: 'forge', x: -50, z: 26, r: 7.5, h: 1.6, ry: 0.4 },
+  { id: 'observatory', x: 46, z: 27, r: 7, h: 2.0, ry: -0.45 },
+  { id: 'apothecary', x: -51, z: -18, r: 7, h: 1.2, ry: 0.7 },
+  { id: 'arena', x: -46, z: 44, r: 8, h: 1.0, ry: 0.35 },
 ];
 export const SITE = Object.fromEntries(SITES.map((s) => [s.id, s])) as Record<ProvinceId, Site>;
 
@@ -134,6 +137,10 @@ export const ROADS: Road[] = [
   { pts: [[0, 27], [-3, 38], [-8, 46]] },
   { pts: [[22, 35], [30, 40], [40, 36]] },
   { pts: [[-27, 33], [-33, 42]] },
+  // roads to the newer provinces
+  { pts: [[40, 36], [43.5, 31.5], [46, 27]] },
+  { pts: [[-46, 2], [-49, -7], [-51, -18]] },
+  { pts: [[-33, 42], [-40, 44], [-46, 44]] },
 ];
 
 // Farmland patches: [cx, cz, w, d, angle]
@@ -143,7 +150,7 @@ export const FARMS: [number, number, number, number, number][] = [
   [38, 38, 8, 6, 0.35],
   [-36, 43, 8, 5.5, -0.3],
   [-58, 12, 6, 7, 0.5],
-  [52, 22, 7, 6, -0.4],
+  [58, 6, 7, 6, -0.4],
 ];
 
 // Raw land field: >0 on land.

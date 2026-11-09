@@ -34,6 +34,7 @@ async function run<T>(p: Promise<T>): Promise<T> {
   } catch (e) {
     if (e instanceof HttpError) throw e;
     if (e instanceof I.ImageBusyError) throw new HttpError(429, e.message);
+    if (e instanceof I.QuotaError) throw new HttpError(429, e.message);
     if (e instanceof I.UpstreamError) throw new HttpError(502, e.message);
     throw new HttpError(400, (e as Error).message || 'Request failed.');
   }
@@ -358,6 +359,11 @@ const DAILY: Record<string, number> = {
   geoapify: 1000,
   pagespeed: 300,
   github: 1500,
+  nasa: 500, // 1,000 requests/hour per key
+  openaq: 500,
+  footballdata: 400, // 10 requests/minute
+  tmdb: 2000,
+  lastfm: 2000,
 };
 function budget(bucket: string) {
   const day = new Date().toISOString().slice(0, 10);
@@ -566,5 +572,121 @@ router.get(
     const order = q(req, 'order') === 'newest' ? 'dateFiled desc' : 'score desc';
     gate(req, 'courtlistener', 6, 60);
     res.json(single('courtlistener', await run(I.caseLawSearch(query, WS('cases'), { limit: 10, order }))));
+  }),
+);
+
+// ================= workshop: Observatory, Apothecary, Arena =================
+// ---- Observatory ----
+router.get(
+  '/tools/space',
+  h(async (req, res) => {
+    ws(req, 'space', 20);
+    const c = WS('space');
+    const asteroids = I.enabled('nasa') ? section('nasa', I.nasaAsteroids(c)) : Promise.resolve({ provider: 'nasa', name: I.PROVIDER.nasa.name, ok: false, data: null, error: 'not configured on this server' } as Section<I.AsteroidFeed>);
+    const [quakes, iss, neo] = await Promise.all([section('usgs', I.earthquakes(c, '4.5', 'day', 10)), section('wheretheiss', I.issPosition(c)), asteroids]);
+    res.json({ quakes, iss, asteroids: neo });
+  }),
+);
+
+router.get(
+  '/tools/apod',
+  h(async (req, res) => {
+    const date = q(req, 'date') || undefined;
+    gate(req, 'nasa', 10, 60);
+    res.json(single('nasa', await run(I.nasaApod(WS('apod'), date))));
+  }),
+);
+
+router.get(
+  '/tools/air',
+  h(async (req, res) => {
+    const city = text(req.query.city, 80, 'city');
+    gate(req, 'openaq', 6, 40);
+    const c = WS('air');
+    const g = await run(I.geocode(city, c, 1));
+    const place = g.results[0];
+    if (!place) throw new HttpError(404, `No place called “${city}” was found.`);
+    res.json(single('openaq', { place, ...(await run(I.airQuality(place.lat, place.lon, c))) }));
+  }),
+);
+
+// ---- Apothecary (information, not medical advice) ----
+router.get(
+  '/tools/drug',
+  h(async (req, res) => {
+    const name = text(req.query.name, 80, 'name');
+    ws(req, 'openfda', 20);
+    const c = WS('drug');
+    const [label, recalls] = await Promise.all([section('openfda', I.drugLabel(name, c, 2)), section('openfda', I.fdaRecalls('drug', c, name, 5))]);
+    res.json({ name, note: I.HEALTH_NOTE, label, recalls });
+  }),
+);
+
+router.get(
+  '/tools/recalls',
+  h(async (req, res) => {
+    const kind = (q(req, 'kind') || 'food') as I.RecallKind;
+    if (!I.RECALL_KINDS.includes(kind)) throw new HttpError(400, `kind must be one of: ${I.RECALL_KINDS.join(', ')}.`);
+    const query = text(req.query.q, 80, 'q', false) || undefined;
+    ws(req, 'openfda', 20);
+    res.json(single('openfda', await run(I.fdaRecalls(kind, WS('recalls'), query, 8))));
+  }),
+);
+
+router.get(
+  '/tools/medresearch',
+  h(async (req, res) => {
+    const query = text(req.query.q, 200, 'q');
+    ws(req, 'medresearch', 15);
+    const c = WS('medresearch');
+    const [papers, trials] = await Promise.all([section('pubmed', I.pubmedSearch(query, c, 6)), section('clinicaltrials', I.trialSearch(query, c, { recruiting: q(req, 'recruiting') === '1', limit: 6 }))]);
+    res.json({ query, note: I.HEALTH_NOTE, papers, trials });
+  }),
+);
+
+// ---- Arena ----
+router.get(
+  '/tools/football',
+  h(async (req, res) => {
+    const code = (q(req, 'competition') || 'PL').toUpperCase();
+    if (!I.isCompetition(code)) throw new HttpError(400, `competition must be one of: ${Object.keys(I.FOOTBALL_COMPETITIONS).join(', ')}.`);
+    gate(req, 'footballdata', 4, 40);
+    const c = WS('football');
+    const [table, matches] = await Promise.all([section('footballdata', I.footballStandings(code, c)), section('footballdata', I.footballMatches(code, c))]);
+    res.json({ code, competitions: I.FOOTBALL_COMPETITIONS, table, matches });
+  }),
+);
+
+router.get(
+  '/tools/screen',
+  h(async (req, res) => {
+    const query = text(req.query.q, 100, 'q', false);
+    const type = q(req, 'type') === 'tv' ? 'tv' : 'movie';
+    gate(req, 'tmdb', 15, 150);
+    const c = WS('screen');
+    res.json(single('tmdb', await run(query ? I.tmdbSearch(query, c, 12) : I.tmdbTrending(c, type, 'week', 12))));
+  }),
+);
+
+router.get(
+  '/tools/music',
+  h(async (req, res) => {
+    const artist = text(req.query.artist, 100, 'artist', false);
+    const country = text(req.query.country, 60, 'country', false) || undefined;
+    gate(req, 'lastfm', 12, 120);
+    const c = WS('music');
+    if (artist) res.json({ kind: 'artist', artist: await section('lastfm', I.artistInfo(artist, c)) });
+    else res.json({ kind: 'chart', chart: await section('lastfm', I.musicChart(c, 'tracks', country, 15)) });
+  }),
+);
+
+router.get(
+  '/tools/games',
+  h(async (req, res) => {
+    const title = text(req.query.title, 100, 'title', false) || undefined;
+    ws(req, 'games', 15);
+    const c = WS('games');
+    const [deals, free] = await Promise.all([section('cheapshark', I.gameDeals(c, title, 8)), title ? Promise.resolve(null) : section('freetogame', I.freeGames(c, { limit: 8 }))]);
+    res.json({ title: title ?? null, deals, free });
   }),
 );

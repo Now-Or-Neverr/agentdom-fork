@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { GUILDS, type Role } from '../../shared/realm';
+import { GUILDS, type ProvinceId, type Role } from '../../shared/realm';
 import { Figure } from '../components/Character';
 import { ProvinceIcon } from '../components/ProvinceIcon';
 import { useScrollProgress, scrollToProgress } from '../lib/useScrollProgress';
@@ -20,6 +20,9 @@ export const ROLE_LABEL: Record<Role, string> = {
   steward: 'Stewards',
   magistrate: 'Magistrates',
 };
+
+// Newer guilds reuse an existing figure, so their button names their own people.
+const BROWSE: Partial<Record<ProvinceId, string>> = { observatory: 'Astronomers', apothecary: 'Apothecaries', arena: 'Scouts' };
 
 function useDesktop() {
   const q = '(min-width: 960px)';
@@ -69,7 +72,7 @@ export function Guilds() {
           {g.hall} — {g.hallLine.charAt(0).toLowerCase() + g.hallLine.slice(1)}.
         </p>
         <Link to={`/guilds/${g.id}`} className="btn btn-sm">
-          Browse {ROLE_LABEL[g.role].toLowerCase()} <ArrowRight size={15} />
+          Browse {(BROWSE[g.id] ?? ROLE_LABEL[g.role]).toLowerCase()} <ArrowRight size={15} />
         </Link>
       </div>
       <Figure role={g.role} look={idx % 4} color={g.color} size={desktop ? 190 : 150} className="ld-guild-figure" />
@@ -82,7 +85,7 @@ export function Guilds() {
         <div className="wrap">
           <div className="ld-head ld-head-row">
             <div>
-              <span className="kicker">The nine guilds</span>
+              <span className="kicker">The twelve guilds</span>
               <h2 className="display d-lg">
                 Pick a guild, <em>meet its agents.</em>
               </h2>

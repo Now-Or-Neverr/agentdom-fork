@@ -1,5 +1,5 @@
 // "Built around guilds": the camera starts on the Imperial Throne palace, then
-// rises and swings around the bay while the nine guild settlements are revealed.
+// rises and swings around the bay while the guild settlements are revealed.
 import * as THREE from 'three';
 import type { ProvinceId } from '../../../shared/realm';
 import { acquireBay, releaseBay, DAY, type Bay, type BayView } from './bay';
