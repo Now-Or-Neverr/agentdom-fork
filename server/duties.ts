@@ -869,6 +869,28 @@ const KINDS: DutyKind[] = [
     },
   },
   {
+    kind: 'chain_economy',
+    province: 'mint',
+    providers: ['defillama'],
+    task: 'Reading the Robinhood Chain economy…',
+    repeatHours: 24,
+    async run(ctx, seen) {
+      const r = await I.chainEconomy(ctx);
+      const day = new Date().toISOString().slice(0, 10);
+      if (seen.has(day) || r.tvl === null) return null;
+      const m = (v: number | null) => (v === null ? '?' : v >= 1e9 ? `$${(v / 1e9).toFixed(2)}B` : `$${Math.round(v / 1e6)}M`);
+      const top = r.topDexes[0];
+      return {
+        key: day,
+        title: `Robinhood Chain: ${m(r.tvl)} locked, ${m(r.dexVolume24h)} traded in a day`,
+        summary: `DefiLlama counts ${m(r.tvl)} locked on Robinhood Chain and ${m(r.dexVolume24h)} of DEX volume in the last 24 hours${r.dexVolumeChange1d !== null ? ` (${r.dexVolumeChange1d > 0 ? '+' : ''}${Math.round(r.dexVolumeChange1d)}% on the day)` : ''}${top ? `, led by ${top.name}` : ''}. Stablecoins on the chain: ${m(r.stablecoins)}.`,
+        data: { tvl: r.tvl, dexVolume24h: r.dexVolume24h, fees24h: r.fees24h, stablecoins: r.stablecoins, topDexes: r.topDexes.slice(0, 3) },
+        sourceName: 'DefiLlama',
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
+  {
     kind: 'agentdom_ledger',
     province: 'mint',
     providers: ['dexscreener', 'geckoterminal', 'robinhoodrpc'],
