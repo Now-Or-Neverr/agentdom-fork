@@ -12,7 +12,8 @@ const alchemyRpc = () => `https://robinhood-mainnet.g.alchemy.com/v2/${process.e
 function endpoints(): { url: string; provider: string }[] {
   const list: { url: string; provider: string }[] = [];
   if (alchemyOn()) list.push({ url: alchemyRpc(), provider: ALCHEMY });
-  else if (process.env.ROBINHOOD_RPC_URL) list.push({ url: process.env.ROBINHOOD_RPC_URL, provider: RPC });
+  if (process.env.CHAINSTACK_RPC_URL) list.push({ url: process.env.CHAINSTACK_RPC_URL, provider: 'chainstack' });
+  if (process.env.ROBINHOOD_RPC_URL) list.push({ url: process.env.ROBINHOOD_RPC_URL, provider: RPC });
   list.push({ url: CHAIN.rpc, provider: RPC });
   return list;
 }
