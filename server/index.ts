@@ -17,6 +17,7 @@ import { turnstileGuard, turnstileOn, turnstileSiteKey } from './turnstile';
 import { router as decreeExtraRoutes } from './decreeExtras';
 import { router as accountRoutes } from './routes/account';
 import { startDuties } from './duties';
+import { startXAutopost } from './herald';
 import { bus, decreeChanged, logActivity } from './events';
 import { MODEL, aiEnabled, runningDecrees, startWorker, vizierPick } from './worker';
 import { GUILDS, PROVINCE, PROVINCES, isProvince, rankFor, routeByKeywords, type ProvinceId } from '../shared/realm';
@@ -32,6 +33,7 @@ const LIMIT_GLOBAL = Number(process.env.DAILY_DECREES_GLOBAL) || 200;
 seed(MODEL);
 startWorker();
 startDuties();
+startXAutopost();
 
 const app = express();
 // Only trust X-Forwarded-For from a local proxy (e.g. cloudflared on this machine); override with TRUST_PROXY.

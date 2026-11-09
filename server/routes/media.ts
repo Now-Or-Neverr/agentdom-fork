@@ -7,7 +7,8 @@ import { db, now } from '../db';
 import { HttpError, currentUser, h, text } from '../core';
 import * as I from '../integrations';
 import { QuotaError, recordUsage, usage, utcDayStart } from '../integrations/media-common';
-import { approveHerald, heraldPost, isAdmin, listHerald, queueHeraldDraft, rejectHerald, type HeraldStatus } from '../herald';
+import { approveHerald, heraldPost, isAdmin, listHerald, queueHeraldDraft, rejectHerald, xInfo, type HeraldStatus } from '../herald';
+import { xCallback, xConnectUrl, xDisconnect } from '../integrations/x';
 import { discordWebhookInfo, notifyEnabled, notifyOwner, notifyRealm, telegramGetMe } from '../notify';
 
 export const router = Router();
@@ -298,7 +299,7 @@ router.get(
     admin(req);
     const s = q(req, 'status') as HeraldStatus;
     const ok = ['pending', 'approved', 'posted', 'rejected', 'failed'].includes(s);
-    res.json({ posts: listHerald(ok ? s : undefined), bluesky: I.bskyEnabled(), at: now() });
+    res.json({ posts: listHerald(ok ? s : undefined), bluesky: I.bskyEnabled(), x: xInfo(), at: now() });
   }),
 );
 router.post(
@@ -306,7 +307,18 @@ router.post(
   h(async (req, res) => {
     admin(req);
     const b = req.body ?? {};
-    res.json(await run(queueHeraldDraft({ text: str(b.text), image: str(b.image) || null, alt: str(b.alt) || null, decreeId: str(b.decreeId) || null })));
+    // Wrapped so a validation error becomes a 400 with its message (queueHeraldDraft throws synchronously).
+    const draft = async () =>
+      queueHeraldDraft({
+        text: str(b.text),
+        image: str(b.image) || null,
+        alt: str(b.alt) || null,
+        decreeId: str(b.decreeId) || null,
+        network: b.network === 'x' ? 'x' : 'bluesky',
+        source: 'admin',
+        scheduledAt: str(b.scheduledAt) || null,
+      });
+    res.json(await run(draft()));
   }),
 );
 router.post(
@@ -323,6 +335,38 @@ router.post(
     admin(req);
     if (!heraldPost(req.params.id)) throw new HttpError(404, 'Draft not found.');
     res.json(await run(rejectHerald(req.params.id, str(req.body?.reason) || undefined)));
+  }),
+);
+
+// ---------------- X connect (OAuth 2.0) ----------------
+/** Admin asks for the X authorize link; the browser then goes there. */
+router.post(
+  '/admin/x/connect',
+  h((req, res) => {
+    admin(req);
+    res.json({ url: xConnectUrl() });
+  }),
+);
+/** X sends the browser back here. Protected by the single-use state, not the admin key. */
+router.get(
+  '/admin/x/callback',
+  h(async (req, res) => {
+    const back = (p: Record<string, string>) => res.redirect(302, `/admin/herald?${new URLSearchParams(p)}`);
+    if (q(req, 'error')) return back({ x: 'error', msg: 'X sign-in was cancelled.' });
+    try {
+      const r = await xCallback(q(req, 'code'), q(req, 'state'));
+      back({ x: 'connected', user: r.username });
+    } catch (e) {
+      back({ x: 'error', msg: (e as Error).message.slice(0, 300) });
+    }
+  }),
+);
+router.post(
+  '/admin/x/disconnect',
+  h(async (req, res) => {
+    admin(req);
+    await xDisconnect();
+    res.json(xInfo());
   }),
 );
 

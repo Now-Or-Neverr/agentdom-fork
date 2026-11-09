@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Check, KeyRound, Loader2, RefreshCw, ShieldCheck, X } from 'lucide-react';
 import { AppShell } from '../app/AppShell';
-import { herald, type HeraldPost, type HeraldStatus } from '../lib/mediaApi';
+import { herald, type HeraldPost, type HeraldStatus, type XInfo } from '../lib/mediaApi';
+import { XPanel } from './HeraldX';
 import './workshop.css';
 import './workshop/media.css';
 
@@ -27,6 +28,7 @@ export default function HeraldQueue() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [checks, setChecks] = useState<Record<string, unknown> | null>(null);
+  const [x, setX] = useState<XInfo | null>(null);
 
   const load = async (k = key) => {
     if (!k) return;
@@ -34,6 +36,7 @@ export default function HeraldQueue() {
     try {
       const r = await herald.list(k, filter === 'all' ? undefined : filter);
       setPosts(r.posts);
+      setX(r.x);
     } catch (e) {
       setPosts(null);
       setErr((e as Error).message);
@@ -65,13 +68,15 @@ export default function HeraldQueue() {
     setChecks(null);
   };
   const act = async (p: HeraldPost, what: 'approve' | 'reject') => {
-    if (what === 'approve' && !window.confirm('Publish this post on the realm’s Bluesky account now? This is public and cannot be undone from here.')) return;
+    const where = p.network === 'x' ? `X account @${x?.username ?? x?.allowedHandle ?? 'agentdomworld'}` : 'Bluesky account';
+    if (what === 'approve' && !window.confirm(`Publish this post on the realm’s ${where} now? This is public and cannot be undone from here.`)) return;
     setBusy(p.id);
     setErr(null);
     try {
       const r = what === 'approve' ? await herald.approve(key, p.id) : await herald.reject(key, p.id, window.prompt('Reason (optional)') ?? undefined);
       setPosts((xs) => (xs ? xs.map((x) => (x.id === r.id ? r : x)) : xs));
-      if (r.status === 'failed') setErr(`Bluesky did not publish it: ${r.error ?? 'unknown error'}`);
+      if (r.status === 'failed') setErr(`${r.network === 'x' ? 'X' : 'Bluesky'} did not publish it: ${r.error ?? 'unknown error'}`);
+      if (r.network === 'x') load();
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -87,7 +92,7 @@ export default function HeraldQueue() {
           <h1 className="display d-lg" style={{ margin: '14px 0 12px' }}>
             Herald queue
           </h1>
-          <p className="lede">Drafts for the realm’s Bluesky account. Nothing is posted until you approve it here.</p>
+          <p className="lede">Drafts for the realm’s Bluesky and X accounts. Nothing is posted until you approve it here, or until its scheduled time when X auto-post is on.</p>
         </div>
       </section>
       <div className="page-paper">
@@ -148,6 +153,7 @@ export default function HeraldQueue() {
                   {err}
                 </div>
               )}
+              {x && <XPanel adminKey={key} info={x} onChange={() => load()} onError={setErr} />}
               {checks && (
                 <section className="ws-panel">
                   <header>
@@ -169,8 +175,10 @@ export default function HeraldQueue() {
                     <span className="hq-status" style={{ color: COLOR[p.status] }}>
                       {p.status}
                     </span>
+                    <span className="hq-net">{p.network === 'x' ? 'X' : 'Bluesky'}</span>
                     <span className="ws-muted">
-                      {when(p.createdAt)} · {p.preview.chars}/300 characters
+                      {when(p.createdAt)} · {p.preview.chars}/{p.network === 'x' ? 280 : 300} characters
+                      {p.scheduledAt ? ` · scheduled ${when(p.scheduledAt)}` : ''}
                       {p.preview.links ? ` · ${p.preview.links} link${p.preview.links > 1 ? 's' : ''}` : ''}
                       {p.preview.tags ? ` · ${p.preview.tags} hashtag${p.preview.tags > 1 ? 's' : ''}` : ''}
                       {p.decreeId ? ` · decree ${p.decreeId}` : ''}
@@ -185,7 +193,7 @@ export default function HeraldQueue() {
                   )}
                   {p.url && (
                     <a className="ws-link" href={p.url} target="_blank" rel="noreferrer">
-                      View on Bluesky · posted {when(p.postedAt)}
+                      View on {p.network === 'x' ? 'X' : 'Bluesky'} · posted {when(p.postedAt)}
                     </a>
                   )}
                   {p.error && <div className="ws-muted">{p.status === 'rejected' ? 'Reason' : 'Error'}: {p.error}</div>}

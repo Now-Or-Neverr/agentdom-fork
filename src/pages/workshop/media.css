@@ -267,3 +267,20 @@ input[type='file'].mt-file::file-selector-button,
   border-radius: 50%;
   background: currentColor;
 }
+.hq-net {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-c);
+}
+.hq-compose {
+  display: grid;
+  gap: 10px;
+}
+.hq-compose textarea {
+  width: 100%;
+  resize: vertical;
+}

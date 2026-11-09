@@ -75,9 +75,21 @@ export const media = {
 };
 
 export const herald = {
-  list: (key: string, status?: HeraldStatus) => req<{ posts: HeraldPost[]; bluesky: boolean; at: string }>(`/admin/herald${status ? `?status=${status}` : ''}`, {}, key),
-  queue: (key: string, d: { text: string; image?: string; alt?: string; decreeId?: string }) => post<HeraldPost>('/admin/herald', d, key),
+  list: (key: string, status?: HeraldStatus) => req<{ posts: HeraldPost[]; bluesky: boolean; x: XInfo; at: string }>(`/admin/herald${status ? `?status=${status}` : ''}`, {}, key),
+  queue: (key: string, d: { text: string; image?: string; alt?: string; decreeId?: string; network?: 'bluesky' | 'x'; scheduledAt?: string }) => post<HeraldPost>('/admin/herald', d, key),
   approve: (key: string, id: string) => post<HeraldPost>(`/admin/herald/${enc(id)}/approve`, {}, key),
   reject: (key: string, id: string, reason?: string) => post<HeraldPost>(`/admin/herald/${enc(id)}/reject`, { reason }, key),
   checks: (key: string) => req<Record<string, unknown>>('/admin/checks', {}, key),
+  xConnect: (key: string) => post<{ url: string }>('/admin/x/connect', {}, key),
+  xDisconnect: (key: string) => post<XInfo>('/admin/x/disconnect', {}, key),
 };
+export interface XInfo {
+  configured: boolean;
+  connected: boolean;
+  username: string | null;
+  allowedHandle: string;
+  autopost: boolean;
+  dailyLimit: number;
+  postedToday: number;
+  maxChars: number;
+}
