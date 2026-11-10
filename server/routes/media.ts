@@ -2,7 +2,7 @@
 // Atelier/Theatre/Scriptorium/Forge workshop tools backed by Cloudflare Workers AI, Pixabay,
 // Freesound, remove.bg, local ffmpeg films and GitHub Pages, plus the admin-only Herald queue
 // (Bluesky drafts) and owner notification checks. Nothing here invents data; every limit is real.
-import { Router, type Request } from 'express';
+import { Router, raw, type Request } from 'express';
 import { db, now } from '../db';
 import { HttpError, currentUser, h, text } from '../core';
 import * as I from '../integrations';
@@ -319,6 +319,22 @@ router.post(
         scheduledAt: str(b.scheduledAt) || null,
       });
     res.json(await run(draft()));
+  }),
+);
+/** Admin media for scheduled posts: the raw file as the body (JPG, PNG, WEBP or MP4 up to 20 MB). */
+router.post(
+  '/admin/upload',
+  raw({ type: () => true, limit: '20mb' }),
+  h((req, res) => {
+    admin(req);
+    const buf = req.body;
+    if (!Buffer.isBuffer(buf) || !buf.length) throw new HttpError(400, 'Send the file as the request body.');
+    try {
+      const s = I.saveUpload(buf, 'adm', ['jpg', 'png', 'webp', 'mp4'], 'file');
+      res.json({ url: s.url, type: s.ext, bytes: s.bytes });
+    } catch (e) {
+      throw new HttpError(400, (e as Error).message);
+    }
   }),
 );
 router.post(

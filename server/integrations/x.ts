@@ -191,6 +191,49 @@ async function uploadImage(access: string, src: string): Promise<string> {
   return j.data.id;
 }
 
+const VIDEO_MAX = 512_000_000; // X video limit
+const CHUNK = 4 * 1024 * 1024;
+
+/** Chunked video upload (initialize, append, finalize, then wait for processing). */
+async function uploadVideo(access: string, src: string): Promise<string> {
+  const buf = fs.readFileSync(resolveUpload(src));
+  if (buf.length > VIDEO_MAX) throw new XError('The video is over 512 MB.');
+  const auth = { authorization: `Bearer ${access}` };
+  const fail = async (r: Response, step: string) => {
+    const j = (await r.json().catch(() => ({}))) as { detail?: string; title?: string };
+    return new XError(`X video ${step} failed (${r.status}): ${j.detail || j.title || 'no detail'}`);
+  };
+  const init = await fetch(`${API}/media/upload/initialize`, {
+    method: 'POST',
+    headers: { ...auth, 'content-type': 'application/json' },
+    body: JSON.stringify({ media_type: 'video/mp4', total_bytes: buf.length, media_category: 'tweet_video' }),
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!init.ok) throw await fail(init, 'initialize');
+  const id = ((await init.json()) as { data?: { id?: string } }).data?.id;
+  if (!id) throw new XError('X video initialize returned no media id.');
+  for (let i = 0, seg = 0; i < buf.length; i += CHUNK, seg++) {
+    const form = new FormData();
+    form.append('media', new Blob([new Uint8Array(buf.subarray(i, i + CHUNK))], { type: 'application/octet-stream' }), 'chunk');
+    form.append('segment_index', String(seg));
+    const r = await fetch(`${API}/media/upload/${id}/append`, { method: 'POST', headers: auth, body: form, signal: AbortSignal.timeout(120_000) });
+    if (!r.ok) throw await fail(r, `append ${seg}`);
+  }
+  const fin = await fetch(`${API}/media/upload/${id}/finalize`, { method: 'POST', headers: auth, signal: AbortSignal.timeout(60_000) });
+  if (!fin.ok) throw await fail(fin, 'finalize');
+  type Info = { state?: string; check_after_secs?: number; error?: { message?: string } };
+  let info = ((await fin.json().catch(() => ({}))) as { data?: { processing_info?: Info } }).data?.processing_info;
+  for (let tries = 0; info && info.state !== 'succeeded' && tries < 40; tries++) {
+    if (info.state === 'failed') throw new XError(`X could not process the video: ${info.error?.message || 'failed'}`);
+    await new Promise((ok) => setTimeout(ok, Math.min(30, Math.max(2, info?.check_after_secs ?? 5)) * 1000));
+    const s = await fetch(`${API}/media/upload?command=STATUS&media_id=${id}`, { headers: auth, signal: AbortSignal.timeout(30_000) });
+    if (!s.ok) throw await fail(s, 'status');
+    info = ((await s.json().catch(() => ({}))) as { data?: { processing_info?: Info } }).data?.processing_info;
+  }
+  if (info && info.state !== 'succeeded') throw new XError('X is still processing the video. Try again later.');
+  return id;
+}
+
 async function addAlt(access: string, mediaId: string, alt: string) {
   await fetch(`${API}/media/metadata`, {
     method: 'POST',
@@ -206,8 +249,9 @@ export async function xPost(text: string, opts: { image?: string | null; alt?: s
   const a = await token();
   const payload: { text: string; media?: { media_ids: string[] } } = { text: body };
   if (opts.image) {
-    const id = await uploadImage(a.access_token, opts.image);
-    if (opts.alt) await addAlt(a.access_token, id, opts.alt);
+    const isVideo = sniff(fs.readFileSync(resolveUpload(opts.image)).subarray(0, 64)) === 'mp4';
+    const id = isVideo ? await uploadVideo(a.access_token, opts.image) : await uploadImage(a.access_token, opts.image);
+    if (opts.alt && !isVideo) await addAlt(a.access_token, id, opts.alt);
     payload.media = { media_ids: [id] };
   }
   const r = await fetch(`${API}/tweets`, {
