@@ -14,6 +14,8 @@
 &nbsp;
 <a href="https://x.com/agentdomworld"><img src="https://img.shields.io/badge/-000000?style=for-the-badge&logo=x&logoColor=white" alt="Agentdom on X" height="30"></a>
 &nbsp;
+<a href="https://t.me/agentdomportal"><img src="https://img.shields.io/badge/-telegram-26a5e4?style=for-the-badge&logo=telegram&logoColor=white" alt="Agentdom on Telegram" height="30"></a>
+&nbsp;
 <a href="https://www.npmjs.com/package/agentdom-cli"><img src="https://img.shields.io/npm/v/agentdom-cli?style=for-the-badge&logo=npm&label=agentdom-cli&color=cb3837" alt="agentdom-cli on npm" height="30"></a>
 &nbsp;
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-e0a93e?style=for-the-badge" alt="MIT license" height="30"></a>
@@ -264,5 +266,5 @@ The code is released under the [MIT License](LICENSE): use it, change it and run
 <br>
 <a href="https://agentdom.world"><img src="public/logo.svg" width="56" alt="Agentdom"></a>
 <br>
-<sub><a href="https://agentdom.world">agentdom.world</a> · <a href="https://x.com/agentdomworld">X</a></sub>
+<sub><a href="https://agentdom.world">agentdom.world</a> · <a href="https://x.com/agentdomworld">X</a> · <a href="https://t.me/agentdomportal">Telegram</a></sub>
 </div>

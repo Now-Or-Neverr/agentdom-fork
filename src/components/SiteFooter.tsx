@@ -46,6 +46,14 @@ function XIcon() {
   );
 }
 
+function TelegramIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+      <path d="M21.4 3.6 2.9 10.7c-1.3.5-1.3 1.2-.2 1.6l4.7 1.5 1.8 5.6c.2.6.1.9.8.9.5 0 .7-.2 1-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.8c.3-1.3-.5-1.9-1.5-1.4ZM8.9 13.4l9.6-6c.5-.3.9-.1.5.2l-8.2 7.4-.3 3.4-1.6-5Z" />
+    </svg>
+  );
+}
+
 function NpmIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
@@ -72,6 +80,11 @@ export function SiteFooter() {
               {BRAND.x ? (
                 <a href={BRAND.x} target="_blank" rel="noreferrer" aria-label="X">
                   <XIcon />
+                </a>
+              ) : null}
+              {BRAND.telegram ? (
+                <a href={BRAND.telegram} target="_blank" rel="noreferrer" aria-label="Agentdom on Telegram">
+                  <TelegramIcon />
                 </a>
               ) : null}
               {BRAND.npm ? (
