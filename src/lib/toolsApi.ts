@@ -120,6 +120,36 @@ export const chainTools = {
   launches: () => req<Named<{ launches: I.Launch[]; note: string; sourceUrl: string; fetchedAt: string }>>('/tools/chain/launches'),
 };
 
+// ---- No-key update: space, sport, letters, research, code, trends, food, fiscal ----
+export const openTools = {
+  spaceWeather: () => req<Named<I.SpaceWeather>>('/tools/spaceweather'),
+  launches: () => req<{ launches: Section<I.LaunchList>; news: Section<I.SpaceNews> }>('/tools/launches'),
+  spaceNews: (q?: string) => req<Named<I.SpaceNews>>('/tools/spacenews' + qs({ q })),
+  sun: (city: string, date?: string) => req<Named<I.SunTimes & { place: I.Place | null }>>('/tools/sun' + qs({ city, date })),
+  f1: () => req<Named<I.F1Season>>('/tools/f1'),
+  chess: (perf: string) => req<Named<I.ChessBoard>>('/tools/chess' + qs({ perf })),
+  tv: (o: { q?: string; country?: string }) => req<Named<I.TvGuide>>('/tools/tv' + qs(o)),
+  anime: (q?: string) => req<Named<I.AnimeList>>('/tools/anime' + qs({ q })),
+  charts: () => req<Named<I.MusicTop>>('/tools/charts'),
+  trivia: (o: { category?: string; difficulty?: string; amount?: number }) => req<Named<I.TriviaSet & { categories: Record<string, string> }>>('/tools/trivia' + qs(o)),
+  books: (q?: string) => req<Named<I.FreeBooks>>('/tools/books' + qs({ q })),
+  poems: (o: { author?: string; title?: string }) => req<Named<I.Poems>>('/tools/poems' + qs(o)),
+  memory: (text: string, from: string, to: string) => req<Named<I.MemoryTranslation>>('/tools/memory' + qs({ text, from, to })),
+  crossref: (q: string) => req<Named<I.CrossrefResult>>('/tools/crossref' + qs({ q })),
+  wikidata: (q: string) => req<Named<I.WikidataResult>>('/tools/wikidata' + qs({ q })),
+  archive: (q: string, type?: string) => req<Named<I.ArchiveSearch>>('/tools/archive' + qs({ q, type })),
+  wayback: (url: string, date?: string) => req<Named<I.WaybackSnapshot>>('/tools/wayback' + qs({ url, date })),
+  pkg: (name: string, ecosystem: 'npm' | 'pypi') => req<Named<I.PackageInfo>>('/tools/package' + qs({ name, ecosystem })),
+  kev: (q?: string) => req<Named<I.KevList>>('/tools/kev' + qs({ q })),
+  cve: (id: string) => req<Named<I.CveRecord>>('/tools/cve' + qs({ id })),
+  domain: (domain: string) => req<Named<I.DomainRecord>>('/tools/domain' + qs({ domain })),
+  mostRead: (lang = 'en') => req<Named<I.MostRead>>('/tools/mostread' + qs({ lang })),
+  devTrends: (tag?: string) => req<{ tag: string | null; dev: Section<I.DevArticles>; lobsters: Section<I.LobsterStories> }>('/tools/devtrends' + qs({ tag })),
+  food: (q: string) => req<Named<I.FoodResult>>('/tools/food' + qs({ q })),
+  healthTopics: (q: string, lang: 'en' | 'es' = 'en') => req<Named<I.HealthTopics>>('/tools/healthtopics' + qs({ q, lang })),
+  fiscal: () => req<Named<I.UsFiscal>>('/tools/fiscal'),
+};
+
 /** "12:04:31" local time, for "fetched at" labels. */
 export const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 export const num = (n: number, d = 2) => new Intl.NumberFormat('en-US', { maximumFractionDigits: d }).format(n);

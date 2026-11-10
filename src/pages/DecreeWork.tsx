@@ -91,13 +91,39 @@ const TOOL_LABEL: Record<string, string> = {
   use_unsplash_photo: 'Unsplash photo',
   check_vulnerabilities: 'Vulnerability check',
   recipe_search: 'Recipe search',
+  space_weather: 'Space weather',
+  rocket_launches: 'Rocket launches',
+  space_news: 'Space news',
+  sun_times: 'Sunrise and sunset',
+  f1_season: 'Formula 1 season',
+  chess_top: 'Lichess top players',
+  tv_guide: 'TV guide',
+  anime_search: 'Anime (AniList)',
+  top_tracks: 'Deezer top tracks',
+  trivia_questions: 'Trivia questions',
+  gutenberg_books: 'Project Gutenberg books',
+  find_poems: 'Poems (PoetryDB)',
+  translation_memory: 'Translation memory',
+  crossref_search: 'Crossref works',
+  wikidata_facts: 'Wikidata facts',
+  archive_search: 'Internet Archive search',
+  wayback_snapshot: 'Wayback Machine snapshot',
+  package_info: 'Package info',
+  exploited_vulns: 'Known exploited vulnerabilities',
+  cve_details: 'CVE details (NVD)',
+  domain_lookup: 'Domain registration',
+  most_read_wiki: 'Most-read Wikipedia',
+  dev_trends: 'Developer trends',
+  food_product: 'Food product',
+  health_topics: 'Health topics',
+  us_fiscal: 'US federal debt and rates',
 };
 
 /** The most telling input of a step, e.g. the search query. */
 function inputLine(s: DecreeStep): string {
   const i = s.input;
   const repo = i.repo ? String(i.repo) + (i.path ? ' · ' + String(i.path) : '') : null;
-  const pick = i.query ?? i.name ?? i.artist ?? i.dish ?? i.package ?? i.competition ?? i.food ?? i.domain ?? i.company_number ?? repo ?? i.url ?? i.slug ?? i.series ?? i.symbol ?? i.input ?? (i.place && i.category ? `${i.category} · ${i.place}` : null) ?? i.title ?? i.word ?? i.place ?? i.prompt ?? (i.from && i.to ? `${i.amount ?? ''} ${i.from} → ${i.to}` : null) ?? (i.country ? `${i.country}${i.indicator ? ' · ' + i.indicator : ''}` : null) ?? i.base ?? i.kind ?? null;
+  const pick = i.query ?? i.name ?? i.artist ?? i.dish ?? i.package ?? i.competition ?? i.food ?? i.domain ?? i.cve ?? i.author ?? i.tag ?? i.company_number ?? repo ?? i.url ?? i.slug ?? i.series ?? i.symbol ?? i.input ?? (i.place && i.category ? `${i.category} · ${i.place}` : null) ?? i.title ?? i.word ?? i.place ?? i.prompt ?? (i.from && i.to ? `${i.amount ?? ''} ${i.from} → ${i.to}` : null) ?? (i.country ? `${i.country}${i.indicator ? ' · ' + i.indicator : ''}` : null) ?? i.base ?? i.kind ?? null;
   return pick == null ? '' : String(pick).slice(0, 140);
 }
 

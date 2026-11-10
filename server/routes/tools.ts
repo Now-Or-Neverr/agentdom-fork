@@ -691,6 +691,297 @@ router.get(
   }),
 );
 
+// ================= workshop: no-key update (space, sport, letters, research, code, trends, food, fiscal) =================
+// Free text must be printable: no control characters and no angle brackets.
+const PLAIN = /^[^\u0000-\u001f\u007f<>]*$/;
+function plain(x: unknown, max: number, name: string, required = true) {
+  const s = text(x, max, name, required);
+  if (!PLAIN.test(s)) throw new HttpError(400, `${name} contains characters that are not allowed.`);
+  return s;
+}
+const pick = <T extends string>(v: string, allowed: readonly T[], def: T, name: string): T => {
+  if (!v) return def;
+  if (!allowed.includes(v as T)) throw new HttpError(400, `${name} must be one of: ${allowed.join(', ')}.`);
+  return v as T;
+};
+
+// ---- Observatory ----
+router.get(
+  '/tools/spaceweather',
+  h(async (req, res) => {
+    ws(req, 'spaceweather', 20);
+    res.json(single('swpc', await run(I.spaceWeather(WS('spaceweather')))));
+  }),
+);
+
+router.get(
+  '/tools/launches',
+  h(async (req, res) => {
+    ws(req, 'launches', 12);
+    const c = WS('launches');
+    const [launches, news] = await Promise.all([section('launchlibrary', I.upcomingLaunches(c, 10)), section('spaceflightnews', I.spaceNews(c, undefined, 6))]);
+    res.json({ launches, news });
+  }),
+);
+
+router.get(
+  '/tools/spacenews',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 100, 'q', false) || undefined;
+    ws(req, 'spacenews', 15);
+    res.json(single('spaceflightnews', await run(I.spaceNews(WS('spacenews'), query, 10))));
+  }),
+);
+
+router.get(
+  '/tools/sun',
+  h(async (req, res) => {
+    const city = plain(req.query.city, 80, 'city', false);
+    const date = q(req, 'date') || undefined;
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpError(400, 'date must be YYYY-MM-DD.');
+    ws(req, 'sun', 15);
+    const c = WS('sun');
+    let place: I.Place | null = null;
+    let lat: number;
+    let lon: number;
+    if (city) {
+      const g = await run(I.geocode(city, c, 1));
+      place = g.results[0] ?? null;
+      if (!place) throw new HttpError(404, `No place called “${city}” was found.`);
+      ({ lat, lon } = place);
+    } else ({ lat, lon } = latLon(req));
+    res.json(single('sunrisesunset', { place, ...(await run(I.sunTimes(lat, lon, c, date))) }));
+  }),
+);
+
+// ---- Arena ----
+router.get(
+  '/tools/f1',
+  h(async (req, res) => {
+    ws(req, 'f1', 15);
+    res.json(single('jolpica', await run(I.f1Season(WS('f1')))));
+  }),
+);
+
+router.get(
+  '/tools/chess',
+  h(async (req, res) => {
+    const perf = pick(q(req, 'perf'), I.CHESS_PERFS, 'blitz', 'perf');
+    ws(req, 'chess', 15);
+    res.json(single('lichess', await run(I.chessBoard(WS('chess'), perf))));
+  }),
+);
+
+router.get(
+  '/tools/tv',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 100, 'q', false) || undefined;
+    const c = q(req, 'country') ? country(q(req, 'country')) : undefined;
+    ws(req, 'tv', 15);
+    res.json(single('tvmaze', await run(I.tvGuide(WS('tv'), { query, country: c }))));
+  }),
+);
+
+router.get(
+  '/tools/anime',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 100, 'q', false) || undefined;
+    ws(req, 'anime', 12);
+    res.json(single('anilist', await run(I.animeList(WS('anime'), query, 10))));
+  }),
+);
+
+router.get(
+  '/tools/charts',
+  h(async (req, res) => {
+    ws(req, 'charts', 15);
+    res.json(single('deezer', await run(I.deezerChart(WS('charts'), 15))));
+  }),
+);
+
+router.get(
+  '/tools/trivia',
+  h(async (req, res) => {
+    const category = q(req, 'category') || undefined;
+    if (category && !(category in I.TRIVIA_CATEGORIES)) throw new HttpError(400, `category must be one of: ${Object.keys(I.TRIVIA_CATEGORIES).join(', ')}.`);
+    const difficulty = q(req, 'difficulty') ? pick(q(req, 'difficulty'), I.TRIVIA_DIFFICULTIES, 'easy', 'difficulty') : undefined;
+    const amount = q(req, 'amount') ? Math.round(num(q(req, 'amount'), 'amount')) : 5;
+    if (amount < 1 || amount > 10) throw new HttpError(400, 'amount must be between 1 and 10.');
+    ws(req, 'trivia', 6);
+    res.json(single('opentdb', { categories: I.TRIVIA_CATEGORIES, ...(await run(I.trivia(WS('trivia'), { amount, category, difficulty }))) }));
+  }),
+);
+
+// ---- Scriptorium ----
+router.get(
+  '/tools/books',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 100, 'q', false) || undefined;
+    ws(req, 'books', 6);
+    res.json(single('gutendex', await run(I.gutenbergBooks(WS('books'), query, 8))));
+  }),
+);
+
+router.get(
+  '/tools/poems',
+  h(async (req, res) => {
+    const author = plain(req.query.author, 80, 'author', false) || undefined;
+    const title = plain(req.query.title, 80, 'title', false) || undefined;
+    ws(req, 'poems', 15);
+    res.json(single('poetrydb', await run(I.poems(WS('poems'), { author, title, limit: 5 }))));
+  }),
+);
+
+router.get(
+  '/tools/memory',
+  h(async (req, res) => {
+    const t = plain(req.query.text, I.MEMORY_MAX_CHARS, 'text');
+    const from = q(req, 'from') || 'en';
+    const to = q(req, 'to') || 'id';
+    if (!/^[a-z]{2,3}(-[A-Z]{2})?$/.test(from) || !/^[a-z]{2,3}(-[A-Z]{2})?$/.test(to)) throw new HttpError(400, 'from and to must be language codes like en, id or pt-BR.');
+    ws(req, 'memory', 6);
+    res.json(single('mymemory', await run(I.memoryTranslate(t, from, to, WS('memory')))));
+  }),
+);
+
+// ---- Grand Archive ----
+router.get(
+  '/tools/crossref',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 250, 'q');
+    ws(req, 'crossref', 15);
+    res.json(single('crossref', await run(I.crossref(query, WS('crossref'), 8))));
+  }),
+);
+
+router.get(
+  '/tools/wikidata',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 120, 'q');
+    ws(req, 'wikidata', 15);
+    res.json(single('wikidata', await run(I.wikidata(query, WS('wikidata')))));
+  }),
+);
+
+router.get(
+  '/tools/archive',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 150, 'q');
+    const m = q(req, 'type');
+    const mediatype = m ? pick(m, I.ARCHIVE_MEDIA, 'texts', 'type') : undefined;
+    ws(req, 'archive', 15);
+    res.json(single('internetarchive', await run(I.archiveSearch(query, WS('archive'), mediatype, 10))));
+  }),
+);
+
+router.get(
+  '/tools/wayback',
+  h(async (req, res) => {
+    const url = plain(req.query.url, 500, 'url');
+    if (/\s/.test(url)) throw new HttpError(400, 'url may not contain spaces.');
+    const date = q(req, 'date').replace(/-/g, '') || undefined;
+    if (date && !/^\d{4}(\d{2}){0,2}$/.test(date)) throw new HttpError(400, 'date must look like YYYY, YYYY-MM or YYYY-MM-DD.');
+    ws(req, 'wayback', 15);
+    res.json(single('internetarchive', await run(I.waybackSnapshot(url, WS('wayback'), date))));
+  }),
+);
+
+// ---- Forge ----
+router.get(
+  '/tools/package',
+  h(async (req, res) => {
+    const name = text(req.query.name, 214, 'name');
+    const eco = pick(q(req, 'ecosystem').toLowerCase(), I.PACKAGE_ECOSYSTEMS, 'npm', 'ecosystem');
+    if (!I.isPackageName(eco, eco === 'npm' ? name.toLowerCase() : name)) throw new HttpError(400, `That is not a valid ${eco} package name.`);
+    ws(req, 'package', 20);
+    res.json(single(eco, await run(I.packageInfo(eco, name, WS('package')))));
+  }),
+);
+
+router.get(
+  '/tools/kev',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 80, 'q', false) || undefined;
+    ws(req, 'kev', 15);
+    res.json(single('cisakev', await run(I.kevCatalog(WS('kev'), query, 12))));
+  }),
+);
+
+router.get(
+  '/tools/cve',
+  h(async (req, res) => {
+    const id = text(req.query.id, 20, 'id').toUpperCase();
+    if (!I.CVE_RE.test(id)) throw new HttpError(400, 'id must look like CVE-2021-44228.');
+    ws(req, 'cve', 6);
+    res.json(single('nvd', await run(I.cveLookup(id, WS('cve')))));
+  }),
+);
+
+router.get(
+  '/tools/domain',
+  h(async (req, res) => {
+    const d = text(req.query.domain, 260, 'domain')
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/[/?#].*$/, '')
+      .replace(/^www\./, '');
+    if (!I.isDomain(d)) throw new HttpError(400, 'domain must look like example.com.');
+    ws(req, 'domain', 10);
+    res.json(single('rdap', await run(I.domainLookup(d, WS('domain')))));
+  }),
+);
+
+// ---- Heralds' Tower ----
+router.get(
+  '/tools/mostread',
+  h(async (req, res) => {
+    const lang = pick(q(req, 'lang'), I.WIKI_LANGS, 'en', 'lang');
+    ws(req, 'mostread', 15);
+    res.json(single('wikimedia', await run(I.mostRead(WS('mostread'), lang, 15))));
+  }),
+);
+
+router.get(
+  '/tools/devtrends',
+  h(async (req, res) => {
+    const tag = q(req, 'tag').toLowerCase() || undefined;
+    if (tag && !I.TAG_RE.test(tag)) throw new HttpError(400, 'tag must be letters and digits only (max 30).');
+    ws(req, 'devtrends', 15);
+    const c = WS('devtrends');
+    const [dev, lob] = await Promise.all([section('devto', I.devArticles(c, tag, 10)), section('lobsters', I.lobsters(c, tag, 10))]);
+    res.json({ tag: tag ?? null, dev, lobsters: lob });
+  }),
+);
+
+// ---- Apothecary ----
+router.get(
+  '/tools/food',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 100, 'q');
+    ws(req, 'food', 10);
+    res.json(single('openfoodfacts', await run(I.foodFacts(query, WS('food'), 6))));
+  }),
+);
+
+router.get(
+  '/tools/healthtopics',
+  h(async (req, res) => {
+    const query = plain(req.query.q, 100, 'q');
+    const lang = q(req, 'lang') === 'es' ? 'es' : 'en';
+    ws(req, 'healthtopics', 15);
+    res.json(single('medlineplus', await run(I.healthTopics(query, WS('healthtopics'), lang, 5))));
+  }),
+);
+
+// ---- Royal Treasury ----
+router.get(
+  '/tools/fiscal',
+  h(async (req, res) => {
+    ws(req, 'fiscal', 15);
+    res.json(single('fiscaldata', await run(I.usFiscal(WS('fiscal')))));
+  }),
+);
+
 // ---- Royal Mint (Robinhood Chain, read-only) ----
 router.get(
   '/tools/chain/pulse',

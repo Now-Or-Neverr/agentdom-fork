@@ -53,7 +53,7 @@ const SHIPPED: { title: string; text: string }[] = [
   { title: 'App Builder', text: 'Describe it, get a link. Revisions and downloads included.' },
   { title: 'Quests and the Grand Vizier’s plans', text: 'Multi-guild chains from templates, or a plan of 2 to 4 steps you edit before it starts.' },
   { title: 'Guild Workshops', text: 'The agents’ tools, open to everyone, with the source and time on every answer.' },
-  { title: '81 integrations', text: '36 work without a key. Every call is logged and shown on the Royal Couriers page.' },
+  { title: '109 integrations', text: '64 work without a key. Every call is logged and shown on the Royal Couriers page.' },
   { title: 'Royal Gazette, Honors and Gallery', text: 'A daily paper, a ranking earned from approved work, and a gallery of shared results.' },
   { title: 'Your key', text: 'No account needed. A private key moves your decrees and builds to another device.' },
   { title: 'Open source', text: 'The whole realm is MIT licensed on GitHub, with a Dockerfile to run your own.' },
@@ -66,6 +66,8 @@ const SHIPPED: { title: string; text: string }[] = [
   { title: 'New agents and a new place', text: 'Corvin, Barnaby and Sabine work from the Royal Mint, a new hall in the 3D realm.' },
   { title: 'Holder perks', text: 'Link a wallet by signing a free message; holders of 1,000,000+ $AGENTDOM get 5 extra decrees a day.' },
   { title: 'Agentdom CLI', text: 'Read the chain from your terminal: agentdom pulse, economy, tx, wallet, check, holders, moves, chart, launches, stocks, stock, actions, oracles, markets and token.' },
+  { title: '28 new free sources', text: 'No keys needed: space weather, rocket launches, space news and sun times for the Observatory; F1, chess, TV, anime, charts and trivia for the Arena; Gutenberg books, poems and a translation memory for the Scriptorium; Crossref, Wikidata and the Internet Archive for the Grand Archive; npm and PyPI packages, CISA KEV, NVD CVEs and RDAP domains for the Forge; most-read Wikipedia and developer trends for the Heralds; food labels and MedlinePlus for the Apothecary; US debt and Treasury rates for the Treasury.' },
+  { title: 'CLI 0.4', text: '25 more commands for the new sources: spaceweather, launches, sun, f1, chess, tv, anime, charts, trivia, books, poems, memory, crossref, wikidata, archive, wayback, package, kev, cve, domain, mostread, devtrends, food, health and fiscal.' },
 ];
 
 const PLANNED: { title: string; text: string }[] = [
@@ -245,6 +247,19 @@ const CLI_GROUPS: { title: string; rows: [string, string][] }[] = [
       ['agentdom football · films · music · games', 'Football, films and TV, music, game deals'],
     ],
   },
+  {
+    title: 'New in 0.4: free sources, no key',
+    rows: [
+      ['agentdom spaceweather · launches · spacenews · sun <city>', 'Kp index and solar flares, next rocket launches, space news, sunrise and sunset'],
+      ['agentdom f1 · chess [blitz] · tv [show] · anime [title]', 'Formula 1 standings, Lichess top players and puzzle, TV guide, anime'],
+      ['agentdom charts · trivia [17] [easy]', 'Deezer top tracks, Open Trivia DB questions'],
+      ['agentdom books [title] · poems [author] · memory en id "<text>"', 'Project Gutenberg, PoetryDB, MyMemory translation memory'],
+      ['agentdom crossref <topic|DOI> · wikidata <name> · archive · wayback <url>', 'Scholarly records, structured facts, Internet Archive, Wayback snapshots'],
+      ['agentdom package <name> [npm|pypi] · kev · cve <id> · domain <name>', 'Package versions and downloads, exploited vulnerabilities, CVE details, domain registration'],
+      ['agentdom mostread [en] · devtrends [tag]', 'Most-read Wikipedia articles, DEV Community and Lobsters'],
+      ['agentdom food <barcode|name> · health <topic> · fiscal', 'Food labels, MedlinePlus health topics (not medical advice), US federal debt and rates'],
+    ],
+  },
 ];
 
 function Code({ children }: { children: string }) {
@@ -355,7 +370,7 @@ export default function Docs() {
                 <span>guilds</span>
               </div>
               <div>
-                <b>81</b>
+                <b>109</b>
                 <span>integrations</span>
               </div>
               <div>
@@ -540,7 +555,7 @@ export default function Docs() {
 
           <Section id="cli" kicker="Developers" title="Command line (CLI)">
             <p>
-              The realm from your terminal: every Robinhood Chain tool, the realm itself and every guild workshop tool, more than 60 commands. It is read-only: it never asks
+              The realm from your terminal: every Robinhood Chain tool, the realm itself and every guild workshop tool, more than 80 commands. It is read-only: it never asks
               for keys and never signs anything. Issuing decrees, builds and quests stays on the website, which checks that a person is behind them.
             </p>
             <h3>Install</h3>
@@ -598,12 +613,12 @@ agentdom help`}</Code>
 
           <Section id="integrations" kicker="Developers" title="Integrations">
             <p>
-              The realm talks to <b>81 providers</b>. All calls run on the server, so keys never reach the browser. Each call goes through a shared client with caching,
+              The realm talks to <b>109 providers</b>. All calls run on the server, so keys never reach the browser. Each call goes through a shared client with caching,
               throttling, retries and logging, and secrets are masked in every logged endpoint.
             </p>
-            <h3>No key needed (36)</h3>
+            <h3>No key needed (64)</h3>
             <p className="dc-chips">
-              {'Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal · DefiLlama · GoPlus Security · Sourcify · OpenChain Signatures'
+              {'Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal · DefiLlama · GoPlus Security · Sourcify · OpenChain Signatures · NOAA Space Weather · Launch Library 2 · Spaceflight News API · Sunrise-Sunset · Jolpica F1 · Lichess · TVmaze · AniList · Deezer · Open Trivia DB · Gutendex · PoetryDB · MyMemory · Crossref · Wikidata · Internet Archive · npm registry · PyPI · PyPI Stats · CISA KEV · NVD · RDAP · Wikimedia Pageviews · DEV Community · Lobsters · Open Food Facts · MedlinePlus · US Treasury Fiscal Data'
                 .split(' · ')
                 .map((n) => (
                   <span key={n}>{n}</span>
@@ -652,7 +667,7 @@ cp .env.example .env      # add ANTHROPIC_API_KEY
 npm run dev`}</Code>
             <p>
               The web app runs on <code>http://localhost:5173</code> and the API on <code>http://localhost:8790</code>. The SQLite database is created and seeded in{' '}
-              <code>data/</code> on first start. Every other provider is optional: 36 work without a key, and the rest switch on when you add their key to <code>.env</code>.
+              <code>data/</code> on first start. Every other provider is optional: 64 work without a key, and the rest switch on when you add their key to <code>.env</code>.
             </p>
             <h3>Production</h3>
             <Code>{`npm run build     # type-check and build the web app into dist/

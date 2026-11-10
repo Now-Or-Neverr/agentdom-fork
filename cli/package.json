@@ -1,6 +1,6 @@
 {
   "name": "agentdom-cli",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Agentdom from your terminal: Robinhood Chain data, the realm, and every guild workshop tool. Read-only.",
   "license": "MIT",
   "type": "module",

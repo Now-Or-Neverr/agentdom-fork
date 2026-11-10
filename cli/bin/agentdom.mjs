@@ -812,14 +812,14 @@ const commands = {
 // Every guild workshop tool and the public realm pages, printed by one generic formatter.
 // Issuing decrees, builds and quests is not possible here: those need the website's human check.
 
-const SKIP_KEYS = new Set(['provider', 'name', 'sourceUrl', 'fetchedAt', 'image', 'imageUrl', 'poster', 'logo', 'thumbnail', 'crest', 'icon', 'avatar', 'look', 'color', 'html', 'svg']);
-const LABEL_KEYS = ['title', 'headline', 'name', 'label', 'symbol', 'word', 'team', 'place', 'city', 'kind', 'type'];
+const SKIP_KEYS = new Set(['provider', 'name', 'sourceUrl', 'fetchedAt', 'image', 'imageUrl', 'poster', 'logo', 'thumbnail', 'cover', 'crest', 'icon', 'avatar', 'look', 'color', 'html', 'svg']);
+const LABEL_KEYS = ['title', 'headline', 'name', 'label', 'symbol', 'word', 'driver', 'username', 'show', 'cve', 'team', 'place', 'city', 'kind', 'type'];
 const isPrim = (v) => v === null || ['string', 'number', 'boolean'].includes(typeof v);
 const human = (k) => k.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/_/g, ' ').replace(/^./, (s) => s.toUpperCase());
 function fmtVal(k, v) {
   if (v === null || v === undefined || v === '') return NA;
   if (typeof v === 'boolean') return v ? 'yes' : 'no';
-  if (typeof v === 'number') return /year|^date|block|count|^id$/i.test(k) ? String(v) : /usd|price|value|cost/i.test(k) ? usd(v) : num(v, 4);
+  if (typeof v === 'number') return /year|^date|block|count|^id$|season|round|^number$/i.test(k) ? String(v) : /usd|price|value|cost/i.test(k) ? usd(v) : num(v, 4);
   const s = String(v);
   if (/^\d{4}-\d{2}-\d{2}T/.test(s)) return when(s);
   return s.length > 220 ? s.slice(0, 217) + '…' : s;
@@ -932,6 +932,33 @@ const SIMPLE = {
   music: ['/tools/music', ['artist'], { rest: true, title: 'Music', help: 'music [artist] (Last.fm; empty = chart)' }],
   games: ['/tools/games', ['title'], { rest: true, title: 'Game deals', help: 'games [title] (CheapShark, FreeToGame)' }],
   grammar: ['/tools/grammar', ['text'], { rest: true, need: 1, post: true, title: 'Grammar check', help: 'grammar "<English text>" (LanguageTool)' }],
+  // 0.4: new no-key sources
+  spaceweather: ['/tools/spaceweather', [], { title: 'Space weather', help: 'Kp index, NOAA storm scales, latest solar flare (NOAA SWPC)' }],
+  launches: ['/tools/launches', [], { title: 'Rocket launches', help: 'Next launches worldwide and space news (Launch Library 2)' }],
+  spacenews: ['/tools/spacenews', ['q'], { rest: true, title: 'Space news', help: 'spacenews [topic] (Spaceflight News API)' }],
+  sun: ['/tools/sun', ['city'], { rest: true, need: 1, title: 'Sunrise and sunset', help: 'sun <city> (sunrise-sunset.org, times in UTC)' }],
+  f1: ['/tools/f1', [], { title: 'Formula 1', help: 'Standings, last race, next rounds (Jolpica F1)' }],
+  chess: ['/tools/chess', ['perf'], { title: 'Chess on Lichess', help: 'chess [bullet|blitz|rapid|classical] (top 10 + daily puzzle)' }],
+  tv: ['/tools/tv', ['q'], { rest: true, title: 'TV guide', help: 'tv [show] (TVmaze; empty = today in the US)' }],
+  anime: ['/tools/anime', ['q'], { rest: true, title: 'Anime', help: 'anime [title] (AniList; empty = trending)' }],
+  charts: ['/tools/charts', [], { title: 'Top tracks', help: 'Deezer chart right now' }],
+  trivia: ['/tools/trivia', ['category', 'difficulty'], { title: 'Trivia', help: 'trivia [category id, e.g. 17] [easy|medium|hard] (Open Trivia DB)' }],
+  books: ['/tools/books', ['q'], { rest: true, title: 'Free classics', help: 'books [title or author] (Project Gutenberg; searches can take a minute)' }],
+  poems: ['/tools/poems', ['author'], { rest: true, title: 'Poems', help: 'poems [author] (PoetryDB; empty = random)' }],
+  memory: ['/tools/memory', ['from', 'to', 'text'], { rest: true, need: 3, title: 'Translation memory', help: 'memory en id "<short text>" (MyMemory)' }],
+  crossref: ['/tools/crossref', ['q'], { rest: true, need: 1, title: 'Crossref', help: 'crossref <topic or DOI>' }],
+  wikidata: ['/tools/wikidata', ['q'], { rest: true, need: 1, title: 'Wikidata', help: 'wikidata <name or Q-id>' }],
+  archive: ['/tools/archive', ['q'], { rest: true, need: 1, title: 'Internet Archive', help: 'archive <title words> (archive.org)' }],
+  wayback: ['/tools/wayback', ['url', 'date'], { need: 1, title: 'Wayback Machine', help: 'wayback <url> [YYYY-MM-DD]' }],
+  package: ['/tools/package', ['name', 'ecosystem'], { need: 1, title: 'Package', help: 'package <name> [npm|pypi]' }],
+  kev: ['/tools/kev', ['q'], { rest: true, title: 'Known exploited vulnerabilities', help: 'kev [vendor or product] (CISA KEV)' }],
+  cve: ['/tools/cve', ['id'], { need: 1, title: 'CVE', help: 'cve <CVE-YYYY-NNNN> (NVD)' }],
+  domain: ['/tools/domain', ['domain'], { need: 1, title: 'Domain registration', help: 'domain <example.com> (RDAP)' }],
+  mostread: ['/tools/mostread', ['lang'], { title: 'Most-read Wikipedia', help: 'mostread [en|id|de|fr|es|ja|…] (yesterday)' }],
+  devtrends: ['/tools/devtrends', ['tag'], { title: 'Developer trends', help: 'devtrends [tag] (DEV Community, Lobsters)' }],
+  food: ['/tools/food', ['q'], { rest: true, need: 1, title: 'Food label', help: 'food <barcode or product> (Open Food Facts)' }],
+  health: ['/tools/healthtopics', ['q'], { rest: true, need: 1, title: 'Health topics', help: 'health <topic> (MedlinePlus; information, not medical advice)' }],
+  fiscal: ['/tools/fiscal', [], { title: 'US federal debt and rates', help: 'Debt to the Penny and average Treasury rates' }],
 };
 
 for (const [name, [path, params, opt]] of Object.entries(SIMPLE)) {
@@ -953,6 +980,8 @@ for (const [name, [path, params, opt]] of Object.entries(SIMPLE)) {
       query.to = (query.to || '').toUpperCase();
     }
     if (name === 'quote' && query.symbol) query.symbol = query.symbol.toUpperCase();
+    if (name === 'cve' && query.id) query.id = query.id.toUpperCase();
+    if (name === 'package' && query.ecosystem) query.ecosystem = query.ecosystem.toLowerCase();
     if (name === 'worldbank') {
       const WB = { gdp: 'NY.GDP.MKTP.CD', 'gdp-per-capita': 'NY.GDP.PCAP.CD', growth: 'NY.GDP.MKTP.KD.ZG', inflation: 'FP.CPI.TOTL.ZG', population: 'SP.POP.TOTL', unemployment: 'SL.UEM.TOTL.ZS', internet: 'IT.NET.USER.ZS', exports: 'NE.EXP.GNFS.ZS' };
       if (query.indicator) query.indicator = WB[query.indicator.toLowerCase()] || query.indicator;
@@ -971,8 +1000,10 @@ for (const [name, [path, params, opt]] of Object.entries(SIMPLE)) {
     if (this.json) return d;
     title(opt.title);
     show(d);
-    if (d && typeof d === 'object' && !Array.isArray(d) && d.sourceUrl) source(d);
+    // For packages "name" is the package itself, so the source line names the registry instead.
+    if (d && typeof d === 'object' && !Array.isArray(d) && d.sourceUrl) source(name === 'package' ? { ...d, name: d.provider === 'pypi' ? 'PyPI' : 'npm registry' } : d);
     if (opt.notAdvice) notAdvice();
+    if (name === 'health' || name === 'food') console.log(c.dim('Information, not medical advice.'));
   };
 }
 const MORE_HELP = Object.entries(SIMPLE)

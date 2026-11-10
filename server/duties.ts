@@ -802,6 +802,160 @@ const KINDS: DutyKind[] = [
       };
     },
   },
+  // ---------- No-key update (Nov 2026) ----------
+  {
+    kind: 'space_weather',
+    province: 'observatory',
+    providers: ['swpc'],
+    task: 'Reading NOAA’s space-weather instruments…',
+    repeatHours: 30,
+    async run(ctx, seen) {
+      const r = await I.spaceWeather(ctx);
+      // One report a day, plus an extra one if a storm (Kp 5+) starts.
+      const storm = (r.kpNow?.kp ?? 0) >= 5;
+      const key = `${today()}${storm ? ':storm' : ''}`;
+      if (seen.has(key) || !r.kpNow) return null;
+      const f = r.flare;
+      return {
+        key,
+        title: storm ? `Geomagnetic storm: Kp ${n2(r.kpNow.kp)}` : `Space weather: Kp ${n2(r.kpNow.kp)}, ${r.stormLevel}`,
+        summary: `NOAA reads a planetary Kp index of ${n2(r.kpNow.kp)} (${r.stormLevel}) for the window from ${r.kpNow.time.slice(11, 16)} UTC${r.kpMax24h ? `; the past day peaked at Kp ${n2(r.kpMax24h.kp)}` : ''}. NOAA scales: R${r.scales.radio.scale}, S${r.scales.solar.scale}, G${r.scales.geomagnetic.scale}.${f?.maxClass ? ` Latest solar flare: ${f.maxClass} class, peak ${f.maxTime?.slice(11, 16) ?? '?'} UTC.` : ''}`,
+        data: { kpNow: r.kpNow, kpMax24h: r.kpMax24h, stormLevel: r.stormLevel, scales: r.scales, flare: r.flare },
+        sourceName: 'NOAA SWPC',
+        sourceUrl: r.auroraUrl,
+      };
+    },
+  },
+  {
+    kind: 'launch_watch',
+    province: 'observatory',
+    providers: ['launchlibrary'],
+    task: 'Checking the launch manifest (Launch Library 2)…',
+    repeatHours: 24 * 4,
+    async run(ctx, seen) {
+      const r = await I.upcomingLaunches(ctx, 12);
+      // The next launch that is go or at least scheduled to the hour, not yet reported.
+      const soon = r.launches.filter((l) => l.net && new Date(l.net).getTime() > Date.now() && new Date(l.net).getTime() < Date.now() + 4 * 86400_000);
+      const l = fresh(soon, (x) => x.id, seen);
+      if (!l || !l.net) return null;
+      return {
+        key: l.id,
+        title: `Launch ahead: ${clip(l.name, 90)}`,
+        summary: `${l.provider ?? 'A launch provider'} plans to launch ${l.rocket ?? 'a rocket'}${l.mission ? ` with ${l.mission}` : ''}${l.orbit ? ` to ${l.orbit}` : ''} no earlier than ${l.net.slice(0, 10)} ${l.net.slice(11, 16)} UTC${l.location ? ` from ${l.location}` : ''}. Status: ${l.status}. Launch times often slip.`,
+        data: { id: l.id, name: l.name, net: l.net, status: l.status, provider: l.provider, rocket: l.rocket, mission: l.mission, orbit: l.orbit, pad: l.pad, location: l.location },
+        sourceName: 'Launch Library 2 (The Space Devs)',
+        sourceUrl: l.url,
+        imageUrl: l.image,
+      };
+    },
+  },
+  {
+    kind: 'f1_round',
+    province: 'arena',
+    providers: ['jolpica'],
+    task: 'Reading the Formula 1 standings…',
+    repeatHours: 24 * 14,
+    async run(ctx, seen) {
+      const r = await I.f1Season(ctx);
+      const lr = r.lastRace;
+      const [a, b] = r.drivers;
+      if (!lr || !a) return null;
+      const key = `${r.season}:${lr.round}`;
+      if (seen.has(key)) return null;
+      const win = lr.results[0];
+      return {
+        key,
+        title: `F1 ${lr.name}: ${win?.driver ?? 'result'} wins`,
+        summary: `${win ? `${win.driver} (${win.team}) won the ${lr.name} on ${lr.date}` : `The ${lr.name} ran on ${lr.date}`}. After round ${r.round ?? lr.round}, ${a.driver} leads the championship on ${a.points} points${b ? `, ${a.points - b.points} ahead of ${b.driver}` : ''}.${r.nextRaces[0] ? ` Next: ${r.nextRaces[0].name} on ${r.nextRaces[0].date}.` : ''}`,
+        data: { season: r.season, round: lr.round, race: lr.name, date: lr.date, podium: lr.results.slice(0, 3), top: r.drivers.slice(0, 5), next: r.nextRaces[0] ?? null },
+        sourceName: 'Jolpica F1',
+        sourceUrl: lr.url,
+      };
+    },
+  },
+  {
+    kind: 'chess_puzzle',
+    province: 'arena',
+    providers: ['lichess'],
+    task: 'Fetching the Lichess daily puzzle…',
+    repeatHours: 24 * 3,
+    async run(ctx, seen) {
+      const r = await I.chessBoard(ctx, 'blitz');
+      const p = r.puzzle;
+      if (!p || seen.has(p.id)) return null;
+      return {
+        key: p.id,
+        title: `Daily chess puzzle (rating ${p.rating})`,
+        summary: `Lichess's puzzle of the day: ${p.toMove} to move, rated ${p.rating}, themes ${p.themes.slice(0, 3).join(', ') || 'mixed'}. ${n0(p.plays)} plays so far. The top blitz player on Lichess right now is ${r.top[0]?.username ?? 'unknown'} at ${r.top[0]?.rating ?? '?'}.`,
+        data: { id: p.id, rating: p.rating, themes: p.themes, fen: p.fen, toMove: p.toMove, plays: p.plays, topBlitz: r.top.slice(0, 3) },
+        sourceName: 'Lichess',
+        sourceUrl: p.url,
+      };
+    },
+  },
+  {
+    kind: 'most_read',
+    province: 'heralds',
+    providers: ['wikimedia'],
+    task: 'Counting yesterday’s Wikipedia pageviews…',
+    repeatHours: 48,
+    async run(ctx, seen) {
+      const r = await I.mostRead(ctx, 'en', 10);
+      const [a, b, c] = r.articles;
+      if (!a || seen.has(r.date)) return null;
+      return {
+        key: r.date,
+        title: `Most read on Wikipedia: ${clip(a.title, 80)}`,
+        summary: `On ${r.date} (UTC) the most viewed English Wikipedia article was “${a.title}” with ${n0(a.views)} views${b ? `, then “${b.title}” (${n0(b.views)})` : ''}${c ? ` and “${c.title}” (${n0(c.views)})` : ''}.`,
+        data: { date: r.date, top: r.articles.slice(0, 10) },
+        sourceName: 'Wikimedia Pageviews',
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
+  {
+    kind: 'kev_added',
+    province: 'forge',
+    providers: ['cisakev'],
+    task: 'Reading CISA’s exploited-vulnerabilities catalogue…',
+    repeatHours: 24 * 60,
+    async run(ctx, seen) {
+      const r = await I.kevCatalog(ctx, undefined, 15);
+      const v = fresh(r.entries, (x) => x.cve, seen);
+      if (!v) return null;
+      return {
+        key: v.cve,
+        title: `Exploited in the wild: ${v.cve} (${clip(v.vendor, 40)} ${clip(v.product, 40)})`,
+        summary: `CISA added ${v.cve}, ${v.name}, to its Known Exploited Vulnerabilities catalogue on ${v.added}${v.due ? `; US federal agencies must fix it by ${v.due}` : ''}${v.ransomware === 'Known' ? '. It is known to be used in ransomware campaigns' : ''}. ${clip(v.description, 180)}`,
+        data: { ...v, catalogVersion: r.catalogVersion },
+        sourceName: 'CISA KEV',
+        sourceUrl: v.url,
+      };
+    },
+  },
+  {
+    kind: 'us_debt',
+    province: 'treasury',
+    providers: ['fiscaldata'],
+    task: 'Reading the US Treasury’s Debt to the Penny…',
+    repeatHours: 24 * 7,
+    async run(ctx, seen) {
+      const r = await I.usFiscal(ctx);
+      const d = r.debt[0];
+      if (!d || seen.has(d.date)) return null;
+      const t = (x: number) => `$${(x / 1e12).toFixed(3)} trillion`;
+      const bills = r.rates.find((x) => /bills/i.test(x.security));
+      const total = r.rates.find((x) => /total marketable/i.test(x.security));
+      return {
+        key: d.date,
+        title: `US federal debt: ${t(d.total)}`,
+        summary: `The US Treasury reports total public debt of ${t(d.total)} on ${d.date} (${t(d.public)} held by the public)${r.debtChange ? `, ${r.debtChange.amount >= 0 ? 'up' : 'down'} $${n0(Math.abs(r.debtChange.amount) / 1e9)} billion over ${r.debtChange.days} days` : ''}.${total ? ` Average rate on marketable debt for ${r.ratesMonth}: ${total.rate}%${bills ? `, Treasury bills ${bills.rate}%` : ''}.` : ''}`,
+        data: { debt: r.debt.slice(0, 5), debtChange: r.debtChange, ratesMonth: r.ratesMonth, rates: r.rates.slice(0, 8) },
+        sourceName: 'US Treasury Fiscal Data',
+        sourceUrl: r.sourceUrl,
+      };
+    },
+  },
   // ---------- The Royal Mint (Robinhood Chain, read-only) ----------
   {
     kind: 'chain_pulse',

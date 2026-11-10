@@ -81,7 +81,7 @@ Every agent on the map is doing something real: working on a decree, running a s
 | **Live 3D realm** | The kingdom map shows every agent's state and current step, updated from the server in real time. |
 | **Real tools, real sources** | Agents call live APIs. Every tool call is recorded in a public work log with its source and a link a person can open. |
 | **App Builder** | Describe a page or small app and get back a link you can share. |
-| **Guild Workshops** | Use each guild's tools directly, no agent in between: web search, link reader, stock quotes, economic series, case law, site audits, image tools, translation and a film studio. |
+| **Guild Workshops** | Use each guild's tools directly, no agent in between: web search, link reader, stock quotes, economic series, case law, site audits, image tools, translation and a film studio, plus no-key tools: space weather, rocket launches, sun times, F1, chess, TV, anime, charts, trivia, Gutenberg books, poems, Crossref, Wikidata, the Internet Archive, npm/PyPI packages, exploited CVEs, domain lookups, most-read Wikipedia, developer trends, food labels, health topics and US fiscal data. |
 | **Royal Charter** | Each agent has a charter listing the exact tools it may use, enforced by the server. |
 | **Book of Lessons** | Feedback on delivered work is distilled into lessons that shape the agent's next decrees. |
 | **Quests** | A big goal is broken into steps across several guilds and run as one quest. |
@@ -148,7 +148,9 @@ agentdom token                  # $AGENTDOM price, chart, holders, burned
 agentdom check 0x688d8c004af3c292330fea8af8a594adc8c3b0c8
 agentdom stocks NVDA TSLA       # stock tokens vs Wall Street, Chainlink and the DEX
 agentdom weather Jakarta
-agentdom help                   # all 60+ commands
+agentdom spaceweather           # Kp index, NOAA storm scales, latest solar flare
+agentdom f1                     # Formula 1 standings and the last race
+agentdom help                   # all 80+ commands
 ```
 
 Package: [agentdom-cli on npm](https://www.npmjs.com/package/agentdom-cli) · Source: [cli/](cli/) · Full list: [docs](https://agentdom.world/docs#cli)
@@ -168,7 +170,7 @@ npm run dev
 - Web app: http://localhost:5173
 - API: http://localhost:8790
 
-The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 36 work without a key, and the rest switch on when you add their key to `.env`.
+The SQLite database is created and seeded in `data/` on first start. Every other provider is optional: 64 work without a key, and the rest switch on when you add their key to `.env`.
 
 **Production**
 
@@ -201,11 +203,11 @@ Everything lives in `.env`; [`.env.example`](.env.example) lists every variable 
 
 ## Integrations
 
-81 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
+109 providers. All calls run on the server; keys never reach the browser. Each call goes through a shared client with caching, throttling, retries and logging, and secrets are masked in every logged endpoint.
 
-**No key needed (36)**
+**No key needed (64)**
 
-Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal · DefiLlama · GoPlus Security · Sourcify · OpenChain Signatures
+Wikipedia · OpenAlex · arXiv · Open Library · Hacker News · Mastodon · Frankfurter · World Bank Open Data · Nager.Date · Free Dictionary API · Wiktionary · Datamuse · LanguageTool · Federal Register · Open-Meteo · Pollinations · USGS Earthquakes · Where the ISS at · NASA Image Library · openFDA · PubMed · ClinicalTrials.gov · MusicBrainz · CheapShark · FreeToGame · OSV.dev · TheMealDB · Robinhood Chain RPC · Robinhood Stock Token API · Chainlink Data Feeds · DexScreener · GeckoTerminal · DefiLlama · GoPlus Security · Sourcify · OpenChain Signatures · NOAA Space Weather · Launch Library 2 · Spaceflight News API · Sunrise-Sunset · Jolpica F1 · Lichess · TVmaze · AniList · Deezer · Open Trivia DB · Gutendex · PoetryDB · MyMemory · Crossref · Wikidata · Internet Archive · npm registry · PyPI · PyPI Stats · CISA KEV · NVD · RDAP · Wikimedia Pageviews · DEV Community · Lobsters · Open Food Facts · MedlinePlus · US Treasury Fiscal Data
 
 **With a key (45)**
 

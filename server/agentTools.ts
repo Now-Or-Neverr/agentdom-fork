@@ -62,6 +62,18 @@ export interface ToolUsage {
   vulns: number;
   chain: number;
   recipes: number;
+  skywatch: number;
+  pastimes: number;
+  library: number;
+  memory: number;
+  scholar: number;
+  packages: number;
+  exploits: number;
+  domains: number;
+  buzz: number;
+  foodfacts: number;
+  topics: number;
+  fiscal: number;
 }
 export const newUsage = (): ToolUsage => ({
   images: 0,
@@ -106,6 +118,18 @@ export const newUsage = (): ToolUsage => ({
   chain: 0,
   vulns: 0,
   recipes: 0,
+  skywatch: 0,
+  pastimes: 0,
+  library: 0,
+  memory: 0,
+  scholar: 0,
+  packages: 0,
+  exploits: 0,
+  domains: 0,
+  buzz: 0,
+  foodfacts: 0,
+  topics: 0,
+  fiscal: 0,
 });
 
 export interface ToolCtx {
@@ -873,6 +897,376 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
         cap(c, 'recipes', 3, 'Recipe');
         const r = await I.mealSearch(dish, ctxOf(c), 3);
         return { data: r, summary: `${r.results.length} recipes for ${q(dish)}`, sourceName: name('themealdb'), sourceUrl: r.sourceUrl };
+      },
+    },
+
+    // ================= No-key update (Nov 2026) =================
+    // ---- Observatory ----
+    {
+      name: 'space_weather',
+      label: 'Space weather',
+      description: 'Space weather right now from NOAA SWPC: planetary Kp index (0-9, 5+ = geomagnetic storm) with the last 24 h, NOAA R (radio blackout), S (solar radiation) and G (geomagnetic storm) scales, and the latest solar flare (class, peak time). Use it for aurora chances, radio/GPS disruption and solar activity. Max 6 calls per decree (shared with rocket_launches, space_news, sun_times).',
+      schema: obj({}, []),
+      doing: () => 'Reading NOAA space weather',
+      run: async (_i, c) => {
+        cap(c, 'skywatch', 6, 'Sky data');
+        const r = await I.spaceWeather(ctxOf(c));
+        return { data: r, summary: `Kp ${r.kpNow?.kp ?? '?'} (${r.stormLevel}), G${r.scales.geomagnetic.scale}${r.flare?.maxClass ? `, latest flare ${r.flare.maxClass}` : ''}`, sourceName: name('swpc'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'rocket_launches',
+      label: 'Upcoming rocket launches',
+      description: 'The next rocket launches worldwide from Launch Library 2 (The Space Devs): name, NET time (no earlier than, UTC) and its precision, status (Go, TBD, TBC), launch provider, rocket, mission, orbit, pad and a Space Launch Now page. Launch dates slip often: give them as "no earlier than". Data refreshes every 30 minutes.',
+      schema: obj({ limit: { type: 'number', description: '1-12, default 8.' } }, []),
+      doing: () => 'Checking the launch manifest',
+      run: async (i, c) => {
+        const limit = num(i, 'limit', 1, 12, 8);
+        cap(c, 'skywatch', 6, 'Sky data');
+        const r = await I.upcomingLaunches(ctxOf(c), limit);
+        const n = r.launches[0];
+        return { data: r, summary: `${r.launches.length} upcoming launches${n ? `, next: ${clip(n.name, 50)} NET ${n.net?.slice(0, 16).replace('T', ' ')} UTC` : ''}`, sourceName: name('launchlibrary'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'space_news',
+      label: 'Space news',
+      description: 'Latest spaceflight news articles (Spaceflight News API, many outlets): title, outlet, publish time, short summary and link. Optional search word, e.g. "Artemis", "Starship", "ISRO". Cite the outlet and link; do not reproduce whole articles.',
+      schema: obj({ query: { type: 'string', description: 'Optional search word.' } }, []),
+      doing: (i) => (i.query ? `Reading space news about ${q(String(i.query), 30)}` : 'Reading the latest space news'),
+      run: async (i, c) => {
+        const query = optStr(i, 'query', 100);
+        cap(c, 'skywatch', 6, 'Sky data');
+        const r = await I.spaceNews(ctxOf(c), query, 8);
+        return { data: r, summary: `${r.articles.length} space news articles${query ? ` for ${q(query)}` : ''}`, sourceName: name('spaceflightnews'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'sun_times',
+      label: 'Sunrise and sunset',
+      description: 'Sunrise, sunset, solar noon, day length and civil/nautical/astronomical twilight for a named place on a date (sunrise-sunset.org; place found with Open-Meteo). Times are UTC ISO; convert them with the place time zone that is returned. Credit "sunrise-sunset.org".',
+      schema: obj({ place: { type: 'string', description: 'City or place, e.g. "Tromsø".' }, date: { type: 'string', description: 'Optional YYYY-MM-DD, default today.' } }, ['place']),
+      doing: (i) => `Working out sun times for ${q(String(i.place), 30)}`,
+      run: async (i, c) => {
+        const place = str(i, 'place', 100);
+        const date = optStr(i, 'date', 10);
+        if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new ToolInputError('"date" must be YYYY-MM-DD.');
+        cap(c, 'skywatch', 6, 'Sky data');
+        const g = await I.geocode(place, ctxOf(c), 1);
+        const p = g.results[0];
+        if (!p) throw new ToolInputError(`Open-Meteo found no place called ${q(place, 60)}.`);
+        const r = await I.sunTimes(p.lat, p.lon, ctxOf(c), date);
+        return { data: { place: p, ...r }, summary: `${p.name}: sunrise ${r.sunrise?.slice(11, 16) ?? '—'} UTC, sunset ${r.sunset?.slice(11, 16) ?? '—'} UTC (${r.date})`, sourceName: name('sunrisesunset'), sourceUrl: r.sourceUrl };
+      },
+    },
+    // ---- Arena ----
+    {
+      name: 'f1_season',
+      label: 'Formula 1 season',
+      description: 'The current Formula 1 season from Jolpica (Ergast-compatible): driver and constructor standings with points and wins, the last race (winner, podium, grid, times) and the next rounds on the calendar. Never guess points or results. Max 8 calls per decree (shared with the other Arena data tools below).',
+      schema: obj({}, []),
+      doing: () => 'Reading the F1 timing sheets',
+      run: async (_i, c) => {
+        cap(c, 'pastimes', 8, 'Arena data');
+        const r = await I.f1Season(ctxOf(c));
+        const lead = r.drivers[0];
+        return { data: { ...r, drivers: r.drivers.slice(0, 12) }, summary: `F1 ${r.season}${lead ? `: ${lead.driver} leads with ${lead.points} pts` : ''}${r.lastRace ? `, last race ${r.lastRace.name}` : ''}`, sourceName: name('jolpica'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'chess_top',
+      label: 'Lichess top players',
+      description: `Top-10 Lichess players for a time control (${I.CHESS_PERFS.join(', ')}) with rating and recent progress, plus today's Lichess daily puzzle (rating, themes, FEN, solution in UCI moves and the puzzle link). Lichess ratings are not FIDE ratings.`,
+      schema: obj({ perf: { type: 'string', enum: [...I.CHESS_PERFS], description: 'Default blitz.' } }, []),
+      doing: (i) => `Checking the Lichess ${String(i.perf ?? 'blitz')} leaderboard`,
+      run: async (i, c) => {
+        const perf = oneOf(i, 'perf', I.CHESS_PERFS, 'blitz');
+        cap(c, 'pastimes', 8, 'Arena data');
+        const r = await I.chessBoard(ctxOf(c), perf);
+        return { data: r, summary: `Lichess ${perf}: #1 ${r.top[0]?.username ?? '?'} (${r.top[0]?.rating ?? '?'})${r.puzzle ? `, daily puzzle ${r.puzzle.rating}` : ''}`, sourceName: name('lichess'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'tv_guide',
+      label: 'TV guide',
+      description: "TVmaze: today's TV schedule for a country (most-followed shows, air time UTC, network) when no query is given, or a show search (premiere, network, status, rating, genres, summary). Credit \"Data from TVmaze\".",
+      schema: obj({ query: { type: 'string', description: 'Show name to search.' }, country: { type: 'string', description: '2-letter country code for the schedule, default US.' } }, []),
+      doing: (i) => (i.query ? `Looking up ${q(String(i.query), 30)} on TVmaze` : 'Reading today’s TV schedule'),
+      run: async (i, c) => {
+        const query = optStr(i, 'query', 100);
+        const country = optStr(i, 'country', 2)?.toUpperCase();
+        if (country && !/^[A-Z]{2}$/.test(country)) throw new ToolInputError('"country" must be a 2-letter code, e.g. GB.');
+        cap(c, 'pastimes', 8, 'Arena data');
+        const r = await I.tvGuide(ctxOf(c), { query, country });
+        return { data: r, summary: r.kind === 'search' ? `${r.shows.length} shows for ${q(query ?? '')}` : `${r.episodes.length} episodes on TV today (${r.country})`, sourceName: name('tvmaze'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'anime_search',
+      label: 'Anime (AniList)',
+      description: 'AniList: trending anime right now (no query) or a title search: title, format, episodes, status, community score (0-100), popularity, genres, season/year, next episode air time and the AniList page.',
+      schema: obj({ query: { type: 'string', description: 'Optional title.' } }, []),
+      doing: (i) => (i.query ? `Searching AniList for ${q(String(i.query), 30)}` : 'Checking trending anime'),
+      run: async (i, c) => {
+        const query = optStr(i, 'query', 100);
+        cap(c, 'pastimes', 8, 'Arena data');
+        const r = await I.animeList(ctxOf(c), query, 10);
+        return { data: r, summary: `${r.results.length} anime ${query ? `for ${q(query)}` : 'trending'}`, sourceName: name('anilist'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'top_tracks',
+      label: 'Deezer top tracks',
+      description: "Deezer's main chart right now: position, track, artist, album, length, explicit flag and Deezer link.",
+      schema: obj({}, []),
+      doing: () => 'Reading the Deezer chart',
+      run: async (_i, c) => {
+        cap(c, 'pastimes', 8, 'Arena data');
+        const r = await I.deezerChart(ctxOf(c), 20);
+        return { data: { ...r, tracks: r.tracks.map(({ cover: _c, ...t }) => t) }, summary: `Deezer #1: ${r.tracks[0] ? `${r.tracks[0].title} by ${r.tracks[0].artist}` : 'empty chart'}`, sourceName: name('deezer'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'trivia_questions',
+      label: 'Trivia questions',
+      description: `Fresh trivia questions from Open Trivia DB (CC BY-SA 4.0) with the correct and wrong answers. category id: ${Object.entries(I.TRIVIA_CATEGORIES)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(', ')}. difficulty: easy, medium, hard. Use it for quiz nights and games; credit Open Trivia DB.`,
+      schema: obj({ amount: { type: 'number', description: '1-10, default 5.' }, category: { type: 'string', description: 'Category id, e.g. "17".' }, difficulty: { type: 'string', enum: [...I.TRIVIA_DIFFICULTIES] } }, []),
+      doing: () => 'Drawing trivia questions',
+      run: async (i, c) => {
+        const amount = num(i, 'amount', 1, 10, 5);
+        const category = optStr(i, 'category', 3);
+        if (category && !(category in I.TRIVIA_CATEGORIES)) throw new ToolInputError(`"category" must be one of: ${Object.keys(I.TRIVIA_CATEGORIES).join(', ')}.`);
+        const difficulty = i.difficulty ? oneOf(i, 'difficulty', I.TRIVIA_DIFFICULTIES) : undefined;
+        cap(c, 'pastimes', 8, 'Arena data');
+        const r = await I.trivia(ctxOf(c), { amount: Math.round(amount), category, difficulty });
+        return { data: r, summary: `${r.questions.length} trivia questions${category ? ` (${I.TRIVIA_CATEGORIES[category]})` : ''}`, sourceName: name('opentdb'), sourceUrl: r.sourceUrl };
+      },
+    },
+    // ---- Scriptorium ----
+    {
+      name: 'gutenberg_books',
+      label: 'Project Gutenberg books',
+      description: 'Public-domain books from Project Gutenberg (Gutendex): the most downloaded (no query) or a title/author search, with authors and their years, languages, subjects, download count, a short summary, a read-online link and the gutenberg.org page. Searches can take up to a minute. Public domain in the USA; say so if the requester wants to reuse a text. Max 6 per decree (shared with find_poems).',
+      schema: obj({ query: { type: 'string', description: 'Title or author, e.g. "Dickens".' } }, []),
+      doing: (i) => (i.query ? `Searching Project Gutenberg for ${q(String(i.query), 30)}` : 'Opening the Gutenberg bestseller shelf'),
+      run: async (i, c) => {
+        const query = optStr(i, 'query', 100);
+        cap(c, 'library', 6, 'Library');
+        const r = await I.gutenbergBooks(ctxOf(c), query, 8);
+        return { data: { ...r, books: r.books.map(({ cover: _c, ...b }) => b) }, summary: `${r.books.length} Gutenberg books${query ? ` for ${q(query)}` : ' (most read)'}`, sourceName: name('gutendex'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'find_poems',
+      label: 'Poems (PoetryDB)',
+      description: 'Full text of public-domain poems from PoetryDB by author and/or title words (both empty = one random poem): title, author, lines (first 60) and line count. Quote poems exactly as returned and name the poet.',
+      schema: obj({ author: { type: 'string', description: 'e.g. "Emily Dickinson".' }, title: { type: 'string', description: 'Words from the title, e.g. "hope".' } }, []),
+      doing: (i) => `Opening PoetryDB${i.author ? ` for ${q(String(i.author), 30)}` : ''}`,
+      run: async (i, c) => {
+        const author = optStr(i, 'author', 80);
+        const title = optStr(i, 'title', 80);
+        cap(c, 'library', 6, 'Library');
+        const r = await I.poems(ctxOf(c), { author, title, limit: 4 });
+        return { data: r, summary: r.poems.length ? `${r.poems.length} poems${author ? ` by ${author}` : ''}${title ? ` titled ${q(title)}` : ''}` : 'No matching poems', sourceName: name('poetrydb'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'translation_memory',
+      label: 'Translation memory',
+      description: `MyMemory translation memory: how people have really translated a short phrase (up to ${I.MEMORY_MAX_CHARS} characters), with stored alternatives, their source ("MT!" = machine translation) and match scores. Good for idioms, greetings and short UI strings; check alternatives because crowd memory can be wrong. Language codes like en, id, fr, pt-BR. Max 3 per decree; the realm has a small daily allowance.`,
+      schema: obj({ text: { type: 'string', description: 'Short text.' }, from: { type: 'string', description: 'Source language code, default en.' }, to: { type: 'string', description: 'Target language code.' } }, ['text', 'to']),
+      doing: (i) => `Checking how people translate into ${String(i.to ?? '').slice(0, 6)}`,
+      run: async (i, c) => {
+        const text = str(i, 'text', I.MEMORY_MAX_CHARS);
+        const from = (optStr(i, 'from', 6) ?? 'en').trim();
+        const to = str(i, 'to', 6);
+        cap(c, 'memory', 3, 'Translation memory');
+        const r = await I.memoryTranslate(text, from, to, ctxOf(c));
+        return { data: r, summary: `MyMemory ${from}→${to}: “${clip(r.translated, 60)}”`, sourceName: name('mymemory'), sourceUrl: r.sourceUrl };
+      },
+    },
+    // ---- Grand Archive ----
+    {
+      name: 'crossref_search',
+      label: 'Crossref works',
+      description: 'Crossref scholarly metadata: a keyword search over papers, books and datasets, or an exact DOI lookup (e.g. "10.1038/nature14539"). Returns title, authors, journal, publisher, type, year, Crossref citation count, abstract when deposited, licence and the doi.org link. Max 10 per decree (shared with wikidata_facts, archive_search, wayback_snapshot).',
+      schema: obj({ query: { type: 'string', description: 'Keywords or a DOI.' } }, ['query']),
+      doing: (i) => `Searching Crossref for ${q(String(i.query))}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 250);
+        cap(c, 'scholar', 10, 'Scholarly lookup');
+        const r = await I.crossref(query, ctxOf(c), 8);
+        return { data: r, summary: r.kind === 'doi' ? `DOI ${r.query}: “${clip(r.works[0]?.title ?? '', 60)}”` : `${r.works.length} of ${r.total.toLocaleString('en')} Crossref records for ${q(query)}`, sourceName: name('crossref'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'wikidata_facts',
+      label: 'Wikidata facts',
+      description: 'Structured facts from Wikidata for the best match of a name (or a Q-id): description, aliases and key statements such as instance of, country, capital, population, area, inception, founder, headquarters, CEO, birth/death, occupation, awards, official website and coordinates, plus other candidate matches. Check the match is the entity you meant.',
+      schema: obj({ query: { type: 'string', description: 'Name or Q-id, e.g. "Marie Curie" or "Q7186".' } }, ['query']),
+      doing: (i) => `Reading Wikidata on ${q(String(i.query), 30)}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 120);
+        cap(c, 'scholar', 10, 'Scholarly lookup');
+        const r = await I.wikidata(query, ctxOf(c));
+        return { data: r, summary: r.entity ? `Wikidata ${r.entity.id}: ${r.entity.label} (${r.entity.facts.length} facts)` : `No Wikidata entity for ${q(query)}`, sourceName: name('wikidata'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'archive_search',
+      label: 'Internet Archive search',
+      description: `Search the Internet Archive (archive.org) catalogue by title, most downloaded first: title, media type, year, creator, downloads and the item page. mediatype: ${I.ARCHIVE_MEDIA.join(', ')}. Items carry their own rights; say that the requester should check each item's licence before reuse.`,
+      schema: obj({ query: { type: 'string', description: 'Title words.' }, mediatype: { type: 'string', enum: [...I.ARCHIVE_MEDIA] } }, ['query']),
+      doing: (i) => `Searching archive.org for ${q(String(i.query))}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 150);
+        const mediatype = i.mediatype ? oneOf(i, 'mediatype', I.ARCHIVE_MEDIA) : undefined;
+        cap(c, 'scholar', 10, 'Scholarly lookup');
+        const r = await I.archiveSearch(query, ctxOf(c), mediatype, 10);
+        return { data: r, summary: `${r.items.length} of ${r.total.toLocaleString('en')} archive.org items for ${q(query)}`, sourceName: name('internetarchive'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'wayback_snapshot',
+      label: 'Wayback Machine snapshot',
+      description: 'The Wayback Machine snapshot of a web address closest to a date (default: the newest): whether it is archived, the snapshot link, its time and the HTTP status the crawler saw. Use it for "what did this page say before" and as evidence that a page existed.',
+      schema: obj({ url: { type: 'string', description: 'Web address, e.g. "example.com/terms".' }, date: { type: 'string', description: 'Optional YYYY, YYYYMM or YYYYMMDD.' } }, ['url']),
+      doing: (i) => `Checking the Wayback Machine for ${String(i.url ?? '').slice(0, 50)}`,
+      run: async (i, c) => {
+        const url = str(i, 'url', 500);
+        const date = optStr(i, 'date', 10)?.replace(/-/g, '');
+        cap(c, 'scholar', 10, 'Scholarly lookup');
+        const r = await I.waybackSnapshot(url, ctxOf(c), date);
+        return { data: r, summary: r.archived ? `Wayback snapshot of ${clip(url, 50)} from ${r.timestamp?.slice(0, 10)}` : `No Wayback snapshot of ${clip(url, 50)}`, sourceName: name('internetarchive'), sourceUrl: r.snapshotUrl ?? r.sourceUrl };
+      },
+    },
+    // ---- Forge ----
+    {
+      name: 'package_info',
+      label: 'Package info',
+      description: 'An npm or PyPI package: latest version, summary, licence, runtime requirement (node/python), number of runtime dependencies, homepage, repository, deprecation/yank notice and download counts (npm: last week/month; PyPI: last day/week/month via pypistats.org). Use with check_vulnerabilities for a dependency review. Max 8 per decree.',
+      schema: obj({ name: { type: 'string', description: 'Package name, e.g. "express" or "@types/node".' }, ecosystem: { type: 'string', enum: [...I.PACKAGE_ECOSYSTEMS], description: 'Default npm.' } }, ['name']),
+      doing: (i) => `Reading ${String(i.ecosystem ?? 'npm')} for ${String(i.name ?? '').slice(0, 40)}`,
+      run: async (i, c) => {
+        const pkg = str(i, 'name', 214);
+        const eco = oneOf(i, 'ecosystem', I.PACKAGE_ECOSYSTEMS, 'npm');
+        cap(c, 'packages', 8, 'Package lookup');
+        const r = await I.packageInfo(eco, pkg, ctxOf(c));
+        return { data: r, summary: `${r.name}@${r.version} (${eco})${r.license ? `, ${r.license}` : ''}${r.downloads.lastWeek != null ? `, ${r.downloads.lastWeek.toLocaleString('en')} downloads last week` : ''}`, sourceName: name(eco), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'exploited_vulns',
+      label: 'Known exploited vulnerabilities',
+      description: "CISA's Known Exploited Vulnerabilities catalogue (flaws attackers really use), newest first or filtered by vendor, product or CVE id: CVE, vendor, product, name, date added, US federal fix-by date, ransomware use, description, required action and CWE. Being absent from KEV does not mean a flaw is safe. Max 6 per decree (shared with cve_details).",
+      schema: obj({ query: { type: 'string', description: 'Vendor, product or CVE, e.g. "Fortinet".' } }, []),
+      doing: (i) => (i.query ? `Checking CISA KEV for ${q(String(i.query), 30)}` : 'Reading the newest CISA KEV entries'),
+      run: async (i, c) => {
+        const query = optStr(i, 'query', 80);
+        cap(c, 'exploits', 6, 'Vulnerability catalogue');
+        const r = await I.kevCatalog(ctxOf(c), query, 10);
+        return { data: r, summary: query ? `${r.matched} KEV entries for ${q(query)}` : `Newest KEV entry: ${r.entries[0]?.cve ?? '—'} (${r.entries[0]?.vendor ?? ''})`, sourceName: name('cisakev'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'cve_details',
+      label: 'CVE details (NVD)',
+      description: 'One CVE from the US National Vulnerability Database: status, published/updated dates, English description, CVSS (v4.0/3.x/2 primary score, severity, vector), CWE weaknesses, references and whether CISA lists it as exploited. NVD is slow without a key; look up only the CVEs that matter.',
+      schema: obj({ cve: { type: 'string', description: 'e.g. "CVE-2021-44228".' } }, ['cve']),
+      doing: (i) => `Reading NVD on ${String(i.cve ?? '').slice(0, 20)}`,
+      run: async (i, c) => {
+        const id = str(i, 'cve', 20).toUpperCase();
+        if (!I.CVE_RE.test(id)) throw new ToolInputError('"cve" must look like CVE-2021-44228.');
+        cap(c, 'exploits', 6, 'Vulnerability catalogue');
+        const r = await I.cveLookup(id, ctxOf(c));
+        return { data: r, summary: `${r.id}: ${r.cvss ? `CVSS ${r.cvss.score} ${r.cvss.severity}` : 'no CVSS yet'}${r.exploitedInWild ? ', exploited in the wild' : ''}`, sourceName: name('nvd'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'domain_lookup',
+      label: 'Domain registration (RDAP)',
+      description: 'Public registration data for a domain from RDAP (the successor of WHOIS) via rdap.org: registrar, registration and expiry dates, age in days, status flags, name servers and DNSSEC. A domain registered days ago is a common scam sign. Personal registrant data is usually redacted; never try to unmask it. Max 4 per decree.',
+      schema: obj({ domain: { type: 'string', description: 'e.g. "example.com".' } }, ['domain']),
+      doing: (i) => `Looking up the registration of ${String(i.domain ?? '').slice(0, 50)}`,
+      run: async (i, c) => {
+        const domain = str(i, 'domain', 260);
+        cap(c, 'domains', 4, 'Domain lookup');
+        const r = await I.domainLookup(domain, ctxOf(c));
+        return { data: r, summary: `${r.domain}: registered ${r.registered?.slice(0, 10) ?? '?'}${r.ageDays != null ? ` (${r.ageDays} days ago)` : ''} via ${r.registrar ?? 'unknown registrar'}`, sourceName: name('rdap'), sourceUrl: r.sourceUrl };
+      },
+    },
+    // ---- Heralds' Tower ----
+    {
+      name: 'most_read_wiki',
+      label: 'Most-read Wikipedia articles',
+      description: `The most-read Wikipedia articles of the latest full day (Wikimedia pageviews, UTC), with view counts and links: a read on what people are curious about right now. lang: ${I.WIKI_LANGS.join(', ')}. Spikes can be caused by bots; say "most viewed", not "most popular". Max 6 per decree (shared with dev_trends).`,
+      schema: obj({ lang: { type: 'string', enum: [...I.WIKI_LANGS], description: 'Wikipedia language, default en.' } }, []),
+      doing: (i) => `Counting ${String(i.lang ?? 'en')} Wikipedia pageviews`,
+      run: async (i, c) => {
+        const lang = oneOf(i, 'lang', I.WIKI_LANGS, 'en');
+        cap(c, 'buzz', 6, 'Trend data');
+        const r = await I.mostRead(ctxOf(c), lang, 15);
+        return { data: r, summary: `Most read on ${r.project} ${r.date}: ${r.articles[0]?.title ?? '—'} (${r.articles[0]?.views.toLocaleString('en') ?? 0} views)`, sourceName: name('wikimedia'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'dev_trends',
+      label: 'Developer trends',
+      description: 'What developers are reading: the top DEV Community articles of the week (title, author, reactions, comments, tags) and the hottest Lobsters stories (title, link, score, comments, tags), optionally for one tag such as "ai", "rust" or "security".',
+      schema: obj({ tag: { type: 'string', description: 'Optional tag, letters and digits.' } }, []),
+      doing: (i) => `Reading DEV and Lobsters${i.tag ? ` on #${String(i.tag).slice(0, 20)}` : ''}`,
+      run: async (i, c) => {
+        const tag = optStr(i, 'tag', 30)?.toLowerCase();
+        if (tag && !I.TAG_RE.test(tag)) throw new ToolInputError('"tag" must be letters and digits only.');
+        cap(c, 'buzz', 6, 'Trend data');
+        const [dev, lob] = await Promise.allSettled([I.devArticles(ctxOf(c), tag, 8), I.lobsters(ctxOf(c), tag, 8)]);
+        if (dev.status === 'rejected' && lob.status === 'rejected') throw dev.reason;
+        const data = { tag: tag ?? null, dev: dev.status === 'fulfilled' ? dev.value : { error: String((dev.reason as Error)?.message ?? 'failed') }, lobsters: lob.status === 'fulfilled' ? lob.value : { error: String((lob.reason as Error)?.message ?? 'failed') } };
+        return { data, summary: `Developer trends${tag ? ` #${tag}` : ''}: ${dev.status === 'fulfilled' ? dev.value.articles.length : 0} DEV articles, ${lob.status === 'fulfilled' ? lob.value.stories.length : 0} Lobsters stories`, sourceName: `${name('devto')} + ${name('lobsters')}`, sourceUrl: dev.status === 'fulfilled' ? dev.value.sourceUrl : 'https://lobste.rs/' };
+      },
+    },
+    // ---- Apothecary ----
+    {
+      name: 'food_product',
+      label: 'Food product (Open Food Facts)',
+      description: 'A packaged food from Open Food Facts by barcode (EAN/UPC, 8-14 digits) or name: brand, quantity, Nutri-Score (a-e), NOVA processing group (1-4), allergens, ingredients and nutrition per 100 g (kcal, fat, saturated fat, carbs, sugars, fibre, protein, salt). Volunteer data from labels: tell the requester to check the package for allergens. Max 4 per decree.',
+      schema: obj({ query: { type: 'string', description: 'Barcode or product name, e.g. "3017624010701" or "oat milk".' } }, ['query']),
+      doing: (i) => `Reading the food label for ${q(String(i.query), 30)}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 100);
+        cap(c, 'foodfacts', 4, 'Food label');
+        const r = await I.foodFacts(query, ctxOf(c), 5);
+        return { data: health({ ...r, products: r.products.map(({ image: _i, ...p }) => p) }), summary: r.kind === 'barcode' ? `${r.products[0]?.name ?? query}: Nutri-Score ${r.products[0]?.nutriScore?.toUpperCase() ?? '—'}` : `${r.products.length} products for ${q(query)}`, sourceName: name('openfoodfacts'), sourceUrl: r.sourceUrl };
+      },
+    },
+    {
+      name: 'health_topics',
+      label: 'Health topics (MedlinePlus)',
+      description: 'Plain-language health topic summaries from MedlinePlus (US National Library of Medicine) in English or Spanish, with the topic page. Use it to explain a condition simply and link a trusted page; it is not a diagnosis. Max 4 per decree.',
+      schema: obj({ query: { type: 'string', description: 'Condition or topic, e.g. "asthma".' }, language: { type: 'string', enum: ['en', 'es'], description: 'Default en.' } }, ['query']),
+      doing: (i) => `Reading MedlinePlus on ${q(String(i.query), 30)}`,
+      run: async (i, c) => {
+        const query = str(i, 'query', 100);
+        const language = oneOf(i, 'language', ['en', 'es'] as const, 'en');
+        cap(c, 'topics', 4, 'Health topics');
+        const r = await I.healthTopics(query, ctxOf(c), language, 4);
+        return { data: health(r), summary: `${r.topics.length} MedlinePlus topics for ${q(query)}`, sourceName: name('medlineplus'), sourceUrl: r.topics[0]?.url ?? r.sourceUrl };
+      },
+    },
+    // ---- Royal Treasury ----
+    {
+      name: 'us_fiscal',
+      label: 'US federal debt and rates',
+      description: 'Official US Treasury Fiscal Data: total public debt outstanding for the last ~10 business days (held by the public vs intragovernmental) and the average interest rates the Treasury pays by security type for the latest month (bills, notes, bonds, TIPS, savings bonds…). Quote figures exactly with their dates. Max 3 per decree.',
+      schema: obj({}, []),
+      doing: () => 'Reading US Treasury Fiscal Data',
+      run: async (_i, c) => {
+        cap(c, 'fiscal', 3, 'Fiscal data');
+        const r = await I.usFiscal(ctxOf(c));
+        const d = r.debt[0];
+        return { data: r, summary: d ? `US debt ${(d.total / 1e12).toFixed(2)}T on ${d.date}; ${r.rates.length} average rates for ${r.ratesMonth}` : 'No US debt figures', sourceName: name('fiscaldata'), sourceUrl: r.sourceUrl };
       },
     },
   ];
@@ -2410,19 +2804,19 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 const COMMON = ['wiki_search', 'wiki_summary'];
 const GUILD_TOOLS: Record<ProvinceId, string[]> = {
-  throne: ['current_weather', 'web_search'],
-  forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file', 'scan_url', 'check_vulnerabilities'],
-  scriptorium: ['check_grammar', 'define_word', 'related_words', 'translate', 'job_search'],
+  throne: ['current_weather', 'web_search', 'sun_times'],
+  forge: ['publish_web_page', 'publish_site', 'audit_site', 'scrape_site', 'repo_info', 'repo_tree', 'repo_file', 'scan_url', 'check_vulnerabilities', 'package_info', 'exploited_vulns', 'cve_details', 'domain_lookup'],
+  scriptorium: ['check_grammar', 'define_word', 'related_words', 'translate', 'job_search', 'translation_memory', 'gutenberg_books', 'find_poems'],
   atelier: ['design_image', 'generate_image', 'stock_photos', 'use_stock_photo', 'unsplash_photos', 'use_unsplash_photo', 'remove_background', 'brand_lookup'],
   theatre: ['design_image', 'stock_videos', 'find_music', 'make_film', 'generate_image', 'make_video', 'transcribe_audio', 'record_voiceover'],
-  archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram', 'nutrition_lookup', 'read_image_text', 'guardian_news', 'nyt_news', 'nyt_bestsellers'],
-  heralds: ['news', 'guardian_news', 'nyt_news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'design_image', 'generate_image', 'draft_bluesky_post'],
-  bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup', 'recipe_search'],
-  treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'read_image_text', 'uk_company_search', 'uk_company_profile'],
-  court: ['case_law', 'federal_register', 'web_search', 'read_url', 'read_image_text', 'scan_url'],
-  observatory: ['nasa_apod', 'near_earth_asteroids', 'nasa_images', 'earthquakes', 'iss_position', 'air_quality', 'current_weather', 'web_search', 'search_arxiv'],
-  apothecary: ['drug_label', 'fda_recalls', 'pubmed_search', 'clinical_trials', 'nutrition_lookup', 'web_search', 'read_url'],
-  arena: ['football_table', 'football_matches', 'film_search', 'film_trending', 'music_charts', 'music_artist', 'game_deals', 'free_games', 'youtube_search', 'web_search', 'design_image'],
+  archive: ['web_search', 'read_url', 'exa_search', 'search_openalex', 'search_arxiv', 'search_openlibrary', 'world_bank_indicator', 'fred_search', 'fred_series', 'ask_wolfram', 'nutrition_lookup', 'read_image_text', 'guardian_news', 'nyt_news', 'nyt_bestsellers', 'crossref_search', 'wikidata_facts', 'archive_search', 'wayback_snapshot', 'gutenberg_books'],
+  heralds: ['news', 'guardian_news', 'nyt_news', 'youtube_trending', 'youtube_search', 'web_search', 'hn_stories', 'mastodon_trends', 'design_image', 'generate_image', 'draft_bluesky_post', 'most_read_wiki', 'dev_trends'],
+  bazaar: ['local_businesses', 'find_similar_companies', 'web_search', 'read_url', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'uk_company_search', 'uk_company_profile', 'brand_lookup', 'recipe_search', 'food_product'],
+  treasury: ['stock_quote', 'company_profile', 'company_news', 'fred_search', 'fred_series', 'ask_wolfram', 'fx_convert', 'fx_rates', 'fx_history', 'world_bank_indicator', 'public_holidays', 'read_image_text', 'uk_company_search', 'uk_company_profile', 'us_fiscal'],
+  court: ['case_law', 'federal_register', 'web_search', 'read_url', 'read_image_text', 'scan_url', 'domain_lookup', 'wayback_snapshot'],
+  observatory: ['nasa_apod', 'near_earth_asteroids', 'nasa_images', 'earthquakes', 'iss_position', 'air_quality', 'current_weather', 'web_search', 'search_arxiv', 'space_weather', 'rocket_launches', 'space_news', 'sun_times'],
+  apothecary: ['drug_label', 'fda_recalls', 'pubmed_search', 'clinical_trials', 'nutrition_lookup', 'web_search', 'read_url', 'food_product', 'health_topics'],
+  arena: ['football_table', 'football_matches', 'film_search', 'film_trending', 'music_charts', 'music_artist', 'game_deals', 'free_games', 'youtube_search', 'web_search', 'design_image', 'f1_season', 'chess_top', 'tv_guide', 'anime_search', 'top_tracks', 'trivia_questions'],
   mint: ['chain_pulse', 'chain_tx', 'chain_address', 'contract_check', 'stock_tokens', 'stock_token', 'corporate_actions', 'oracle_prices', 'market_pulse', 'chain_economy', 'token_holders', 'token_moves', 'token_chart', 'new_launches', 'agentdom_token', 'stock_quote', 'company_news', 'web_search', 'read_url'],
 };
 
@@ -2464,6 +2858,7 @@ export function toolGuidance(p: ProvinceId): string {
         `- Ground campaigns in what is happening now: news (GNews), youtube_trending / youtube_search, web_search, hn_stories, mastodon_trends. You may paint up to ${lim} visuals with generate_image.`,
         '- draft_bluesky_post only QUEUES one draft for the Herald (a human) to approve. Never say it was posted or give a post link; say it is waiting for approval.',
         '- guardian_news and nyt_news give headline, short summary and link only: never reproduce or paraphrase whole articles; quote the headline and link back.',
+        '- most_read_wiki (Wikimedia pageviews) shows what people looked up yesterday and dev_trends what developers are reading on DEV and Lobsters: good hooks for timely posts. Say "most viewed", and link the sources.',
       ].join('\n');
     case 'forge':
       return [
@@ -2472,6 +2867,7 @@ export function toolGuidance(p: ProvinceId): string {
         '- For a redesign brief, scrape_site the current site first (1-3 pages). For a speed/SEO review, audit_site the url.',
         '- Royal Inspection of a GitHub repository: repo_info → repo_tree → repo_file on the few files that matter (use the ref from repo_info). Link every finding to its line as [path#L12](https://github.com/owner/repo/blob/<ref>/<path>#L12). State plainly in the report that the code was read, not executed, built or tested.',
         '- check_vulnerabilities looks up known vulnerabilities for a package version on OSV.dev (e.g. dependencies from package.json). Report ids, severity and fixed versions; no result is not proof of safety.',
+        '- For a dependency review, package_info gives the real latest version, licence, downloads and deprecation for npm/PyPI packages; exploited_vulns (CISA KEV) shows flaws attackers really use, and cve_details (NVD) gives the CVSS score and references for one CVE. domain_lookup (RDAP) gives a domain’s registrar, age and expiry.',
         '- For "is this link safe?", run scan_url and report urlscan.io’s verdict, final URL, hosting and certificate exactly. A clean verdict is not proof of safety; list the warning signs you can see yourself (look-alike domain, very new certificate, login form on an unrelated domain).',
       ].join('\n');
     case 'scriptorium':
@@ -2479,36 +2875,40 @@ export function toolGuidance(p: ProvinceId): string {
         '- Before you deliver a text of more than a few sentences, run check_grammar on your draft and fix the real issues (ignore false alarms on names and stylistic choices).',
         '- For translations, use translate (machine translation) as a first pass, then polish it yourself and say that you did.',
         '- For job hunting, use job_search (live Adzuna ads) and list only real ads it returned, with title, company, location, salary as given and the link. Say that ads can close at any time.',
+        '- translation_memory (MyMemory) shows how people have really translated a short phrase; compare it with translate and keep the best. gutenberg_books and find_poems give public-domain classics and poems: quote them exactly and name the author.',
       ].join('\n');
     case 'archive':
-      return '- For research, look up real sources (web_search + read_url for the current web, exa_search for companies/papers/projects, search_openalex, search_arxiv, search_openlibrary, world_bank_indicator, fred_series, ask_wolfram for calculations, Wikipedia) and cite them with the urls the tools return.\n- For nutrition, use nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the real amounts and show the arithmetic; mark anything estimated. read_image_text reads text from a public image or PDF link.\n- guardian_news, nyt_news and nyt_bestsellers give headlines, short summaries and links only (never full articles): cite and link them.';
+      return '- For research, look up real sources (web_search + read_url for the current web, exa_search for companies/papers/projects, search_openalex, search_arxiv, search_openlibrary, world_bank_indicator, fred_series, ask_wolfram for calculations, Wikipedia) and cite them with the urls the tools return.\n- For nutrition, use nutrition_lookup (USDA FoodData Central, per 100 g) for each main ingredient, scale by the real amounts and show the arithmetic; mark anything estimated. read_image_text reads text from a public image or PDF link.\n- guardian_news, nyt_news and nyt_bestsellers give headlines, short summaries and links only (never full articles): cite and link them.\n- crossref_search finds scholarly records or resolves a DOI exactly (with citation counts); wikidata_facts gives structured facts (population, founders, dates) for a named entity: check the match is the right one. archive_search and wayback_snapshot find items on archive.org and old versions of web pages; gutenberg_books lists public-domain books.';
     case 'bazaar':
       return [
         '- For local markets, use local_businesses (real OpenStreetMap businesses worldwide) and list the actual names and addresses it returns; note that coverage varies. Use find_similar_companies to map competitors from a company url, web_search / read_url for current details.',
         '- Use fx_convert / fx_rates / fx_history for exchange rates, world_bank_indicator for macro figures and public_holidays for calendars. Never guess these numbers.',
         '- To check a UK company, use uk_company_search then uk_company_profile (official Companies House register) and report status, age, officers, overdue filings and other red flags with the register link. brand_lookup gives a company’s real logos, colours and fonts.',
-        '- recipe_search (TheMealDB) gives real recipes with ingredients for food businesses and menus; say when it has no match.',
+        '- recipe_search (TheMealDB) gives real recipes with ingredients for food businesses and menus; say when it has no match. food_product (Open Food Facts) reads packaged products by barcode or name (nutrition, Nutri-Score, allergens).',
       ].join('\n');
     case 'treasury':
-      return '- Use stock_quote / company_profile / company_news (Finnhub) for listed companies, fred_series for official US rates and series, ask_wolfram for calculations, fx tools for exchange rates and world_bank_indicator for macro figures. Never guess these numbers, and note that this is not financial advice.\n- read_image_text reads a receipt, invoice or statement from a public image/PDF link (use table=true); rebuild it as a clean table and flag any digit the OCR may have misread. uk_company_search / uk_company_profile check UK companies on the official register.';
+      return '- Use stock_quote / company_profile / company_news (Finnhub) for listed companies, fred_series for official US rates and series, ask_wolfram for calculations, fx tools for exchange rates and world_bank_indicator for macro figures. Never guess these numbers, and note that this is not financial advice.\n- read_image_text reads a receipt, invoice or statement from a public image/PDF link (use table=true); rebuild it as a clean table and flag any digit the OCR may have misread. uk_company_search / uk_company_profile check UK companies on the official register.\n- us_fiscal gives official US federal debt (Debt to the Penny) and the average Treasury interest rates; quote them with their dates.';
     case 'court':
-      return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.\n- When a scam or phishing link is part of the facts, scan_url records what it really loads (unlisted urlscan.io scan with screenshot) as evidence; report the verdict exactly.\n- When the requester gives a public link to a contract, policy or terms page, read it with read_url; for a public image or PDF scan of a document, use read_image_text. Say how much of the document you could read.';
+      return '- Use case_law (CourtListener) for US court opinions, federal_register for US federal rules and notices, and web_search for other jurisdictions; cite case names, document numbers and urls. Make clear this is general information, not legal advice.\n- When a scam or phishing link is part of the facts, scan_url records what it really loads (unlisted urlscan.io scan with screenshot) as evidence; report the verdict exactly.\n- When the requester gives a public link to a contract, policy or terms page, read it with read_url; for a public image or PDF scan of a document, use read_image_text. Say how much of the document you could read.\n- domain_lookup shows when a domain was registered and by which registrar (very young domains are a scam sign); wayback_snapshot shows what a page looked like before and is useful evidence.';
     case 'throne':
-      return '- Use current_weather when the decree depends on the weather somewhere right now, and web_search for current facts.';
+      return '- Use current_weather when the decree depends on the weather somewhere right now, sun_times for sunrise and sunset, and web_search for current facts.';
     case 'observatory':
       return [
         '- Use earthquakes (USGS), near_earth_asteroids and nasa_apod / nasa_images (NASA), iss_position, air_quality (OpenAQ) and current_weather for live space and earth facts; cite the event, asteroid or station links they return. search_arxiv finds astronomy and earth-science preprints.',
         '- Report numbers exactly with units and times (UTC). "Potentially hazardous" asteroids are an orbit class, not an impact forecast. For air quality, name the station and its distance. If NASA APOD is down, say so and use nasa_images.',
+        '- space_weather (NOAA SWPC) gives the Kp index, NOAA storm scales and the latest solar flare (Kp 5+ is a storm; aurora odds rise at high latitudes). rocket_launches lists the next launches (NET = no earlier than; dates slip), space_news the latest spaceflight articles, sun_times sunrise, sunset and twilight for a place.',
       ].join('\n');
     case 'apothecary':
       return [
         '- Use drug_label (FDA labels), fda_recalls, pubmed_search, clinical_trials and nutrition_lookup, and cite every label, paper or trial link.',
         '- Start or end every result with the line "Information, not medical advice." Never diagnose, never give personal dosing beyond quoting the label, and tell the requester to ask a doctor or pharmacist. For emergencies, tell them to contact local emergency services.',
+        '- food_product (Open Food Facts) reads a packaged food by barcode or name: Nutri-Score, NOVA group, allergens and nutrition per 100 g from volunteer data; tell them to check the label. health_topics gives plain-language MedlinePlus summaries with a trusted link.',
       ].join('\n');
     case 'arena':
       return [
         '- Use football_table / football_matches (football-data.org, major competitions only), film_search / film_trending (TMDB), music_charts / music_artist (Last.fm + MusicBrainz), game_deals (CheapShark) and free_games (FreeToGame). Never guess scores, tables or prices.',
         '- Credit sources in the result: "Data: TMDB" (link themoviedb.org) for film/TV, "Data from FreeToGame.com" for free games, Last.fm for charts. Prices change fast: give the time they were fetched.',
+        '- f1_season (Jolpica F1), chess_top (Lichess), tv_guide (TVmaze; credit "Data from TVmaze"), anime_search (AniList), top_tracks (Deezer chart) and trivia_questions (Open Trivia DB) are live, no-key sources. Never invent standings, ratings or chart places.',
       ].join('\n');
     case 'mint':
       return [

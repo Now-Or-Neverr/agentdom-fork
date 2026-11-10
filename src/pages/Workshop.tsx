@@ -17,6 +17,7 @@ import * as Data from './workshop/DataTools';
 import { AtelierMediaTools, TheatreMediaTools, TranslateTool, SiteStatusTool } from './workshop/MediaTools';
 import * as Realm from './workshop/RealmTools';
 import * as Mint from './workshop/MintTools';
+import * as Open from './workshop/OpenTools';
 
 // ---------------- Throne: weather ----------------
 function ThroneTool() {
@@ -681,23 +682,30 @@ function ViaDecree({ what }: { what: string }) {
 const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
   throne: { label: 'Weather', render: () => <ThroneTool /> },
   forge: {
-    label: 'Site audit & repos',
+    label: 'Audits, packages & security',
     render: () => (
       <>
         <Data.AuditTool />
         <Data.RepoTool />
         <SiteStatusTool />
+        <Open.PackageTool />
+        <Open.KevTool />
+        <Open.CveTool />
+        <Open.DomainTool />
         <ViaDecree what="The Forge also builds code and small web pages for you. Its smiths work through decrees, so issue one in the Decree Hall." />
       </>
     ),
   },
   scriptorium: {
-    label: 'Grammar, words & translation',
+    label: 'Grammar, translation & classics',
     render: () => (
       <>
         <GrammarTool />
         <WordsTool />
         <TranslateTool />
+        <Open.MemoryTool />
+        <Open.BooksTool />
+        <Open.PoemsTool />
       </>
     ),
   },
@@ -718,6 +726,9 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
         <Data.WebSearchTool />
         <Data.ReadLinkTool />
         <ResearchTool />
+        <Open.CrossrefTool />
+        <Open.WikidataTool />
+        <Open.InternetArchiveTool />
       </>
     ),
   },
@@ -728,6 +739,8 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
         <Data.NewsTool />
         <Data.YouTubeTool />
         <TrendsTool />
+        <Open.MostReadTool />
+        <Open.DevTrendsTool />
       </>
     ),
   },
@@ -751,6 +764,7 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
         <Data.WolframTool />
         <FxTool />
         <WorldBankTool />
+        <Open.FiscalTool />
       </>
     ),
   },
@@ -764,34 +778,45 @@ const TOOLS: Record<ProvinceId, { label: string; render: () => ReactNode }> = {
     ),
   },
   observatory: {
-    label: 'Space & Earth now',
+    label: 'Space weather, launches & Earth',
     render: () => (
       <>
         <Realm.SpaceNowTool />
         <Realm.ApodTool />
         <Realm.AirTool />
+        <Open.SpaceWeatherTool />
+        <Open.LaunchesTool />
+        <Open.SunTool />
       </>
     ),
   },
   apothecary: {
-    label: 'Drugs, recalls & research',
+    label: 'Drugs, food & health topics',
     render: () => (
       <>
         <Realm.NotAdvice />
         <Realm.DrugTool />
         <Realm.RecallsTool />
         <Realm.MedResearchTool />
+        <Open.FoodTool />
+        <Open.HealthTopicsTool />
       </>
     ),
   },
   arena: {
-    label: 'Sport, film, music & games',
+    label: 'Sport, F1, chess, TV & games',
     render: () => (
       <>
         <Realm.FootballTool />
         <Realm.ScreenTool />
         <Realm.MusicTool />
         <Realm.GamesTool />
+        <Open.F1Tool />
+        <Open.ChessTool />
+        <Open.TvTool />
+        <Open.AnimeTool />
+        <Open.ChartsTool />
+        <Open.TriviaTool />
       </>
     ),
   },

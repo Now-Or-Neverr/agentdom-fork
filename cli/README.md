@@ -92,6 +92,27 @@ Everything the realm shows and every guild workshop tool, not only Robinhood Cha
 | `agentdom drug ibuprofen`, `recalls drug`, `medresearch diabetes` | Drug labels, FDA recalls, medical research (information, not medical advice) |
 | `agentdom football PL`, `films Dune`, `music Radiohead`, `games` | Football, films and TV, music, game deals |
 
+New in 0.4: tools from free public APIs that need no key.
+
+| Command | What it shows |
+|---|---|
+| `agentdom spaceweather` | Kp index, NOAA storm scales and the latest solar flare (NOAA SWPC) |
+| `agentdom launches`, `spacenews [topic]` | The next rocket launches (Launch Library 2) and space news (Spaceflight News API) |
+| `agentdom sun Tromsø` | Sunrise, sunset and twilight in UTC (sunrise-sunset.org) |
+| `agentdom f1` | Formula 1 standings, last race and next rounds (Jolpica F1) |
+| `agentdom chess [blitz]` | Top 10 Lichess players and the daily puzzle |
+| `agentdom tv [show]`, `anime [title]`, `charts` | TV schedule or show search (TVmaze), anime (AniList), Deezer top tracks |
+| `agentdom trivia [17] [easy]` | Trivia questions with answers (Open Trivia DB) |
+| `agentdom books [title]`, `poems [author]` | Public-domain books (Project Gutenberg via Gutendex) and poems (PoetryDB) |
+| `agentdom memory en id "Good morning"` | Translation memory with alternatives (MyMemory) |
+| `agentdom crossref <topic or DOI>`, `wikidata <name>` | Scholarly records (Crossref) and structured facts (Wikidata) |
+| `agentdom archive <title>`, `wayback <url> [date]` | Internet Archive search and Wayback Machine snapshots |
+| `agentdom package react`, `package requests pypi` | npm or PyPI package: version, licence, downloads |
+| `agentdom kev [vendor]`, `cve CVE-2021-44228`, `domain example.com` | CISA exploited vulnerabilities, NVD CVE details, domain registration (RDAP) |
+| `agentdom mostread [en]`, `devtrends [tag]` | Most-read Wikipedia articles, DEV Community and Lobsters |
+| `agentdom food <barcode or name>`, `health asthma` | Open Food Facts product data and MedlinePlus health topics (information, not medical advice) |
+| `agentdom fiscal` | US federal debt and average Treasury interest rates (Fiscal Data) |
+
 Run `agentdom help` for the full list with examples.
 
 ## Options
