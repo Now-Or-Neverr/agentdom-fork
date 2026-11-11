@@ -1,7 +1,8 @@
-// Holder perks: link a wallet by signing a free message (no transaction). If it holds enough
-// $AGENTDOM on Robinhood Chain, this guest gets extra decrees per day.
+// Holder perks: link a Solana wallet by signing a free message (no transaction).
 import { useEffect, useState } from 'react';
 import { Coins, Loader2, Unlink } from 'lucide-react';
+import bs58 from 'bs58';
+import { BRAND } from '../config';
 import { getUid } from '../lib/api';
 import { useApp } from '../lib/store';
 
@@ -14,7 +15,12 @@ interface Status {
   limit: number;
   token: string;
 }
-type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
+
+type SolWallet = {
+  publicKey: { toBase58: () => string };
+  connect: () => Promise<{ publicKey: { toBase58: () => string } }>;
+  signMessage: (message: Uint8Array, display?: string) => Promise<{ signature: Uint8Array }>;
+};
 
 async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = { 'content-type': 'application/json' };
@@ -26,14 +32,19 @@ async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   return data as T;
 }
 const fmt = (n: number | string) => Number(n).toLocaleString('en', { maximumFractionDigits: 2 });
-const short = (a: string) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+const short = (a: string) => (a.length > 12 ? `${a.slice(0, 4)}…${a.slice(-4)}` : a);
+
+function solWallet(): SolWallet | undefined {
+  const w = window as unknown as { phantom?: { solana?: SolWallet }; solana?: SolWallet };
+  return w.phantom?.solana ?? w.solana;
+}
 
 export function HolderPerks() {
   const { user, toast } = useApp();
   const [s, setS] = useState<Status | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const eth = (window as unknown as { ethereum?: Eth }).ethereum;
+  const wallet = solWallet();
 
   useEffect(() => {
     if (!user) return;
@@ -43,20 +54,22 @@ export function HolderPerks() {
   }, [user?.id]);
 
   const link = async () => {
-    if (!eth) return;
+    if (!wallet) return;
     setBusy(true);
     setErr(null);
     try {
-      const [address] = (await eth.request({ method: 'eth_requestAccounts' })) as string[];
-      if (!address) throw new Error('No wallet account was shared.');
+      const conn = await wallet.connect();
+      const address = conn.publicKey.toBase58();
       const { message } = await api<{ message: string }>('/me/holder/challenge', { method: 'POST', body: JSON.stringify({ address }) });
-      const signature = (await eth.request({ method: 'personal_sign', params: [message, address] })) as string;
+      const encoded = new TextEncoder().encode(message);
+      const signed = await wallet.signMessage(encoded, 'utf8');
+      const signature = bs58.encode(signed.signature);
       const next = await api<Status>('/me/holder', { method: 'POST', body: JSON.stringify({ signature }) });
       setS(next);
       toast(next.holder ? `Holder perks on: ${next.limit} decrees a day.` : 'Wallet linked.');
     } catch (e) {
       const m = (e as { message?: string }).message ?? 'Linking failed.';
-      setErr(/reject|denied/i.test(m) ? 'You cancelled the signature.' : m);
+      setErr(/reject|denied|cancel/i.test(m) ? 'You cancelled the signature.' : m);
     } finally {
       setBusy(false);
     }
@@ -79,7 +92,7 @@ export function HolderPerks() {
         <h2>$AGENTDOM holder perks</h2>
       </div>
       <p className="muted">
-        Hold at least {s ? fmt(s.min) : '…'} $AGENTDOM on Robinhood Chain and get {s ? s.bonus : '…'} extra decrees per day ({s ? s.base + s.bonus : '…'} instead of {s ? s.base : '…'}). Link your
+        Hold at least {s ? fmt(s.min) : '…'} $AGENTDOM on {BRAND.chain} and get {s ? s.bonus : '…'} extra decrees per day ({s ? s.base + s.bonus : '…'} instead of {s ? s.base : '…'}). Link your
         wallet by signing a message: it is free, sends no transaction and gives no access to your funds.
       </p>
       {s?.wallet ? (
@@ -89,7 +102,7 @@ export function HolderPerks() {
             {s.holder ? <span className="tag">Perks on · {s.limit} decrees a day</span> : <span className="tag">Below {fmt(s.min)}: no perks yet</span>}
           </p>
           <div className="acct-row">
-            <button className="btn btn-sm" onClick={link} disabled={busy || !eth}>
+            <button className="btn btn-sm" onClick={link} disabled={busy || !wallet}>
               {busy ? <Loader2 size={15} className="spin" aria-hidden /> : null} Link another wallet
             </button>
             <button className="btn btn-quiet btn-sm" onClick={unlink} disabled={busy}>
@@ -99,12 +112,12 @@ export function HolderPerks() {
         </>
       ) : (
         <div className="acct-row">
-          <button className="btn btn-primary btn-sm" onClick={link} disabled={busy || !eth || !user}>
+          <button className="btn btn-primary btn-sm" onClick={link} disabled={busy || !wallet || !user}>
             {busy ? <Loader2 size={15} className="spin" aria-hidden /> : null} Link wallet
           </button>
         </div>
       )}
-      {!eth && <p className="muted acct-small">Open this page in a browser with a wallet extension (for example MetaMask or Rabby) to link a wallet.</p>}
+      {!wallet && <p className="muted acct-small">Open this page in a browser with a Solana wallet (for example Phantom or Solflare) to link a wallet.</p>}
       {err && (
         <p className="acct-err" role="alert">
           {err}

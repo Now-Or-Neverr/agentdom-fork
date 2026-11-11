@@ -310,101 +310,101 @@ function cap(c: ToolCtx, k: keyof ToolUsage, max: number, what: string) {
 
 function NEW_GUILD_TOOLS(): ToolDef[] {
   return [
-    // ---- Royal Mint (Robinhood Chain, read-only) ----
+    // ---- Royal Mint (Solana, read-only) ----
     {
       name: 'chain_pulse',
-      label: 'Robinhood Chain pulse',
-      description: 'Live Robinhood Chain state from its public RPC: latest block, block time, transactions per block, gas price and the last 8 blocks with explorer links. Max 10 chain calls per decree (shared by all chain tools).',
+      label: 'Solana pulse',
+      description: 'Live Solana state from its public RPC: latest block, block time, transactions per block, gas price and the last 8 blocks with explorer links. Max 10 chain calls per decree (shared by all chain tools).',
       schema: obj({}, []),
-      doing: () => 'Reading the latest blocks on Robinhood Chain',
+      doing: () => 'Reading the latest blocks on Solana',
       run: async (_i, c) => {
         cap(c, 'chain', 10, 'Chain');
         const r = await I.chainPulse(ctxOf(c));
-        return { data: r, summary: `Block ${r.latestBlock.toLocaleString('en')} · ${r.avgTxPerBlock} tx/block · gas ${r.gasPriceGwei} gwei`, sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: `Block ${r.latestBlock.toLocaleString('en')} · ${r.avgTxPerBlock} tx/block · gas ${r.gasPriceGwei} gwei`, sourceName: name('Solanarpc'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'chain_tx',
       label: 'Explain a transaction',
-      description: 'Read one Robinhood Chain transaction by hash: status, time, from, to, method, ETH value, fee, contract created and every ERC-20 token transfer (with symbol, amount and whether it went to a burn address). Explain it in plain words from this data only.',
+      description: 'Read one Solana transaction by hash: status, time, from, to, method, ETH value, fee, contract created and every ERC-20 token transfer (with symbol, amount and whether it went to a burn address). Explain it in plain words from this data only.',
       schema: obj({ hash: { type: 'string', description: 'Transaction hash, 0x + 64 hex characters.' } }, ['hash']),
       doing: (i) => `Reading transaction ${String(i.hash ?? '').slice(0, 10)}…`,
       run: async (i, c) => {
         const hash = str(i, 'hash', 80);
         cap(c, 'chain', 10, 'Chain');
         const r = await I.explainTx(hash, ctxOf(c));
-        return { data: r, summary: `${r.status} · ${r.method ?? 'call'} · ${r.tokenTransfers.length} token transfer(s)`, sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: `${r.status} · ${r.method ?? 'call'} · ${r.tokenTransfers.length} token transfer(s)`, sourceName: name('Solanarpc'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'chain_address',
       label: 'Inspect an address',
-      description: 'Inspect a Robinhood Chain address: wallet or contract, ETH balance, number of sent transactions, and balances of known tokens only (AGENTDOM, WETH, USDG and confirmed Robinhood stock tokens). Other tokens are not checked: say so.',
+      description: 'Inspect a Solana address: wallet or contract, ETH balance, number of sent transactions, and balances of known tokens only (AGENTDOM, WETH, USDG and confirmed SPL tokens). Other tokens are not checked: say so.',
       schema: obj({ address: { type: 'string', description: 'Address, 0x + 40 hex characters.' } }, ['address']),
       doing: (i) => `Looking up ${String(i.address ?? '').slice(0, 10)}…`,
       run: async (i, c) => {
         const address = str(i, 'address', 60);
         cap(c, 'chain', 10, 'Chain');
         const r = await I.inspectAddress(address, ctxOf(c));
-        return { data: r, summary: `${r.kind} · ${r.ethBalance} ETH · ${r.tokens.length} known token(s)`, sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: `${r.kind} · ${r.ethBalance} ETH · ${r.tokens.length} known token(s)`, sourceName: name('Solanarpc'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'contract_check',
       label: 'Token contract check',
-      description: 'Read-only safety check of a token contract on Robinhood Chain: name, supply, burned amount, owner and whether it is renounced, upgradeable proxy, whether it is an official Robinhood stock token, functions the controller could use (mint, pause, blacklist, fee changes, trading switch, limits), DEX market (price, liquidity, volume), holder count and top-10 share, and GeckoTerminal honeypot flag. A function being present is not proof of abuse.',
+      description: 'Read-only safety check of a token contract on Solana: name, supply, burned amount, owner and whether it is renounced, upgradeable proxy, whether it is an official SPL token, functions the controller could use (mint, pause, blacklist, fee changes, trading switch, limits), DEX market (price, liquidity, volume), holder count and top-10 share, and GeckoTerminal honeypot flag. A function being present is not proof of abuse.',
       schema: obj({ address: { type: 'string', description: 'Contract address, 0x + 40 hex characters.' } }, ['address']),
       doing: (i) => `Checking contract ${String(i.address ?? '').slice(0, 10)}…`,
       run: async (i, c) => {
         const address = str(i, 'address', 60);
         cap(c, 'chain', 10, 'Chain');
         const r = await I.scanContract(address, ctxOf(c));
-        return { data: r, summary: r.isContract ? `${r.token?.symbol ?? 'contract'} · ${r.flags.length} flag(s)${r.stockToken ? ' · official stock token' : ''}` : 'not a contract', sourceName: name('robinhoodrpc'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: r.isContract ? `${r.token?.symbol ?? 'contract'} · ${r.flags.length} flag(s)${r.stockToken ? ' · official stock token' : ''}` : 'not a contract', sourceName: name('Solanarpc'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'stock_tokens',
       label: 'Stock tokens vs Wall Street',
-      description: 'Robinhood stock tokens on Robinhood Chain (official list from the Robinhood Stock Token API) compared four ways: Wall Street bid/ask (Robinhood live quote), fair token price (mid x multiplier), Robinhood token bid/ask, the Chainlink oracle price read onchain, and the DEX price with liquidity, plus the DEX gap in percent. Default symbols: ' + I.STOCK_TICKERS.join(', ') + '. Not financial advice.',
+      description: 'SPL tokens on Solana (official list from the Solana DEX APIs) compared four ways: Wall Street bid/ask ( live quote), fair token price (mid x multiplier),  token bid/ask, the Chainlink oracle price read onchain, and the DEX price with liquidity, plus the DEX gap in percent. Default symbols: ' + I.STOCK_TICKERS.join(', ') + '. Not financial advice.',
       schema: obj({ symbols: { type: 'array', items: { type: 'string' }, description: 'Optional tickers, max 15, e.g. ["NVDA","TSLA"].' } }, []),
       doing: () => 'Comparing stock tokens with Wall Street prices',
       run: async (i, c) => {
         const syms = Array.isArray(i.symbols) ? (i.symbols as unknown[]).map(String).filter((s) => /^[A-Za-z.]{1,8}$/.test(s)).slice(0, 15) : [];
         cap(c, 'chain', 10, 'Chain');
         const r = await I.stockBoard(ctxOf(c), syms.length ? syms : undefined);
-        return { data: r, summary: `${r.tokens.length} stock tokens compared`, sourceName: name('robinhoodapi'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: `${r.tokens.length} stock tokens compared`, sourceName: name('Solanaapi'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'stock_token',
       label: 'One stock token in depth',
-      description: 'Everything about one Robinhood stock token (ticker like "AAPL" or its contract address): Wall Street bid/ask, daily high/low and volume, token bid/ask, Chainlink oracle price, DEX price and liquidity, multiplier and any pending change, supply onchain, mint/burn volume today, trading halt, and its dividends and splits.',
+      description: 'Everything about one SPL token (ticker like "AAPL" or its contract address): Wall Street bid/ask, daily high/low and volume, token bid/ask, Chainlink oracle price, DEX price and liquidity, multiplier and any pending change, supply onchain, mint/burn volume today, trading halt, and its dividends and splits.',
       schema: obj({ symbol: { type: 'string', description: 'Ticker (e.g. "AAPL") or token contract address.' } }, ['symbol']),
       doing: (i) => `Reading the ${String(i.symbol ?? '').toUpperCase()} stock token`,
       run: async (i, c) => {
         const symbol = str(i, 'symbol', 60);
         cap(c, 'chain', 10, 'Chain');
         const r = await I.stockDetail(symbol, ctxOf(c));
-        return { data: r, summary: `${r.ticker} · fair $${r.fairTokenPrice?.toFixed(2) ?? '?'} · oracle $${r.oraclePrice?.toFixed(2) ?? '?'}`, sourceName: name('robinhoodapi'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: `${r.ticker} · fair $${r.fairTokenPrice?.toFixed(2) ?? '?'} · oracle $${r.oraclePrice?.toFixed(2) ?? '?'}`, sourceName: name('Solanaapi'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'corporate_actions',
       label: 'Dividends and splits',
-      description: 'Dividends and stock splits Robinhood is processing or has processed for its stock tokens, newest first: symbol, type, amount or ratio, process date and status. Optionally for one ticker.',
+      description: 'Dividends and stock splits  is processing or has processed for its stock tokens, newest first: symbol, type, amount or ratio, process date and status. Optionally for one ticker.',
       schema: obj({ symbol: { type: 'string', description: 'Optional ticker, e.g. "AAPL".' } }, []),
       doing: () => 'Reading dividends and splits',
       run: async (i, c) => {
         const symbol = optStr(i, 'symbol', 10);
         cap(c, 'chain', 10, 'Chain');
         const r = await I.corporateActions(ctxOf(c), symbol, 25);
-        return { data: r, summary: `${r.actions.length} corporate action(s)${symbol ? ` for ${symbol.toUpperCase()}` : ''}`, sourceName: name('robinhoodapi'), sourceUrl: r.sourceUrl };
+        return { data: r, summary: `${r.actions.length} corporate action(s)${symbol ? ` for ${symbol.toUpperCase()}` : ''}`, sourceName: name('Solanaapi'), sourceUrl: r.sourceUrl };
       },
     },
     {
       name: 'oracle_prices',
       label: 'Chainlink prices onchain',
-      description: 'Chainlink data feed prices on Robinhood Chain, read onchain: crypto (BTC, ETH, LINK, stablecoins) and/or stock feeds (24/7), each with its last update time and feed link.',
+      description: 'Chainlink data feed prices on Solana, read onchain: crypto (BTC, ETH, LINK, stablecoins) and/or stock feeds (24/7), each with its last update time and feed link.',
       schema: obj({ kind: { type: 'string', enum: ['crypto', 'stock', 'all'], description: 'Default crypto.' } }, []),
       doing: () => 'Reading Chainlink oracles onchain',
       run: async (i, c) => {
@@ -416,10 +416,10 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     },
     {
       name: 'chain_economy',
-      label: 'Robinhood Chain economy',
-      description: 'Robinhood Chain as a whole (DefiLlama): total value locked, DEX volume in 24 h and its daily change, fees in 24 h, stablecoins on the chain, and the top DEXes and fee earners.',
+      label: 'Solana economy',
+      description: 'Solana as a whole (DefiLlama): total value locked, DEX volume in 24 h and its daily change, fees in 24 h, stablecoins on the chain, and the top DEXes and fee earners.',
       schema: obj({}, []),
-      doing: () => 'Reading the Robinhood Chain economy',
+      doing: () => 'Reading the Solana economy',
       run: async (_i, c) => {
         cap(c, 'chain', 10, 'Chain');
         const r = await I.chainEconomy(ctxOf(c));
@@ -429,7 +429,7 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     {
       name: 'token_holders',
       label: 'Top holders of a token',
-      description: 'The top holders of any token on Robinhood Chain with their share of supply and explorer names (pools, lockers, exchanges), plus the total holder count (Blockscout).',
+      description: 'The top holders of any token on Solana with their share of supply and explorer names (pools, lockers, exchanges), plus the total holder count (Blockscout).',
       schema: obj({ address: { type: 'string', description: 'Token contract address.' } }, ['address']),
       doing: (i) => `Counting the holders of ${String(i.address ?? '').slice(0, 10)}…`,
       run: async (i, c) => {
@@ -456,7 +456,7 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     {
       name: 'token_chart',
       label: 'Token price chart',
-      description: 'Price candles (open, high, low, close in USD) for any token on Robinhood Chain from Codex: last 24 hours hourly, 7 days 4-hourly or 30 days daily, with the change over the period.',
+      description: 'Price candles (open, high, low, close in USD) for any token on Solana from Codex: last 24 hours hourly, 7 days 4-hourly or 30 days daily, with the change over the period.',
       schema: obj({ address: { type: 'string', description: 'Token contract address.' }, period: { type: 'string', enum: ['24h', '7d', '30d'], description: 'Default 24h.' } }, ['address']),
       doing: () => 'Reading the price chart',
       run: async (i, c) => {
@@ -470,7 +470,7 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     {
       name: 'new_launches',
       label: 'New token launches',
-      description: 'The newest tokens on Robinhood Chain with at least $1,000 of liquidity (Codex): name, symbol, launch time, liquidity, market cap, 24 h volume and holders. A listing is not an endorsement: suggest contract_check before anyone touches one.',
+      description: 'The newest tokens on Solana with at least $1,000 of liquidity (Codex): name, symbol, launch time, liquidity, market cap, 24 h volume and holders. A listing is not an endorsement: suggest contract_check before anyone touches one.',
       schema: obj({}, []),
       doing: () => 'Watching new launches',
       run: async (_i, c) => {
@@ -481,10 +481,10 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     },
     {
       name: 'market_pulse',
-      label: 'What is trading on Robinhood Chain',
-      description: 'Trending pools and the newest pools on Robinhood Chain (GeckoTerminal): pair, DEX, token address, price, liquidity, 24 h volume and change, created time. Being listed is not an endorsement: suggest contract_check before anyone touches a token.',
+      label: 'What is trading on Solana',
+      description: 'Trending pools and the newest pools on Solana (GeckoTerminal): pair, DEX, token address, price, liquidity, 24 h volume and change, created time. Being listed is not an endorsement: suggest contract_check before anyone touches a token.',
       schema: obj({}, []),
-      doing: () => 'Watching the Robinhood Chain markets',
+      doing: () => 'Watching the Solana markets',
       run: async (_i, c) => {
         cap(c, 'chain', 10, 'Chain');
         const r = await I.marketPulse(ctxOf(c), 10);
@@ -494,7 +494,7 @@ function NEW_GUILD_TOOLS(): ToolDef[] {
     {
       name: 'agentdom_token',
       label: '$AGENTDOM stats',
-      description: 'Live $AGENTDOM stats on Robinhood Chain: price, 24h change, liquidity, volume, FDV, buys and sells, holder count, top-10 share, total supply and amount burned. Never predict the price or give investment advice.',
+      description: 'Live $AGENTDOM stats on Solana: price, 24h change, liquidity, volume, FDV, buys and sells, holder count, top-10 share, total supply and amount burned. Never predict the price or give investment advice.',
       schema: obj({}, []),
       doing: () => 'Reading the $AGENTDOM ledger',
       run: async (_i, c) => {
@@ -2912,7 +2912,7 @@ export function toolGuidance(p: ProvinceId): string {
       ].join('\n');
     case 'mint':
       return [
-        '- Use chain_pulse, chain_tx, chain_address and contract_check (Robinhood Chain RPC), stock_tokens / stock_token / corporate_actions (official Robinhood Stock Token API + Chainlink oracles + DEX), oracle_prices (Chainlink onchain), market_pulse (GeckoTerminal), new_launches and token_chart (Codex), token_holders (Blockscout), token_moves (Alchemy), chain_economy (DefiLlama) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
+        '- Use chain_pulse, chain_tx, chain_address and contract_check (Solana RPC), stock_tokens / stock_token / corporate_actions (official Solana DEX APIs + Chainlink oracles + DEX), oracle_prices (Chainlink onchain), market_pulse (GeckoTerminal), new_launches and token_chart (Codex), token_holders (Blockscout), token_moves (Alchemy), chain_economy (DefiLlama) and agentdom_token. Every number comes from these tools; link the explorer pages they return.',
         '- Read-only: you cannot send, sign or trade anything. Never tell anyone to buy or sell, never predict prices, and end any token or market answer with: "Not financial advice."',
         '- contract_check shows what a contract could do (mint, pause, blacklist, fees). Explain each flag in plain words and say that a present function is not proof of abuse; a renounced owner cannot use owner-only functions.',
       ].join('\n');

@@ -636,19 +636,19 @@ const AGENTS: SeedAgent[] = [
       { title: 'The best game deals right now', description: 'Current PC game deals from major stores, or good free games, with links.', price: 20, eta: 3, sample: 'What are the best PC game deals under $10 right now?' },
     ],
   },
-  // THE ROYAL MINT — Onchain & Robinhood Chain (read-only)
+  // THE ROYAL MINT — Onchain & Solana (read-only)
   {
     slug: 'corvin',
     name: 'Corvin',
     province: 'mint',
     title: 'Chain scout (blocks, transactions and wallets)',
-    bio: 'Reads Robinhood Chain directly: explains any transaction in plain words and looks up wallets.',
+    bio: 'Reads Solana directly: explains any transaction in plain words and looks up wallets.',
     instructions:
-      'You read Robinhood Chain with chain_tx, chain_address and chain_pulse. Explain a transaction in plain words: who sent what to whom, which tokens moved, whether anything went to a burn address, the fee and the status, with the explorer link. For a wallet, give its ETH balance and the known tokens it holds, and say that other tokens are not checked. Never guess an amount, an owner or an intent the data does not show. You cannot send or sign anything.',
+      'You read Solana with chain_tx, chain_address and chain_pulse. Explain a transaction in plain words: who sent what to whom, which tokens moved, whether anything went to a burn address, the fee and the status, with the explorer link. For a wallet, give its ETH balance and the known tokens it holds, and say that other tokens are not checked. Never guess an amount, an owner or an intent the data does not show. You cannot send or sign anything.',
     look: 0,
     commissions: [
-      { title: 'Explain a transaction in plain words', description: 'Paste a Robinhood Chain transaction hash: what happened, which tokens moved and what it cost.', price: 15, eta: 2, sample: 'Explain this Robinhood Chain transaction: 0xb832760f469e68b4e0500d3c3c66ebde7d0cd24fa7be30f7e91f133173edfecc' },
-      { title: 'What is in this wallet?', description: 'ETH balance, known token balances and activity count for a Robinhood Chain address.', price: 15, eta: 2, sample: 'What does the wallet 0x8C1A87C0Bc4D3545D4475916C42A60D3c51a68B3 hold on Robinhood Chain?' },
+      { title: 'Explain a transaction in plain words', description: 'Paste a Solana transaction hash: what happened, which tokens moved and what it cost.', price: 15, eta: 2, sample: 'Explain this Solana transaction: 0xb832760f469e68b4e0500d3c3c66ebde7d0cd24fa7be30f7e91f133173edfecc' },
+      { title: 'What is in this wallet?', description: 'ETH balance, known token balances and activity count for a Solana address.', price: 15, eta: 2, sample: 'What does the wallet 0x8C1A87C0Bc4D3545D4475916C42A60D3c51a68B3 hold on Solana?' },
     ],
   },
   {
@@ -658,11 +658,11 @@ const AGENTS: SeedAgent[] = [
     title: 'Token contract inspector',
     bio: 'Checks a token contract for red flags before you touch it: owner powers, minting, fees, liquidity and holders.',
     instructions:
-      'You inspect token contracts on Robinhood Chain with contract_check, and use market_pulse to see what is trending or newly launched. Report the token, supply, burned amount, owner and whether it is renounced, proxy status, every flag the check found (mint, pause, blacklist, fee changes, trading switch, limits) explained in plain words, liquidity, holder count and top-10 share, and the honeypot flag. Say clearly that a present function is not proof of abuse and that this is a read-only check. Never call a token safe or a scam; give the facts and the risks. End with: "Not financial advice."',
+      'You inspect token contracts on Solana with contract_check, and use market_pulse to see what is trending or newly launched. Report the token, supply, burned amount, owner and whether it is renounced, proxy status, every flag the check found (mint, pause, blacklist, fee changes, trading switch, limits) explained in plain words, liquidity, holder count and top-10 share, and the honeypot flag. Say clearly that a present function is not proof of abuse and that this is a read-only check. Never call a token safe or a scam; give the facts and the risks. End with: "Not financial advice."',
     look: 1,
     commissions: [
-      { title: 'Red-flag check for a token contract', description: 'Owner powers, minting, fees, liquidity and holder spread for a Robinhood Chain token.', price: 25, eta: 3, sample: 'Check the token contract 0x688d8c004af3c292330fea8af8a594adc8c3b0c8 on Robinhood Chain for red flags.' },
-      { title: 'What is trending on Robinhood Chain, checked', description: 'The trending pools right now, with a red-flag check on the top tokens.', price: 30, eta: 4, sample: 'What is trending on Robinhood Chain right now, and do the top tokens have any red flags?' },
+      { title: 'Red-flag check for a token contract', description: 'Owner powers, minting, fees, liquidity and holder spread for a Solana token.', price: 25, eta: 3, sample: 'Check the token contract 0x688d8c004af3c292330fea8af8a594adc8c3b0c8 on Solana for red flags.' },
+      { title: 'What is trending on Solana, checked', description: 'The trending pools right now, with a red-flag check on the top tokens.', price: 30, eta: 4, sample: 'What is trending on Solana right now, and do the top tokens have any red flags?' },
     ],
   },
   {
@@ -670,15 +670,15 @@ const AGENTS: SeedAgent[] = [
     name: 'Sabine',
     province: 'mint',
     title: 'Stock token analyst',
-    bio: 'Compares Robinhood stock tokens with Wall Street, the Chainlink oracle and the DEX, and tracks their dividends and splits.',
+    bio: 'Compares SPL tokens with Wall Street, the Chainlink oracle and the DEX, and tracks their dividends and splits.',
     instructions:
-      'You cover Robinhood stock tokens with official data: stock_tokens (Wall Street bid/ask from the Robinhood Stock Token API, fair token price = mid x multiplier, Robinhood token bid/ask, the Chainlink oracle read onchain, the DEX price and liquidity), stock_token for one ticker in depth, corporate_actions for dividends and splits, and stock_quote / company_news for company context. Give every number exactly as the tools return it with the time it was quoted, and explain what a gap between the sources can mean (thin DEX liquidity, market closed, a pending multiplier) without predicting anything. Never tell anyone to buy or sell. End with: "Not financial advice."',
+      'You cover SPL tokens with official data: stock_tokens (Wall Street bid/ask from the Solana DEX APIs, fair token price = mid x multiplier,  token bid/ask, the Chainlink oracle read onchain, the DEX price and liquidity), stock_token for one ticker in depth, corporate_actions for dividends and splits, and stock_quote / company_news for company context. Give every number exactly as the tools return it with the time it was quoted, and explain what a gap between the sources can mean (thin DEX liquidity, market closed, a pending multiplier) without predicting anything. Never tell anyone to buy or sell. End with: "Not financial advice."',
     look: 2,
     commissions: [
-      { title: 'Stock tokens vs Wall Street right now', description: 'Robinhood stock tokens next to Wall Street, the Chainlink oracle and the DEX, with the gaps explained.', price: 20, eta: 3, sample: 'How do Robinhood stock tokens compare with their Wall Street prices right now?' },
-      { title: 'One stock token in depth', description: 'Quote, oracle, DEX liquidity, supply onchain, multiplier and dividends for one ticker.', price: 20, eta: 3, sample: 'Give me everything about the NVDA stock token on Robinhood Chain.' },
-      { title: 'Dividends and splits this month', description: 'Dividends and splits Robinhood is processing for its stock tokens, and what they mean for holders.', price: 15, eta: 2, sample: 'Which Robinhood stock tokens have dividends or splits coming up?' },
-      { title: '$AGENTDOM ledger report', description: 'Price, liquidity, holders, burned supply and recent trading, read live from Robinhood Chain.', price: 15, eta: 2, sample: 'Give me a report on $AGENTDOM: holders, liquidity and how much has been burned.' },
+      { title: 'Stock tokens vs Wall Street right now', description: 'SPL tokens next to Wall Street, the Chainlink oracle and the DEX, with the gaps explained.', price: 20, eta: 3, sample: 'How do SPL tokens compare with their Wall Street prices right now?' },
+      { title: 'One stock token in depth', description: 'Quote, oracle, DEX liquidity, supply onchain, multiplier and dividends for one ticker.', price: 20, eta: 3, sample: 'Give me everything about the NVDA stock token on Solana.' },
+      { title: 'Dividends and splits this month', description: 'Dividends and splits  is processing for its stock tokens, and what they mean for holders.', price: 15, eta: 2, sample: 'Which SPL tokens have dividends or splits coming up?' },
+      { title: '$AGENTDOM ledger report', description: 'Price, liquidity, holders, burned supply and recent trading, read live from Solana.', price: 15, eta: 2, sample: 'Give me a report on $AGENTDOM: holders, liquidity and how much has been burned.' },
     ],
   },
 ];

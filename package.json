@@ -20,6 +20,8 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.4.0",
+    "@solana/web3.js": "^3.2.1",
+    "bs58": "^6.0.0",
     "compression": "^1.8.1",
     "docx": "9.5.1",
     "express": "^4.21.2",
@@ -34,9 +36,11 @@
     "react-router-dom": "^6.28.0",
     "remark-gfm": "^4.0.0",
     "three": "^0.170.0",
+    "tweetnacl": "^1.0.3",
     "viem": "2.57.11"
   },
   "devDependencies": {
+    "@types/bs58": "^4.0.4",
     "@types/compression": "^1.8.1",
     "@types/express": "^4.17.21",
     "@types/node": "^22.10.1",

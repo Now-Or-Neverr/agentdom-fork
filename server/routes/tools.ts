@@ -982,20 +982,20 @@ router.get(
   }),
 );
 
-// ---- Royal Mint (Robinhood Chain, read-only) ----
+// ---- Royal Mint (Solana, read-only) ----
 router.get(
   '/tools/chain/pulse',
   h(async (req, res) => {
     ws(req, 'chain-pulse', 30);
-    res.json(single('robinhoodrpc', await run(I.chainPulse(WS('chain-pulse')))));
+    res.json(single('solanarpc', await run(I.chainPulse(WS('chain-pulse')))));
   }),
 );
 router.get(
   '/tools/chain/tx',
   h(async (req, res) => {
-    const hash = text(req.query.hash, 80, 'hash');
+    const hash = text(req.query.hash, 120, 'hash');
     ws(req, 'chain-tx', 30);
-    res.json(single('robinhoodrpc', await run(I.explainTx(hash, WS('chain-tx')))));
+    res.json(single('solanarpc', await run(I.explainTx(hash, WS('chain-tx')))));
   }),
 );
 router.get(
@@ -1003,7 +1003,7 @@ router.get(
   h(async (req, res) => {
     const address = text(req.query.address, 60, 'address');
     ws(req, 'chain-address', 20);
-    res.json(single('robinhoodrpc', await run(I.inspectAddress(address, WS('chain-address')))));
+    res.json(single('solanarpc', await run(I.inspectAddress(address, WS('chain-address')))));
   }),
 );
 router.get(
@@ -1011,7 +1011,7 @@ router.get(
   h(async (req, res) => {
     const address = text(req.query.address, 60, 'address');
     ws(req, 'chain-contract', 20);
-    res.json(single('robinhoodrpc', await run(I.scanContract(address, WS('chain-contract')))));
+    res.json(single('solanarpc', await run(I.scanContract(address, WS('chain-contract')))));
   }),
 );
 router.get(
@@ -1019,7 +1019,7 @@ router.get(
   h(async (req, res) => {
     const symbols = q(req, 'symbols').split(',').map((x) => x.trim().toUpperCase()).filter((x) => /^[A-Z.]{1,8}$/.test(x)).slice(0, 20);
     ws(req, 'chain-stocks', 15);
-    res.json(single('robinhoodapi', await run(I.stockBoard(WS('chain-stocks'), symbols.length ? symbols : undefined))));
+    res.json(single('solanarpc', await run(I.stockBoard(WS('chain-stocks'), symbols.length ? symbols : undefined))));
   }),
 );
 router.get(
@@ -1091,7 +1091,8 @@ router.get(
   '/tools/chain/chart',
   h(async (req, res) => {
     const address = text(req.query.address, 60, 'address');
-    const hours = [24, 168, 720].includes(Number(q(req, 'hours'))) ? Number(q(req, 'hours')) : 24;
+    const raw = Number(q(req, 'hours'));
+    const hours: 24 | 168 | 720 = raw === 168 ? 168 : raw === 720 ? 720 : 24;
     ws(req, 'chain-chart', 30);
     res.json(single('codex', await run(I.tokenChart(address, WS('chain-chart'), hours))));
   }),

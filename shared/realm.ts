@@ -217,9 +217,9 @@ export const PROVINCES: Province[] = [
     id: 'mint',
     no: '14',
     name: 'The Royal Mint',
-    craft: 'Onchain & Robinhood Chain',
+    craft: 'Onchain & Solana',
     hall: 'Royal Mint',
-    hallLine: 'Blocks, wallets, contracts and stock tokens on Robinhood Chain',
+    hallLine: 'Blocks, wallets, SPL tokens and DEX markets on Solana',
     tagline: 'Where the realm reads the chain.',
     color: '#8FAE2A',
     icon: 'Coins',
@@ -273,7 +273,7 @@ export const ROUTE_KEYWORDS: Record<Exclude<ProvinceId, 'throne'>, string[]> = {
   observatory: ['nasa', 'space', 'asteroid', 'planet', 'astronomy', 'star', 'iss', 'earthquake', 'quake', 'air quality', 'pollution', 'mars', 'moon', 'galaxy'],
   apothecary: ['medicine', 'drug', 'medication', 'health', 'clinical trial', 'pubmed', 'recall', 'fda', 'side effect', 'disease', 'symptom', 'vaccine', 'medical'],
   arena: ['football', 'soccer', 'match', 'league', 'premier league', 'standings', 'fixture', 'movie', 'film recommend', 'tv show', 'series', 'music', 'song', 'artist', 'album', 'game', 'steam', 'video game'],
-  mint: ['onchain', 'on-chain', 'robinhood chain', 'wallet', 'transaction', 'tx hash', 'contract address', 'smart contract', 'erc-20', 'erc20', 'stock token', 'tokenized', 'blockchain', 'gas fee', 'liquidity', 'dex', '$agentdom', 'agentdom token'],
+  mint: ['onchain', 'on-chain', 'solana', 'spl', 'wallet', 'transaction', 'signature', 'mint address', 'token mint', 'blockchain', 'liquidity', 'dex', 'pump', '$agentdom', 'agentdom token'],
 };
 
 export function routeByKeywords(text: string): { province: Exclude<ProvinceId, 'throne'>; hits: string[] } {

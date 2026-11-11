@@ -956,12 +956,12 @@ const KINDS: DutyKind[] = [
       };
     },
   },
-  // ---------- The Royal Mint (Robinhood Chain, read-only) ----------
+  // ---------- The Royal Mint (Solana, read-only) ----------
   {
     kind: 'chain_pulse',
     province: 'mint',
-    providers: ['robinhoodrpc'],
-    task: 'Reading the latest blocks on Robinhood Chain…',
+    providers: ['Solanarpc'],
+    task: 'Reading the latest blocks on Solana…',
     repeatHours: 8,
     async run(ctx, seen) {
       const r = await I.chainPulse(ctx);
@@ -969,10 +969,10 @@ const KINDS: DutyKind[] = [
       if (seen.has(key)) return null;
       return {
         key,
-        title: `Robinhood Chain passes block ${r.latestBlock.toLocaleString('en')}`,
+        title: `Solana passes block ${r.latestBlock.toLocaleString('en')}`,
         summary: `The latest block is ${r.latestBlock.toLocaleString('en')}. Over the last ${r.blocks.length} blocks the chain averaged ${r.avgTxPerBlock} transactions per block${r.avgBlockSeconds ? `, a new block every ${r.avgBlockSeconds} s` : ''}, with gas at ${r.gasPriceGwei} gwei.`,
         data: { latestBlock: r.latestBlock, avgTxPerBlock: r.avgTxPerBlock, avgBlockSeconds: r.avgBlockSeconds, gasPriceGwei: r.gasPriceGwei },
-        sourceName: 'Robinhood Chain RPC',
+        sourceName: 'Solana RPC',
         sourceUrl: r.sourceUrl,
       };
     },
@@ -980,7 +980,7 @@ const KINDS: DutyKind[] = [
   {
     kind: 'stock_token_gap',
     province: 'mint',
-    providers: ['robinhoodapi', 'dexscreener'],
+    providers: ['Solanaapi', 'dexscreener'],
     task: 'Comparing stock tokens with Wall Street…',
     repeatHours: 24,
     async run(ctx, seen) {
@@ -992,9 +992,9 @@ const KINDS: DutyKind[] = [
       return {
         key: `${day}:${t.ticker}`,
         title: `${t.ticker} token ${t.gapPct! >= 0 ? 'above' : 'below'} its share price by ${Math.abs(t.gapPct!)}%`,
-        summary: `The ${t.name} stock token traded at $${t.tokenPriceUsd} on Robinhood Chain, against $${t.fairTokenPrice.toFixed(2)} for the Wall Street price × its multiplier (Robinhood quote${t.quotedAt ? `, ${t.quotedAt.slice(0, 16).replace('T', ' ')} UTC` : ''}). Widest gap of the ${ranked.length} stock tokens checked. Not financial advice.`,
+        summary: `The ${t.name} stock token traded at $${t.tokenPriceUsd} on Solana, against $${t.fairTokenPrice.toFixed(2)} for the Wall Street price × its multiplier ( quote${t.quotedAt ? `, ${t.quotedAt.slice(0, 16).replace('T', ' ')} UTC` : ''}). Widest gap of the ${ranked.length} stock tokens checked. Not financial advice.`,
         data: { ticker: t.ticker, tokenPriceUsd: t.tokenPriceUsd, fairTokenPrice: t.fairTokenPrice, gapPct: t.gapPct, liquidityUsd: t.liquidityUsd, multiplier: t.multiplier },
-        sourceName: 'Robinhood Stock Token API + DexScreener',
+        sourceName: 'Solana DEX APIs + DexScreener',
         sourceUrl: t.url,
       };
     },
@@ -1002,7 +1002,7 @@ const KINDS: DutyKind[] = [
   {
     kind: 'stock_dividend',
     province: 'mint',
-    providers: ['robinhoodapi'],
+    providers: ['Solanaapi'],
     task: 'Reading dividends and splits for stock tokens…',
     repeatHours: 12,
     async run(ctx, seen) {
@@ -1014,10 +1014,10 @@ const KINDS: DutyKind[] = [
         key: `${a.symbol}:${a.type}:${a.date}`,
         title: split ? `${a.symbol} stock token: ${a.detail} split` : `${a.symbol} stock token: ${a.detail} dividend`,
         summary: split
-          ? `Robinhood is processing a ${a.detail} ${a.type.toLowerCase()} for the ${a.symbol} stock token on Robinhood Chain, dated ${a.date}. Splits are applied through the token's multiplier, so raw balances stay the same.`
-          : `Robinhood is processing a ${a.type.toLowerCase()} of ${a.detail} for the ${a.symbol} stock token on Robinhood Chain, dated ${a.date}.`,
+          ? ` is processing a ${a.detail} ${a.type.toLowerCase()} for the ${a.symbol} stock token on Solana, dated ${a.date}. Splits are applied through the token's multiplier, so raw balances stay the same.`
+          : ` is processing a ${a.type.toLowerCase()} of ${a.detail} for the ${a.symbol} stock token on Solana, dated ${a.date}.`,
         data: { ...a },
-        sourceName: 'Robinhood Stock Token API',
+        sourceName: 'Solana DEX APIs',
         sourceUrl: a.url ?? r.sourceUrl,
       };
     },
@@ -1026,7 +1026,7 @@ const KINDS: DutyKind[] = [
     kind: 'chain_economy',
     province: 'mint',
     providers: ['defillama'],
-    task: 'Reading the Robinhood Chain economy…',
+    task: 'Reading the Solana economy…',
     repeatHours: 24,
     async run(ctx, seen) {
       const r = await I.chainEconomy(ctx);
@@ -1036,8 +1036,8 @@ const KINDS: DutyKind[] = [
       const top = r.topDexes[0];
       return {
         key: day,
-        title: `Robinhood Chain: ${m(r.tvl)} locked, ${m(r.dexVolume24h)} traded in a day`,
-        summary: `DefiLlama counts ${m(r.tvl)} locked on Robinhood Chain and ${m(r.dexVolume24h)} of DEX volume in the last 24 hours${r.dexVolumeChange1d !== null ? ` (${r.dexVolumeChange1d > 0 ? '+' : ''}${Math.round(r.dexVolumeChange1d)}% on the day)` : ''}${top ? `, led by ${top.name}` : ''}. Stablecoins on the chain: ${m(r.stablecoins)}.`,
+        title: `Solana: ${m(r.tvl)} locked, ${m(r.dexVolume24h)} traded in a day`,
+        summary: `DefiLlama counts ${m(r.tvl)} locked on Solana and ${m(r.dexVolume24h)} of DEX volume in the last 24 hours${r.dexVolumeChange1d !== null ? ` (${r.dexVolumeChange1d > 0 ? '+' : ''}${Math.round(r.dexVolumeChange1d)}% on the day)` : ''}${top ? `, led by ${top.name}` : ''}. Stablecoins on the chain: ${m(r.stablecoins)}.`,
         data: { tvl: r.tvl, dexVolume24h: r.dexVolume24h, fees24h: r.fees24h, stablecoins: r.stablecoins, topDexes: r.topDexes.slice(0, 3) },
         sourceName: 'DefiLlama',
         sourceUrl: r.sourceUrl,
@@ -1047,7 +1047,7 @@ const KINDS: DutyKind[] = [
   {
     kind: 'agentdom_ledger',
     province: 'mint',
-    providers: ['dexscreener', 'geckoterminal', 'robinhoodrpc'],
+    providers: ['dexscreener', 'geckoterminal', 'Solanarpc'],
     task: 'Counting the $AGENTDOM holders…',
     repeatHours: 24,
     async run(ctx, seen) {
@@ -1057,9 +1057,9 @@ const KINDS: DutyKind[] = [
       return {
         key: day,
         title: `$AGENTDOM: ${r.holders.toLocaleString('en')} holders`,
-        summary: `$AGENTDOM has ${r.holders.toLocaleString('en')} holders on Robinhood Chain${r.burned ? `, and ${Math.round(Number(r.burned)).toLocaleString('en')} tokens (${r.burnedPct}% of supply) sit in burn addresses` : ''}. Read from the chain and GeckoTerminal. Not financial advice.`,
+        summary: `$AGENTDOM has ${r.holders.toLocaleString('en')} holders on Solana${r.burned ? `, and ${Math.round(Number(r.burned)).toLocaleString('en')} tokens (${r.burnedPct}% of supply) sit in burn addresses` : ''}. Read from the chain and GeckoTerminal. Not financial advice.`,
         data: { holders: r.holders, top10Pct: r.top10Pct, burned: r.burned, burnedPct: r.burnedPct, totalSupply: r.totalSupply },
-        sourceName: 'Robinhood Chain + GeckoTerminal',
+        sourceName: 'Solana + GeckoTerminal',
         sourceUrl: r.sourceUrl,
       };
     },

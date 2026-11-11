@@ -101,7 +101,7 @@ export const realmTools = {
   games: (title?: string) => req<{ title: string | null; deals: Section<I.GameDeals>; free: Section<I.FreeGames> | null }>('/tools/games' + qs({ title })),
 };
 
-// ---- Royal Mint (Robinhood Chain, read-only) ----
+// ---- Royal Mint (Solana, read-only) ----
 export const chainTools = {
   pulse: () => req<Named<I.ChainPulse>>('/tools/chain/pulse'),
   tx: (hash: string) => req<Named<I.TxExplained>>('/tools/chain/tx' + qs({ hash })),

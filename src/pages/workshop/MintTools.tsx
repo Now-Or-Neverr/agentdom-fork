@@ -1,4 +1,4 @@
-// Workshop tools for the Royal Mint: read-only Robinhood Chain data. Every answer shows its
+// Workshop tools for the Royal Mint: read-only Solana data. Every answer shows its
 // source, an explorer link to verify it, and when it was fetched. Nothing here can send or sign.
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { AlertTriangle, ArrowDownLeft, ArrowLeftRight, ArrowUpRight, Search } from 'lucide-react';
@@ -9,7 +9,7 @@ import * as Markets from './MintMarkets';
 import { CandleChart, Change, HolderList, Stats, price } from './MintCharts';
 import type * as I from '../../../server/integrations';
 
-const AGENTDOM_CA = BRAND.ca || '0x688d8c004af3c292330fea8af8a594adc8c3b0c8';
+const AGENTDOM_CA = BRAND.ca;
 
 const table: CSSProperties = { width: '100%', borderCollapse: 'collapse', fontSize: 14 };
 // Values wrap so the tables fit a phone.
@@ -27,7 +27,7 @@ const when = (iso: string | null) => (iso ? new Date(iso).toLocaleString([], { m
 export function NotFinancial() {
   return (
     <p className="ws-muted" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-      <AlertTriangle size={14} /> Read-only data from Robinhood Chain. Not financial advice.
+      <AlertTriangle size={14} /> Read-only data from Solana. Not financial advice.
     </p>
   );
 }
@@ -136,7 +136,7 @@ export function ChainPulseTool() {
     run(chainTools.pulse());
   }, []);
   return (
-    <Panel title="Robinhood Chain right now" sub="The latest blocks from the chain's public RPC, plus chain-wide totals from the explorer: transactions, addresses, block time and gas.">
+    <Panel title="Solana right now" sub="The latest slots from the public RPC: block time and transactions per slot.">
       <div className="ws-row ws-end">
         <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.pulse())}>
           Refresh
@@ -187,8 +187,8 @@ export function TxTool() {
   const [hash, setHash] = useState('');
   const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.tx>>>();
   return (
-    <Panel title="Explain a transaction" sub="Paste a Robinhood Chain transaction hash. See who sent what to whom, which tokens moved, and what it cost.">
-      <AddrForm value={hash} set={setHash} onGo={() => run(chainTools.tx(hash.trim()))} busy={s.loading} placeholder="0x… transaction hash" button="Explain" />
+    <Panel title="Explain a transaction" sub="Paste a Solana transaction signature. See status, fee, and account keys involved.">
+      <AddrForm value={hash} set={setHash} onGo={() => run(chainTools.tx(hash.trim()))} busy={s.loading} placeholder="Signature (base58)…" button="Explain" />
       <Status s={s} label="Reading the transaction…">
         {(d) => (
           <>
@@ -229,8 +229,8 @@ export function AddressTool() {
   const [addr, setAddr] = useState('');
   const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.address>>>();
   return (
-    <Panel title="Look up a wallet" sub="ETH and every token held with values, the portfolio total, recent transfers and transactions, and NFTs on Robinhood Chain.">
-      <AddrForm value={addr} set={setAddr} onGo={() => run(chainTools.address(addr.trim()))} busy={s.loading} placeholder="0x… address" button="Look up" />
+    <Panel title="Look up a wallet" sub="SOL balance and SPL token accounts from Solana RPC.">
+      <AddrForm value={addr} set={setAddr} onGo={() => run(chainTools.address(addr.trim()))} busy={s.loading} placeholder="Solana wallet address…" button="Look up" />
       <Status s={s} label="Reading the address…">
         {(d) => (
           <>
@@ -243,7 +243,7 @@ export function AddressTool() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '4px 12px' }}>
                   <span className="ws-big">{usd(d.portfolio.totalUsd)}</span>
                   <span className="ws-muted">
-                    portfolio on Robinhood Chain · <Ext href={d.portfolio.sourceUrl}>Zerion</Ext>
+                    portfolio on Solana · <Ext href={d.portfolio.sourceUrl}>portfolio</Ext>
                   </span>
                 </div>
                 {d.portfolio.positions.length > 0 && (
@@ -378,7 +378,7 @@ export function ContractTool({ preset }: { preset?: { address: string; n: number
   return (
     <div ref={box} style={{ scrollMarginTop: 90 }}>
     <Panel title="Check a token contract" sub="Before you touch a token: who controls it, what they could change, how deep its liquidity is and how its holders are spread.">
-      <AddrForm value={addr} set={setAddr} onGo={() => run(chainTools.contract(addr.trim()))} busy={s.loading} placeholder="0x… token contract" button="Check" />
+      <AddrForm value={addr} set={setAddr} onGo={() => run(chainTools.contract(addr.trim()))} busy={s.loading} placeholder="SPL mint address…" button="Check" />
       <Status s={s} label="Reading the contract…">
         {(d) =>
           !d.isContract ? (
@@ -387,7 +387,7 @@ export function ContractTool({ preset }: { preset?: { address: string; n: number
             <>
               <p>
                 <Ext href={d.sourceUrl}>{d.token ? `${d.token.name ?? ''} (${d.token.symbol ?? '?'})` : short(d.address)}</Ext>
-                {d.stockToken && <span className="tag">official Robinhood stock token</span>}
+                {d.stockToken && <span className="tag">official stock token</span>}
                 {d.honeypot === true && <span className="tag">honeypot flag</span>}
               </p>
               <table style={table}>
@@ -532,7 +532,7 @@ function GoPlus({ g }: { g: I.GoPlusReport }) {
 }
 
 export function MovesTool() {
-  const [addr, setAddr] = useState(AGENTDOM_CA);
+  const [addr, setAddr] = useState<string>(AGENTDOM_CA);
   const [hours, setHours] = useState(6);
   const [m, runM] = useRun<Awaited<ReturnType<typeof chainTools.moves>>>();
   const [h, runH] = useRun<Awaited<ReturnType<typeof chainTools.holders>>>();
@@ -554,7 +554,7 @@ export function MovesTool() {
           go();
         }}
       >
-        <input className="field ws-grow" style={{ flexBasis: 280 }} value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="0x… token contract" maxLength={80} spellCheck={false} />
+        <input className="field ws-grow" style={{ flexBasis: 280 }} value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="SPL mint address…" maxLength={80} spellCheck={false} />
         <select
           className="field ws-sel"
           value={hours}
@@ -625,16 +625,12 @@ export function MintWorkshop() {
     <>
       <AgentdomVaultTool />
       <Markets.EconomyTool />
-      <Markets.StockBoardTool />
-      <Markets.StockLookupTool />
       <Markets.LaunchesTool onCheck={check} />
       <Markets.MarketsTool onCheck={check} />
       <ContractTool preset={preset} />
       <MovesTool />
       <TxTool />
       <AddressTool />
-      <Markets.ActionsTool />
-      <Markets.OracleTool />
       <ChainPulseTool />
     </>
   );

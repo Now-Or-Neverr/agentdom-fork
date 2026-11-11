@@ -1,5 +1,5 @@
-// Royal Mint workshop: Robinhood stock tokens (official Stock Token API + Chainlink + DEX),
-// dividends and splits, Chainlink oracles and what is trading on Robinhood Chain.
+// Royal Mint workshop: Solana stock tokens (official Stock Token API + Chainlink + DEX),
+// dividends and splits, Chainlink oracles and what is trading on Solana.
 import { useEffect, useState, type CSSProperties, type FormEvent } from 'react';
 import { Search } from 'lucide-react';
 import { chainTools, compact, num } from '../../lib/toolsApi';
@@ -27,13 +27,13 @@ export function StockBoardTool() {
     run(chainTools.stocks());
   }, []);
   return (
-    <Panel title="Stock tokens vs Wall Street" sub="Each token four ways: Wall Street (Robinhood's live quote × the token's multiplier), Robinhood's token price, the Chainlink oracle read onchain, and the DEX.">
+    <Panel title="Stock tokens vs Wall Street" sub="Each token four ways: Wall Street (Solana's live quote × the token's multiplier), Solana's token price, the Chainlink oracle read onchain, and the DEX.">
       <div className="ws-row ws-end">
         <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.stocks())}>
           Refresh
         </button>
       </div>
-      <Status s={s} label="Reading Robinhood, Chainlink and the DEX…">
+      <Status s={s} label="Reading Solana, Chainlink and the DEX…">
         {(d) => (
           <>
             <div style={{ overflowX: 'auto' }}>
@@ -42,7 +42,7 @@ export function StockBoardTool() {
                   <tr>
                     <th style={cell}>Token</th>
                     <th style={cell}>Wall Street × mult.</th>
-                    <th style={cell}>Robinhood token</th>
+                    <th style={cell}>Solana token</th>
                     <th style={cell}>Chainlink</th>
                     <th style={cell}>DEX</th>
                     <th style={cell}>DEX gap</th>
@@ -70,7 +70,7 @@ export function StockBoardTool() {
               </table>
             </div>
             <p className="ws-muted">
-              {num(d.listed, 0)} official stock tokens are listed by Robinhood; look any of them up below. {d.note}
+              {num(d.listed, 0)} official stock tokens are listed by Solana; look any of them up below. {d.note}
             </p>
             <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
           </>
@@ -84,7 +84,7 @@ export function StockLookupTool() {
   const [sym, setSym] = useState('');
   const [s, run] = useRun<Awaited<ReturnType<typeof chainTools.stock>>>();
   return (
-    <Panel title="Look up a stock token" sub="Any of the official Robinhood stock tokens, by ticker or contract address: quotes, oracle, DEX, supply onchain, multiplier and dividends.">
+    <Panel title="Look up a stock token" sub="Any of the official Solana stock tokens, by ticker or contract address: quotes, oracle, DEX, supply onchain, multiplier and dividends.">
       <form
         className="ws-row ws-wrap"
         onSubmit={(e: FormEvent) => {
@@ -121,7 +121,7 @@ export function StockLookupTool() {
                   </td>
                 </tr>
                 <tr>
-                  <td style={wrap}>Robinhood token bid / ask</td>
+                  <td style={wrap}>Solana token bid / ask</td>
                   <td style={wrap}>
                     {usd(d.robinhoodTokenBid)} / {usd(d.robinhoodTokenAsk)}
                   </td>
@@ -179,7 +179,7 @@ export function ActionsTool() {
     run(chainTools.actions());
   }, []);
   return (
-    <Panel title="Dividends and splits" sub="Corporate actions Robinhood is processing for its stock tokens, newest first. Splits are applied through each token's multiplier.">
+    <Panel title="Dividends and splits" sub="Corporate actions Solana is processing for its stock tokens, newest first. Splits are applied through each token's multiplier.">
       <Status s={s} label="Reading corporate actions…">
         {(d) => (
           <>
@@ -213,7 +213,7 @@ export function OracleTool() {
     run(chainTools.oracles(kind));
   }, [kind]);
   return (
-    <Panel title="Chainlink prices onchain" sub="Price oracles on Robinhood Chain, read straight from the Chainlink feed contracts.">
+    <Panel title="Chainlink prices onchain" sub="Price oracles on Solana, read straight from the Chainlink feed contracts.">
       <div className="ws-row">
         <button className={'btn btn-sm' + (kind === 'crypto' ? ' btn-seal' : '')} onClick={() => setKind('crypto')}>
           Crypto
@@ -230,7 +230,7 @@ export function OracleTool() {
                 .filter((f) => f.price !== null)
                 .map((f) => (
                   <li key={f.url} style={{ breakInside: 'avoid' }}>
-                    <Ext href={f.url}>{f.name.replace(/^Robinhood\s+/, '')}</Ext> <b>{small(f.price)}</b> <span className="ws-muted">· {ago(f.updatedAt)}</span>
+                    <Ext href={f.url}>{f.name.replace(/^Solana\s+/, '')}</Ext> <b>{small(f.price)}</b> <span className="ws-muted">· {ago(f.updatedAt)}</span>
                   </li>
                 ))}
             </ul>
@@ -275,7 +275,7 @@ export function MarketsTool({ onCheck }: { onCheck?: (address: string) => void }
     </div>
   );
   return (
-    <Panel title="What is trading on Robinhood Chain" sub="Trending pools and brand-new pools from GeckoTerminal. Press Check to run a token through the contract check.">
+    <Panel title="What is trading on Solana" sub="Trending pools and brand-new pools from GeckoTerminal. Press Check to run a token through the contract check.">
       <div className="ws-row ws-end">
         <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.markets())}>
           Refresh
@@ -289,7 +289,7 @@ export function MarketsTool({ onCheck }: { onCheck?: (address: string) => void }
             <h4>Just launched</h4>
             {list(d.newest, true)}
             <p className="ws-muted">
-              {d.dexCount ? `${d.dexCount} DEXes are active on Robinhood Chain. ` : ''}
+              {d.dexCount ? `${d.dexCount} DEXes are active on Solana. ` : ''}
               {d.note}
             </p>
             <Source name={d.name} url={d.sourceUrl} at={d.fetchedAt} />
@@ -323,7 +323,7 @@ export function EconomyTool() {
     );
   };
   return (
-    <Panel title="Robinhood Chain economy" sub="How much money lives on the chain and how much moves through it in a day: value locked, DEX volume, fees and stablecoins, from DefiLlama.">
+    <Panel title="Solana economy" sub="How much money lives on the chain and how much moves through it in a day: value locked, DEX volume, fees and stablecoins, from DefiLlama.">
       <Status s={s} label="Reading DefiLlama…">
         {(d) => (
           <>
@@ -375,7 +375,7 @@ export function LaunchesTool({ onCheck }: { onCheck?: (address: string) => void 
     run(chainTools.launches());
   }, []);
   return (
-    <Panel title="New launches" sub="The newest tokens on Robinhood Chain with at least $1,000 of liquidity, from Codex. Press Check to run one through the contract check.">
+    <Panel title="New launches" sub="The newest tokens on Solana with at least $1,000 of liquidity, from Codex. Press Check to run one through the contract check.">
       <div className="ws-row ws-end">
         <button className="btn btn-sm" disabled={s.loading} onClick={() => run(chainTools.launches())}>
           Refresh

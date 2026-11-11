@@ -1,9 +1,8 @@
-// Holder perks: a visitor proves they own a wallet by signing a plain message (free, no
-// transaction), and if it holds at least HOLDER_MIN_TOKENS $AGENTDOM they get
-// HOLDER_BONUS_DECREES extra decrees per day. The balance is re-read from Robinhood Chain.
+// Holder perks: prove wallet ownership with a free message signature; enough $AGENTDOM on Solana
+// unlocks extra decrees per day. Balance is re-read from Solana RPC.
 import { randomBytes } from 'node:crypto';
 import { Router } from 'express';
-import { getAddress, parseUnits, verifyMessage } from 'viem';
+import { TOKEN } from '../shared/brand';
 import { db, now } from './db';
 import { HttpError, currentUser, h, text } from './core';
 import * as I from './integrations';
@@ -13,6 +12,7 @@ export const HOLDER_MIN = Number(process.env.HOLDER_MIN_TOKENS) || 1_000_000;
 export const HOLDER_BONUS = Number(process.env.HOLDER_BONUS_DECREES) || 5;
 const STALE_MS = 30 * 60_000;
 const CTX: I.CallContext = { context: 'realm', ref: 'holder' };
+const DECIMALS = Number(process.env.TOKEN_DECIMALS) || TOKEN.decimals;
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS user_wallets (
@@ -32,7 +32,7 @@ interface WalletRow {
   checked_at: string;
 }
 const row = (userId: string) => db.prepare('SELECT * FROM user_wallets WHERE user_id = ?').get(userId) as WalletRow | undefined;
-const minRaw = () => parseUnits(String(HOLDER_MIN), 18);
+const minRaw = () => BigInt(HOLDER_MIN) * 10n ** BigInt(DECIMALS);
 const isHolder = (r: WalletRow | undefined) => !!r && BigInt(r.balance) >= minRaw();
 
 async function refresh(r: WalletRow): Promise<WalletRow> {
@@ -69,7 +69,6 @@ function status(r: WalletRow | undefined) {
   };
 }
 
-// One pending challenge per user, valid for 10 minutes.
 const challenges = new Map<string, { address: string; message: string; exp: number }>();
 
 export const router = Router();
@@ -88,7 +87,7 @@ router.post(
   '/me/holder/challenge',
   h((req, res) => {
     const u = currentUser(req);
-    const address = getAddress(I.checkAddress(text(req.body?.address, 60, 'address')));
+    const address = I.checkAddress(text(req.body?.address, 60, 'address'));
     const message = [
       'Agentdom holder check',
       '',
@@ -110,14 +109,14 @@ router.post(
     const u = currentUser(req);
     const c = challenges.get(u.id as string);
     if (!c || c.exp < Date.now()) throw new HttpError(400, 'The signing request expired. Please try again.');
-    const signature = text(req.body?.signature, 300, 'signature') as `0x${string}`;
-    const ok = await verifyMessage({ address: c.address as `0x${string}`, message: c.message, signature }).catch(() => false);
+    const signature = text(req.body?.signature, 300, 'signature');
+    const ok = I.verifySolanaMessage(c.message, signature, c.address);
     if (!ok) throw new HttpError(400, 'The signature does not match this wallet.');
     challenges.delete(u.id as string);
     const t = now();
     db.prepare('INSERT INTO user_wallets (user_id, address, balance, verified_at, checked_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(user_id) DO UPDATE SET address = excluded.address, balance = excluded.balance, verified_at = excluded.verified_at, checked_at = excluded.checked_at').run(u.id, c.address, '0', t, t);
     const r = await refresh(row(u.id as string)!).catch(() => {
-      throw new HttpError(502, 'Wallet linked, but Robinhood Chain did not answer. Try again in a minute.');
+      throw new HttpError(502, 'Wallet linked, but Solana RPC did not answer. Try again in a minute.');
     });
     res.json(status(r));
   }),
